@@ -1,0 +1,86 @@
+<%
+
+function doesApiGroupHaveCall(inputApiName, inputCallName) 
+{
+    var api = categorizedApis[inputApiName]; 
+    for (var i = 0; i < api.otherCalls.length; i++) 
+    {
+        var call = api.otherCalls[i];
+        if( call.name == inputCallName )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function countCallName(inputCallName) 
+{
+    let count = 0;
+    for(var apiName in categorizedApis)  
+    {
+        var api = categorizedApis[apiName]; 
+        for (var i = 0; i < api.otherCalls.length; i++) 
+        {
+            var call = api.otherCalls[i];
+            if( call.name == inputCallName )
+            {
+                count++;
+                break;
+            }
+        }
+    }
+
+    return count;
+}
+
+%>Feature Area,Call,Example API, Classic Client, Classic Server, Classic Admin, Entity Group, SubGroup
+<%
+
+seenCallName = [];
+for(var apiName in categorizedApis) 
+{ 
+    var api = categorizedApis[apiName]; 
+    for (var i = 0; i < api.otherCalls.length; i++) 
+    {
+        var call = api.otherCalls[i];
+        if( !seenCallName.includes(call.name) )
+        {
+            seenCallName.push(call.name);
+            var asyncName = "PlayFab" + apiName + call.name + "Async"; 
+            let clientYN = doesApiGroupHaveCall("Client", call.name) ? "Y" : "N";
+            if( clientYN == "Y" )
+            {
+                asyncName = "PlayFabClient" + call.name + "Async"; // Prefer Client example
+            }
+            let serverYN = doesApiGroupHaveCall("Server", call.name) ? "Y" : "N";
+            let adminYN = doesApiGroupHaveCall("Admin", call.name) ? "Y" : "N";            
+            let group = apiGrouping.APIGroups[call.name]; // Manual grouping of client/admin/server APIs.  entity apis are already grouped so aren't included
+            if( group == undefined ) {
+                 group = "TBD";
+            }
+            if( clientYN == "N" && serverYN == "N" && adminYN == "N" )
+            {
+                group = apiName;
+%><%- group + "," + call.name + "," + asyncName + "," + clientYN + "," + serverYN + "," + adminYN + "," + apiName + "," + call.subgroup %> 
+<%
+            }
+            else
+            {
+%><%- group + "," + call.name + "," + asyncName + "," + clientYN + "," + serverYN + "," + adminYN + ",n/a," + call.subgroup  %> 
+<%
+            }
+        }
+    }
+} 
+
+for(var apiName in apiGrouping.NotAutogenAPIs) 
+{ 
+    // these APIs aren't auto-gen'd so manually included
+    var api = apiGrouping.NotAutogenAPIs[apiName]; 
+%><%- api.Group + ",n/a," + api.Name + ",N,N,N,n/a," + api.Group %> 
+<%
+}
+
+%>

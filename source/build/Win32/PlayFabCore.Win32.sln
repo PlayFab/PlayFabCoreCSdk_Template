@@ -1,0 +1,63 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PropertySheets", "PropertySheets", "{DDB43465-C46F-4041-9AC4-687E42680072}"
+	ProjectSection(SolutionItems) = preProject
+		..\PlayFabCore.props = ..\PlayFabCore.props
+		..\PlayFabCoreStaticLib.props = ..\PlayFabCoreStaticLib.props
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libHttpClient.141.Win32.C", "..\..\external\libHttpClient\Build\libHttpClient.141.Win32.C\libHttpClient.141.Win32.C.vcxproj", "{CF37BEB2-A66A-42BA-B348-1F07566F4865}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClientApp", "TestClientApp.vcxproj", "{3E4DF9A7-08A4-4188-9C86-B60605F3710B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlayFabCore.Win32", "PlayFabCore.Win32.vcxproj", "{92F6EC5F-B66C-4572-A74D-79329AFF3129}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlayFabCore.UnitTests", "PlayFabCore.UnitTests.vcxproj", "{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Debug|x64.ActiveCfg = Debug|x64
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Debug|x64.Build.0 = Debug|x64
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Debug|x86.ActiveCfg = Debug|Win32
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Debug|x86.Build.0 = Debug|Win32
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Release|x64.ActiveCfg = Release|x64
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Release|x64.Build.0 = Release|x64
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Release|x86.ActiveCfg = Release|Win32
+		{CF37BEB2-A66A-42BA-B348-1F07566F4865}.Release|x86.Build.0 = Release|Win32
+		{3E4DF9A7-08A4-4188-9C86-B60605F3710B}.Debug|x64.ActiveCfg = Debug|x64
+		{3E4DF9A7-08A4-4188-9C86-B60605F3710B}.Debug|x64.Build.0 = Debug|x64
+		{3E4DF9A7-08A4-4188-9C86-B60605F3710B}.Debug|x86.ActiveCfg = Debug|x64
+		{3E4DF9A7-08A4-4188-9C86-B60605F3710B}.Release|x64.ActiveCfg = Release|x64
+		{3E4DF9A7-08A4-4188-9C86-B60605F3710B}.Release|x64.Build.0 = Release|x64
+		{3E4DF9A7-08A4-4188-9C86-B60605F3710B}.Release|x86.ActiveCfg = Release|x64
+		{92F6EC5F-B66C-4572-A74D-79329AFF3129}.Debug|x64.ActiveCfg = Debug|x64
+		{92F6EC5F-B66C-4572-A74D-79329AFF3129}.Debug|x64.Build.0 = Debug|x64
+		{92F6EC5F-B66C-4572-A74D-79329AFF3129}.Debug|x86.ActiveCfg = Debug|x64
+		{92F6EC5F-B66C-4572-A74D-79329AFF3129}.Release|x64.ActiveCfg = Release|x64
+		{92F6EC5F-B66C-4572-A74D-79329AFF3129}.Release|x64.Build.0 = Release|x64
+		{92F6EC5F-B66C-4572-A74D-79329AFF3129}.Release|x86.ActiveCfg = Release|x64
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Debug|x64.ActiveCfg = Debug|x64
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Debug|x64.Build.0 = Debug|x64
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Debug|x86.ActiveCfg = Debug|Win32
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Debug|x86.Build.0 = Debug|Win32
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Release|x64.ActiveCfg = Release|x64
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Release|x64.Build.0 = Release|x64
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Release|x86.ActiveCfg = Release|Win32
+		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5FBC6BF0-5E0A-4A8A-A726-C664DC7FB893}
+		        SolutionGuid = {3F4F42F0-0F64-4D7F-9C01-7918C9A0828F}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,250 @@
+#include "stdafx.h"
+#include "<%- featureGroup.name %>.h"
+#include "GlobalState.h"
+#include "TitlePlayer.h"<%
+if (featureGroup.name === "Authentication") { %>
+#include "PlatformUser.h"
+#include "JsonUtils.h"<%
+} %>
+
+namespace PlayFab
+{<%
+if (!(featureGroup.name === "Shared")) { %>
+namespace <%- featureGroup.name %>
+{<%
+} %>
+
+<%
+function validateToken(call) {
+    switch (call.auth) {
+        case "EntityToken": { %>
+    auto entityToken{ entity->EntityToken() };
+    if (!entityToken || !entityToken->token) 
+    {
+        return E_PF_NOENTITYTOKEN;
+    }
+<% 
+            break;
+        }
+        case "SessionTicket": { %>
+    auto sessionTicket{ entity->SessionTicket() };
+    if (!sessionTicket || sessionTicket->empty()) 
+    {
+        return E_PF_NOSESSIONTICKET;
+    }
+<%
+            break;
+        }
+        case "SecretKey": { %>
+    auto secretKey{ state->SecretKey() };
+    if (!secretKey || secretKey->empty())
+    {
+        return E_PF_NOSECRETKEY;
+    }
+<%
+            break;
+        }
+    }
+}
+
+function addAuthHeader(call) {
+    switch (call.auth) {
+        case "EntityToken": { 
+            %>{ kEntityTokenHeaderName, entityToken->token }<% 
+            break;
+        }
+        case "SessionTicket": {
+            %>{ kSessionTicketHeaderName, *sessionTicket }<%
+            break;
+        }
+        case "SecretKey": {
+            %>{ kSecretKeyHeaderName, *secretKey }<%
+            break;
+        }
+    }
+}
+
+for (var i = 0; i < featureGroup.calls.length; i++) {
+    var call = featureGroup.calls[i];
+    var constModifier = call.entityRequired ? " const" : "";
+
+    var resultType = "void";
+    if (call.entityReturned) {
+        resultType = "SharedPtr<" + call.entityReturned + ">";
+    } else if (call.resultDatatype) {
+        resultType = call.resultDatatype.name;
+    }
+    var contextParam = "SharedPtr<GlobalState const> state,\n    ";
+    var httpRequestMethod = "state->HttpClient()->MakePostRequest";
+    if (call.entityRequired) {
+        contextParam = "SharedPtr<" + call.entityRequired + "> entity,\n    ";
+        if (call.entityRequired === "Entity") {
+            httpRequestMethod = "entity->HttpClient()->MakeEntityRequest";
+        } else if (call.entityRequired === "TitlePlayer") {
+            httpRequestMethod = "entity->HttpClient()->MakeClassicRequest";
+        }
+    }
+    var requestParam = call.requestDatatype ? "const " + call.requestDatatype.name + "& request,\n    " : ""; 
+    var requestBody = call.requestDatatype ? "JsonValue requestBody{ request.ToJson() };" : "JsonValue requestBody{ rapidjson::kNullType };";
+    if (call.entityReturned === "TitlePlayer") {
+        // add TitleId for login calls
+        requestBody += "\n    JsonUtils::ObjectAddMember(requestBody, \"TitleId\", state->TitleId());";
+    }
+    var entityParam = call.entityRequired ? "entity,\n        " : "";
+
+%>
+AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
+    <%- contextParam %><%- requestParam %>const TaskQueue& queue
+)
+{<% validateToken(call); %>
+    const char* path{ "<%- call.url %>" };
+    <%- requestBody %>
+    UnorderedMap<String, String> headers{<% addAuthHeader(call); %>};
+
+    auto requestOp = <%- httpRequestMethod %>(
+        <%- entityParam %>path,
+        std::move(headers),
+        std::move(requestBody),
+        queue
+    );
+<%  if (call.entityReturned) {
+        var loginContext = "";
+        if (call.entityReturned === "TitlePlayer") {
+            loginContext = ", loginContext"; %>
+    // Remember LoginContext so we can refresh tokens
+    auto loginContext = MakeShared<LoginContext>(path, std::move(requestBody), std::move(headers));<%
+        } %>
+    return requestOp.Then([ state<%- loginContext %> ](Result<ServiceResponse> result) -> Result<SharedPtr<<%- call.entityReturned %>>><%
+    } else { %>
+    return requestOp.Then([](Result<ServiceResponse> result) -> Result<<%- resultType %>><%
+    } %>
+    {
+        RETURN_IF_FAILED(result.hr);
+
+        auto serviceResponse = result.ExtractPayload();
+        if (serviceResponse.HttpCode == 200)
+        {<% 
+    if (call.resultDatatype) { %>
+            <%- call.resultDatatype.name %> resultModel;
+            resultModel.FromJson(serviceResponse.Data);<%
+        if (call.entityReturned) { %>
+            return MakeShared<<%- call.entityReturned %>>(state->HttpClient(), state->QoSAPI()<%- loginContext %>, std::move(resultModel));<%
+        } else { %>
+            return resultModel;<%
+        }
+    } else { %>
+            return S_OK;<%
+    } %>
+        }
+        else
+        {<%
+    if (call.entityReturned) { %>
+            return Result<SharedPtr<<%- call.entityReturned %>>>{ ServiceErrorToHR(serviceResponse.ErrorCode), std::move(serviceResponse.ErrorMessage) };<% 
+    } else { %>
+            return Result<<%- resultType %>>{ ServiceErrorToHR(serviceResponse.ErrorCode), std::move(serviceResponse.ErrorMessage) };<%
+    } %>
+        }
+    });
+}
+<%
+// Explicitly add LoginWithXUser implementation alongside Client/LoginWithXbox
+if (call.url === "/Client/LoginWithXbox") { %>
+#if HC_PLATFORM == HC_PLATFORM_GDK
+
+class XUserLoginContext : public LoginContext
+{
+public:
+    XUserLoginContext(XUser&& platformUser, String titleId, const PFAuthenticationLoginWithXUserRequest& request);
+
+    AsyncOp<JsonValue> GetRequestBody(const TaskQueue& queue) const override;
+
+private:
+    XUser m_platformUser;
+    String m_titleId;
+    ClientLoginWithXboxRequest m_request;
+};
+
+XUserLoginContext::XUserLoginContext(XUser&& platformUser, String titleId, const PFAuthenticationLoginWithXUserRequest& request)
+    : LoginContext{ "/Client/LoginWithXbox" },
+    m_platformUser{ std::move(platformUser) },
+    m_titleId{ std::move(titleId) },
+    m_request{ PFAuthenticationClientLoginWithXboxRequest
+    {
+        request.createAccount,
+        request.customTags,
+        request.customTagsCount,
+        request.infoRequestParameters,
+        request.playerSecret,
+        nullptr // XboxToken, will be populated later
+    }
+    }
+{
+}
+
+AsyncOp<JsonValue> XUserLoginContext::GetRequestBody(const TaskQueue& queue) const
+{
+    return m_platformUser.GetTokenAndSignature(
+        XUserGetTokenAndSignatureOptions::None,
+        "POST",
+        "https://playfabapi.com/",
+        UnorderedMap<String, String>{},
+        0,
+        nullptr,
+        queue
+    ).Then([request{ this->m_request }, titleId{ this->m_titleId }](Result<TokenAndSignature> getTokenResult) mutable->Result<JsonValue>
+    {
+        RETURN_IF_FAILED(getTokenResult.hr);
+        request.SetXboxToken(getTokenResult.Payload().token);
+        auto requestJson = request.ToJson();
+        JsonUtils::ObjectAddMember(requestJson, "TitleId", titleId);
+        return requestJson;
+    });
+}
+
+AsyncOp<SharedPtr<TitlePlayer>> AuthenticationAPI::LoginWithXUser(
+    SharedPtr<GlobalState> state,
+    const <%- globalPrefix %>AuthenticationLoginWithXUserRequest& request,
+    const TaskQueue& queue
+)
+{
+    auto wrapUserHandleResult = XUser::WrapHandle(request.userHandle);
+    RETURN_IF_FAILED(wrapUserHandleResult.hr);
+
+    auto loginContext = MakeShared<XUserLoginContext>(wrapUserHandleResult.ExtractPayload(), state->TitleId(), request);
+
+    return loginContext->GetRequestBody(queue.DeriveWorkerQueue()).Then([ httpClient{ state->HttpClient() }, queue = TaskQueue{ queue }, loginContext](Result<JsonValue> requestBodyResult) -> AsyncOp<ServiceResponse>
+    {
+        RETURN_IF_FAILED(requestBodyResult.hr);
+
+        return httpClient->MakePostRequest(
+            loginContext->RequestPath(),
+            UnorderedMap<String, String>{},
+            requestBodyResult.Payload(),
+            queue
+        );
+
+    }).Then([ state, loginContext ](Result<ServiceResponse> result) -> Result<SharedPtr<TitlePlayer>>
+    {
+        RETURN_IF_FAILED(result.hr);
+
+        auto serviceResponse = result.ExtractPayload();
+        if (serviceResponse.HttpCode == 200)
+        {
+            LoginResult resultModel;
+            resultModel.FromJson(serviceResponse.Data);
+            return MakeShared<TitlePlayer>(state->HttpClient(), state->QoSAPI(), loginContext, std::move(resultModel));
+        }
+        else
+        {
+            return Result<SharedPtr<TitlePlayer>>{ ServiceErrorToHR(serviceResponse.ErrorCode), std::move(serviceResponse.ErrorMessage) };
+        }
+    });
+}
+#endif
+<% } // end if
+} // end for
+
+if (!(featureGroup.name === "Shared")) { %>
+} // namespace <%- featureGroup.name %><%
+} %>
+} // namespace PlayFab

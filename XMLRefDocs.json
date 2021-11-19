@@ -1,0 +1,5 @@
+{
+  "PFAuthenticationGetEntityTokenAsync": {
+    "summary": "Method to exchange a title SecretKey for an Entity Token."
+  }
+}

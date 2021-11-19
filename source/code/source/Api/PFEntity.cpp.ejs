@@ -1,0 +1,148 @@
+#include "stdafx.h"
+#include <playfab/<%- prefix %>Entity.h>
+#include "Entity.h"
+#include "ApiAsyncProviders.h"
+
+using namespace PlayFab;
+
+HRESULT <%- prefix %>EntityDuplicateHandle(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _Out_ <%- prefix %>EntityHandle* duplicatedEntityHandle
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(duplicatedEntityHandle);
+
+    *duplicatedEntityHandle = MakeUnique<<%- prefix %>Entity>(*entityHandle).release();
+    return S_OK;
+}
+
+void <%- prefix %>EntityCloseHandle(
+    _In_ <%- prefix %>EntityHandle entityHandle
+) noexcept
+{
+    UniquePtr<<%- prefix %>Entity>{ entityHandle };
+}
+
+HRESULT <%- prefix %>EntityRegisterTokenRefreshedCallback(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _In_ XTaskQueueHandle queue,
+    _In_ <%- prefix %>EntityTokenRefreshedCallback* callback,
+    _In_opt_ void* context,
+    _Out_ <%- prefix %>RegistrationToken* token
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(callback);
+    RETURN_HR_INVALIDARG_IF_NULL(token);
+
+    *token = entityHandle->entity->TokenRefreshedCallbacks.Register(queue, [callback, context](SharedPtr<EntityToken const> newToken)
+        {
+            callback(newToken.get(), context);
+        });
+
+    return S_OK;
+}
+
+HRESULT <%- prefix %>EntityUnregisterTokenRefreshedCallback(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _In_ <%- prefix %>RegistrationToken token
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+
+    entityHandle->entity->TokenRefreshedCallbacks.Unregister(token);
+    return S_OK;
+}
+
+HRESULT <%- prefix %>EntityGetEntityTokenAsync(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _In_ const <%- prefix %>AuthenticationGetEntityTokenRequest* request,
+    _Inout_ XAsyncBlock* async
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+
+    auto provider = MakeAuthProvider(async, __FUNCTION__, std::bind(&Entity::GetEntityToken, entityHandle->entity.get(), *request, std::placeholders::_1));
+    return Provider::Run(UniquePtr<Provider>(provider.release()));
+}
+
+HRESULT <%- prefix %>EntityGetEntityTokenGetResult(
+    _In_ XAsyncBlock* async,
+    _Out_ <%- prefix %>EntityHandle* entityHandle
+) noexcept
+{
+    return XAsyncGetResult(async, nullptr, sizeof(<%- prefix %>EntityHandle), entityHandle, nullptr);
+}
+
+HRESULT <%- prefix %>EntityGetEntityKeySize(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _Out_ size_t* bufferSize
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(bufferSize);
+
+    *bufferSize = entityHandle->entity->EntityKey().RequiredBufferSize();
+    return S_OK;
+}
+
+HRESULT <%- prefix %>EntityGetEntityKey(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _In_ size_t bufferSize,
+    _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
+    _Outptr_ const <%- prefix %>EntityKey** entityKey,
+    _Out_opt_ size_t* bufferUsed
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(buffer);
+    RETURN_HR_INVALIDARG_IF_NULL(entityKey);
+
+    ModelBuffer b{ buffer, bufferSize };
+    auto copyResult = entityHandle->entity->EntityKey().Copy(b);
+    RETURN_IF_FAILED(copyResult.hr);
+    *entityKey = copyResult.ExtractPayload();
+    if (bufferUsed)
+    {
+        *bufferUsed = bufferSize - b.RemainingSpace();
+    }
+    
+    return S_OK;
+}
+
+HRESULT <%- prefix %>EntityGetCachedEntityTokenSize(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _Out_ size_t* bufferSize
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(bufferSize);
+
+    *bufferSize = entityHandle->entity->EntityToken()->RequiredBufferSize();
+    return S_OK;
+}
+
+HRESULT <%- prefix %>EntityGetCachedEntityToken(
+    _In_ <%- prefix %>EntityHandle entityHandle,
+    _In_ size_t bufferSize,
+    _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
+    _Outptr_ const <%- prefix %>EntityToken** entityToken,
+    _Out_opt_ size_t* bufferUsed
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(entityHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(buffer);
+    RETURN_HR_INVALIDARG_IF_NULL(entityToken);
+
+    ModelBuffer b{ buffer, bufferSize };
+    auto copyResult = entityHandle->entity->EntityToken()->Copy(b);
+    RETURN_IF_FAILED(copyResult.hr);
+    *entityToken = copyResult.ExtractPayload();
+    if (bufferUsed)
+    {
+        *bufferUsed = bufferSize - b.RemainingSpace();
+    }
+
+    return S_OK;
+}
