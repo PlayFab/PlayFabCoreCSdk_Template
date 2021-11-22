@@ -1,0 +1,48 @@
+#pragma once
+
+#include "<%- featureGroup.name %>DataModels.h"
+#include "TitlePlayer.h"
+#include "GlobalState.h"
+
+namespace PlayFab
+{<%
+if (!(featureGroup.name === "Shared")) { %>
+namespace <%- featureGroup.name %>
+{<%
+} %>
+
+class <%- featureGroup.name %>API
+{
+public:
+    <%- featureGroup.name %>API() = delete;
+    <%- featureGroup.name %>API(const <%- featureGroup.name %>API& source) = delete;
+    <%- featureGroup.name %>API& operator=(const <%- featureGroup.name %>API& source) = delete;
+    ~<%- featureGroup.name %>API() = default;
+
+    // ------------ Generated API calls<%
+for (var i = 0; i < featureGroup.calls.length; i++) {
+    var call = featureGroup.calls[i];
+
+    var resultType = "void";
+    if (call.entityReturned) {
+        resultType = "SharedPtr<" + call.entityReturned + ">";
+    } else if (call.resultDatatype) {
+        resultType = call.resultDatatype.name;
+    }
+    var contextParam = call.entityRequired ? "SharedPtr<" + call.entityRequired + "> entity, " : "SharedPtr<GlobalState const> state, ";
+    var requestParam = call.requestDatatype ? "const " + call.requestDatatype.name + "& request, " : ""; 
+%>
+    static AsyncOp<<%- resultType %>> <%- call.name %>(<%- contextParam %><%- requestParam %>const TaskQueue& queue);<%
+
+    // Eplicitly add LoginWithXUser API alongside Client/LoginWithXbox
+    if (call.url === "/Client/LoginWithXbox") { %>
+#if HC_PLATFORM == HC_PLATFORM_GDK
+    static AsyncOp<SharedPtr<TitlePlayer>> LoginWithXUser(SharedPtr<GlobalState> state, const <%- globalPrefix %>AuthenticationLoginWithXUserRequest& request, const TaskQueue& queue);
+#endif<%
+    } // end if
+} // end for %>
+};
+<% if (!(featureGroup.name === "Shared")) { %>
+} // namespace <%- featureGroup.name %><%
+} %>
+} // namespace PlayFab

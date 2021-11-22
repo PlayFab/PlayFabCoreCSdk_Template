@@ -1,0 +1,75 @@
+#include "stdafx.h"
+#include "GlobalState.h"
+#include "BaseModel.h"
+#include <httpClient/httpClient.h>
+
+using namespace PlayFab;
+
+STDAPI <%- prefix %>MemSetFunctions(
+    _In_opt_ <%- prefix %>MemAllocFunction* memAllocFunc,
+    _In_opt_ <%- prefix %>MemFreeFunction* memFreeFunc
+) noexcept
+{
+    RETURN_IF_FAILED(PlayFab::Detail::SetMemoryHooks(memAllocFunc, memFreeFunc));
+
+    // Try to set the memory hooks for libHttpClient as well. If it has already be initialized, there is nothing we can do
+    HRESULT hr = HCMemSetFunctions([](size_t size, HCMemoryType)
+        {
+            return PlayFab::Alloc(size);
+        },
+        [](void* pointer, HCMemoryType)
+        {
+            return PlayFab::Free(pointer);
+        });
+
+    if (FAILED(hr) && hr != E_HC_ALREADY_INITIALISED)
+    {
+        return hr;
+    }
+
+    return S_OK;
+}
+
+STDAPI <%- prefix %>MemGetFunctions(
+    _Out_ <%- prefix %>MemAllocFunction** memAllocFunc,
+    _Out_ <%- prefix %>MemFreeFunction** memFreeFunc
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(memAllocFunc);
+    RETURN_HR_INVALIDARG_IF_NULL(memFreeFunc);
+
+    auto& hooks = PlayFab::Detail::GetMemoryHooks();
+    *memAllocFunc = hooks.alloc;
+    *memFreeFunc = hooks.free;
+
+    return S_OK;
+}
+
+HRESULT <%- prefix %>Initialize(
+    _In_z_ const char* titleId,
+    _In_opt_ XTaskQueueHandle backgroundQueue,
+    _Outptr_ <%- prefix %>StateHandle* stateHandle
+) noexcept
+{
+    return <%- prefix %>GlobalState::Create(titleId, nullptr, backgroundQueue, stateHandle);
+}
+
+HRESULT <%- prefix %>AdminInitialize(
+    _In_z_ const char* titleId,
+    _In_z_ const char* secretKey,
+    _In_opt_ XTaskQueueHandle backgroundQueue,
+    _Outptr_ <%- prefix %>StateHandle* stateHandle
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(secretKey);
+    return <%- prefix %>GlobalState::Create(titleId, secretKey, backgroundQueue, stateHandle);
+}
+
+HRESULT <%- prefix %>UninitializeAsync(
+    _In_ <%- prefix %>StateHandle stateHandle,
+    _In_ XAsyncBlock* async
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(stateHandle);
+    return stateHandle->CleanupAsync(async);
+}

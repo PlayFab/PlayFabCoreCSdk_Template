@@ -1,0 +1,124 @@
+#pragma once
+
+#include "TestCase.h"
+#include <playfab/PFGlobal.h>
+#include <playfab/PFEntity.h>
+#include <playfab/cpp/<%- globalPrefix %><%- featureGroup.name %>DataModelWrappers.h>
+#include "AutoGen<%- featureGroup.name %>ResultHolders.h"
+
+namespace PlayFabUnit
+{
+
+class AutoGen<%- featureGroup.name %>Tests : public PlayFabApiTestCase
+{
+private: 
+    static void Log(std::stringstream& ss);
+    static HRESULT LogHR(HRESULT hr);
+
+<% for (var i = 0; i < featureGroup.calls.length; i++) 
+{
+    var call = featureGroup.calls[i];
+
+    for (var j = 0; j < prerequisiteCalls[call.name].length; j++)
+    {
+        var prereqCall = prerequisiteCalls[call.name][j];
+    %>    void Test<%- featureGroup.name + call.name %>Prerequisite<%- prereqCall.name %>(TestContext& testContext);
+<%
+    }
+
+    var asyncName = prefix + call.name + "Async"; 
+%>    void Test<%- featureGroup.name + call.name %>(TestContext& testContext);
+<%
+
+    for (var j = 0; j < cleanupCalls[call.name].length; j++)
+    {
+        var cleanupCall = cleanupCalls[call.name][j];
+    %>    void Test<%- featureGroup.name + call.name %>Cleanup<%- cleanupCall.name %>(TestContext& testContext);
+<%
+    }
+%>
+<%
+} // end for %>
+protected:
+    void AddTests();
+<% 
+var hasFillBeenDefinedMap = {};
+var hasValidateBeenDefinedMap = {};
+var storedResponseTypes = [];
+for (var i = 0; i < featureGroup.calls.length; i++) 
+{
+    var call = featureGroup.calls[i];
+
+    for (var j = 0; j < prerequisiteCalls[call.name].length; j++)
+    {
+        var prereqCall = prerequisiteCalls[call.name][j];
+        
+        if (prereqCall.requestDatatype && !(call.name + prereqCall.requestDatatype.name in hasFillBeenDefinedMap) ) {
+            hasFillBeenDefinedMap[call.name + prereqCall.requestDatatype.name] = true; %>
+    static void Fill<%- call.name %>Prerequisite<%- prereqCall.requestDatatype.name %>(PlayFab::Wrappers::<%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<>& request);<%
+        } // end if 
+        if (prereqCall.resultDatatype && !(call.name + prereqCall.resultDatatype.name in hasValidateBeenDefinedMap) ) { 
+            hasValidateBeenDefinedMap[call.name + prereqCall.resultDatatype.name] = true;
+            if (!(storedResponseTypes.some(elem => elem.name === prereqCall.resultDatatype.name)))
+            {
+                 storedResponseTypes.push(prereqCall.resultDatatype);
+            } %>
+    static HRESULT Store<%- call.name %>Prerequisite<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(std::shared_ptr<<%- prereqCall.resultDatatype.name %>Holder> result);<%
+        } // end if
+    } // end for
+
+    if (call.requestDatatype && !(call.requestDatatype.name in hasFillBeenDefinedMap) ) {
+        hasFillBeenDefinedMap[call.requestDatatype.name] = true; %>
+    static void Log<%- call.requestDatatype.name %>(<%- call.requestDatatype.prefix + call.requestDatatype.name %> const* request, const char* testName);
+    static void Fill<%- call.requestDatatype.name %>(PlayFab::Wrappers::<%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<>& request);<%
+    } // end if
+    if (call.resultDatatype && !(call.resultDatatype.name in hasValidateBeenDefinedMap) ) { 
+        hasValidateBeenDefinedMap[call.resultDatatype.name] = true; %>
+    static HRESULT Log<%- call.resultDatatype.prefix + call.resultDatatype.name %>(<%- call.resultDatatype.prefix + call.resultDatatype.name %> const* result);
+    static HRESULT Validate<%- call.resultDatatype.prefix + call.resultDatatype.name %>(<%- call.resultDatatype.prefix + call.resultDatatype.name %>* result);<%
+    } // end if
+
+    for (var j = 0; j < cleanupCalls[call.name].length; j++)
+    {
+        var cleanupCall = cleanupCalls[call.name][j];
+        
+        if (cleanupCall.requestDatatype && !(call.name + cleanupCall.requestDatatype.name in hasFillBeenDefinedMap) ) {
+            hasFillBeenDefinedMap[call.name + cleanupCall.requestDatatype.name] = true; %>
+    static void Fill<%- call.name %>Cleanup<%- cleanupCall.requestDatatype.name %>(PlayFab::Wrappers::<%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<>& request);<%
+        } // end if 
+        if (cleanupCall.resultDatatype && !(call.name + cleanupCall.resultDatatype.name in hasValidateBeenDefinedMap) ) { 
+            hasValidateBeenDefinedMap[call.name + cleanupCall.resultDatatype.name] = true;
+            if (!(storedResponseTypes.some(elem => elem.name === cleanupCall.resultDatatype.name)))
+            {
+                 storedResponseTypes.push(cleanupCall.resultDatatype);
+            }%>
+    static HRESULT Store<%- call.name %>Cleanup<%- cleanupCall.resultDatatype.prefix + cleanupCall.resultDatatype.name %>(std::shared_ptr<<%- cleanupCall.resultDatatype.name %>Holder> result);<%
+        } // end if
+    } // end for %>
+<% } // end for %>
+    struct <%- featureGroup.name %>TestData
+    {
+        ~<%- featureGroup.name %>TestData() = default;
+<% for (const responseType of storedResponseTypes) { %>
+        std::shared_ptr<<%- responseType.name %>Holder> m_<%- responseType.name %>;<%
+} // end for %>
+    };
+
+    static <%- featureGroup.name %>TestData testData;
+
+public:
+    PFStateHandle stateHandle{ nullptr };
+    PFTitlePlayerHandle titlePlayerHandle{ nullptr };
+    PFEntityHandle entityHandle{ nullptr };
+    PFTitlePlayerHandle titlePlayerHandle2{ nullptr };
+    PFEntityHandle entityHandle2{ nullptr };
+    PFEntityHandle titleEntityHandle{ nullptr };
+
+    void ClassSetUp() override;
+    void ClassTearDown() override;
+    void SetUp(TestContext& testContext) override;
+
+    void Tick(TestContext&) override {}
+};
+
+}

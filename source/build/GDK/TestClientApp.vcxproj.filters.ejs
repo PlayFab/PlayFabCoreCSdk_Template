@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source" />
+    <Filter Include="Source\AutoGen Tests" />
+    <Filter Include="Source\Tests" />
+    <Filter Include="Source\GDK" />
+    <Filter Include="Source\GDK\ATGTK" />
+    <Filter Include="Assets" />
+  </ItemGroup>
+  <ItemGroup><%
+for (var file in projectFiles.TestClientAppFiles) { 
+    var filter = projectFiles.TestClientAppFiles[file];
+    var header = file.endsWith(".h"); 
+    if (header) { %>
+    <ClInclude Include="$(PlayFabTestDir)\<%- file %>" >
+      <Filter><%- filter %></Filter>
+    </ClInclude><%
+    } else { %>
+    <ClCompile Include="$(PlayFabTestDir)\<%- file %>" >
+      <Filter><%- filter %></Filter>
+    </ClCompile><%
+    }
+}
+for(var featureGroupName in SDKFeatureGroups) { %>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>Tests.h">
+      <Filter>Source\AutoGen Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>ResultHolders.h">
+      <Filter>Source\AutoGen Tests</Filter>
+    </ClInclude>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>TestData.cpp">
+      <Filter>Source\AutoGen Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>TestLog.cpp">
+      <Filter>Source\AutoGen Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>Tests.cpp">
+      <Filter>Source\AutoGen Tests</Filter>
+    </ClCompile><%
+} %>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\ATGColors.h" >
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\ControllerFont.h" >
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\CSVReader.h">
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\d3dx12.h">
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\FindMedia.h">
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\Json.h">
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\SampleGUI.h">
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\StringUtil.h">
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\TextConsole.h">
+      <Filter>Source\GDK\ATGTK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\DeviceResources.h">
+      <Filter>Source\GDK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\StepTimer.h">
+      <Filter>Source\GDK</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\TestAppGDK.h">
+      <Filter>Source\GDK</Filter>
+    </ClInclude>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\Main.cpp">
+      <Filter>Source\GDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\SampleGUI.cpp">
+      <Filter>Source\GDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\StringUtil.cpp">
+      <Filter>Source\GDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\TextConsole.cpp">
+      <Filter>Source\GDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\DeviceResources.cpp">
+      <Filter>Source\GDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\TestAppGDK.cpp">
+      <Filter>Source\GDK</Filter>
+    </ClCompile>
+    <ClInclude Include="$(PlayFabTestDir)\TestApp\TestAppPch.h" >
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\TestAppPch.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\ATGConsoleBlack.DDS">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\ATGSampleBackground.DDS">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Logo.png">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Mounted.png">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Owned.png">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\SampleUI.csv">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\SplashScreen.png">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Unmounted.png">
+      <Filter>Assets</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+</Project>

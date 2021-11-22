@@ -1,0 +1,145 @@
+// Copyright (c) Microsoft Corporation
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#if !defined(__cplusplus)
+#error C++11 required
+#endif
+
+#pragma once
+
+#include "<%- globalPrefix %>ModelWrapperHelpers.h"
+#include "<%- globalPrefix %>SharedDataModelWrappers.h"
+#include <playfab/PF<%- featureGroup.name %>DataModels.h>
+
+namespace PlayFab
+{
+namespace Wrappers
+{
+<% for (var typeIndex = 0; typeIndex < featureGroup.sortedClasses.length; typeIndex++) {
+    var datatype = featureGroup.sortedClasses[typeIndex]; 
+    if (datatype.isInternalOnly) {
+        continue;
+    }
+    var wrapperTypename = datatype.prefix + datatype.name + "Wrapper"; %>
+template<template<typename AllocT> class Alloc = std::allocator>
+class <%- wrapperTypename %> : public ModelWrapper<<%- datatype.prefix + datatype.name %>, Alloc>
+{
+public:
+    using ModelType = typename <%- datatype.prefix + datatype.name %>;<%
+    if (featureGroup.dictionaryEntryTypes.hasOwnProperty(datatype.name)) { %>
+    using DictionaryEntryType = typename <%- datatype.prefix + datatype.name %>DictionaryEntry;<%
+    } %>
+    using String = typename std::basic_string<char, std::char_traits<char>, Alloc<char>>;
+    template<typename T> using Vector = typename std::vector<T, Alloc<T>>;
+<%  if (canDefaultCopyConstructor(datatype)) { %>
+    using ModelWrapper<<%- datatype.prefix + datatype.name %>, Alloc>::ModelWrapper;
+<%  } else { %>
+    <%- wrapperTypename %>() = default;
+
+    <%- wrapperTypename %>(const <%- datatype.prefix + datatype.name %>& model) :
+        <%- getWrapConstructorInitializationList(datatype) %>
+    {
+        SetModelPointers();
+    }
+
+    <%- wrapperTypename %>(const <%- wrapperTypename %>& src) :
+        <%- wrapperTypename %>{ src.Model() }
+    {
+    }
+
+    <%- wrapperTypename %>(<%- wrapperTypename %>&& src) :
+        <%- wrapperTypename %>{}
+    {
+        swap(*this, src);
+    }
+
+    <%- wrapperTypename %>& operator=(<%- wrapperTypename %> src) 
+    {
+        swap(*this, src);
+        return *this;
+    }
+
+    virtual ~<%- wrapperTypename %>() = default;
+
+    friend void swap(<%- wrapperTypename %>& lhs, <%- wrapperTypename %>& rhs)
+    {
+        using std::swap;
+        swap(lhs.m_model, rhs.m_model);<%
+    for (var propertyIndex = 0; propertyIndex < datatype.properties.length; propertyIndex++) {
+        var property = datatype.properties[propertyIndex]; 
+        if (requiresDynamicStorage(property))
+        {
+            var wrapperPropName = getPropertyName(property, true); %>
+        swap(lhs.<%- wrapperPropName %>, rhs.<%- wrapperPropName %>);<%
+        } // end if
+    } // end for %>
+        lhs.SetModelPointers();
+        rhs.SetModelPointers();
+    }
+<%  } // end if
+    for (var propertyIndex = 0; propertyIndex < datatype.properties.length; propertyIndex++) {
+        var property = datatype.properties[propertyIndex];
+        var wrapperPropName = getPropertyName(property, true);
+        var CPropName = getPropertyName(property, false) %>
+    void Set<%- getPropertyName(property, false, false) %>(<%- getWrapperPropertyType(property) %> value)
+    {<%
+        if (requiresDynamicStorage(property)) { %>
+        <%- wrapperPropName %> = std::move(value);<%
+            if (property.actualtype === "object") { %>
+        this->m_model.<%- CPropName %>.stringValue = <%- wrapperPropName %>.stringValue.empty() ? nullptr : <%- wrapperPropName %>.stringValue.data();<%
+            } else if (property.collection) { %>
+        this->m_model.<%- CPropName %> =  <%- wrapperPropName %>.empty() ? nullptr : <%- wrapperPropName %>.data();
+        this->m_model.<%- CPropName %>Count =  static_cast<uint32_t>(<%- wrapperPropName %>.size());<%
+            } else if (property.actualtype === "String") { %>
+        this->m_model.<%- CPropName %> =  <%- wrapperPropName %>.empty() ? nullptr : <%- wrapperPropName %>.data();<%
+            } else if (property.isclass && property.optional) { %>
+        this->m_model.<%- CPropName %> = <%- wrapperPropName %> ? &<%- wrapperPropName %>->Model() : nullptr;<%
+            } else if (property.isclass) { %>
+        this->m_model.<%- CPropName %> = &<%- wrapperPropName %>.Model();<%
+            } else if (property.optional) { %>
+        this->m_model.<%- CPropName %> = <%- wrapperPropName %> ? <%- wrapperPropName %>.operator->() : nullptr;<%
+            } else {
+                throw Error("Unable to copy property of type " + datatype.name + ":" + CPropName);
+            }
+        } else { %>
+        this->m_model.<%- CPropName %> = value;<%
+        } // end if%>
+    }
+<%  } // end for %>
+private:<%
+    if (!canDefaultCopyConstructor(datatype)) { %>
+    void SetModelPointers()
+    {<%
+    for (var propIdx = 0; propIdx < datatype.properties.length; propIdx++) {
+        var property = datatype.properties[propIdx];
+        if (requiresDynamicStorage(property) && !datatype.isInternalOnly) {
+            var wrapperPropName = getPropertyName(property, true);
+            var CPropName = getPropertyName(property, false)
+
+            if (property.actualtype === "object") { %>
+        this->m_model.<%- CPropName %>.stringValue = <%- wrapperPropName %>.stringValue.empty() ? nullptr : <%- wrapperPropName %>.stringValue.data();<%
+            } else if (property.collection || property.actualtype === "String") { %>
+        this->m_model.<%- CPropName %> = <%- wrapperPropName %>.empty() ? nullptr : <%- wrapperPropName %>.data();<%
+            } else if (property.isclass) {
+                if (property.optional) { %>
+        this->m_model.<%- CPropName %> = <%- wrapperPropName %> ?  &<%- wrapperPropName %>->Model() : nullptr;<%
+                } else { %>
+        this->m_model.<%- CPropName %> = &<%- wrapperPropName %>.Model();<%
+                }
+            } else if (property.optional) { %>
+        this->m_model.<%- CPropName %> = <%- wrapperPropName %> ? <%- wrapperPropName %>.operator->() : nullptr;<%
+            } else {
+                throw Error("Unable to copy property of type " + property.actualtype);
+            }
+        }
+    } // end for %>
+    }
+<%  } // end if
+    for (var propertyIndex = 0; propertyIndex < datatype.properties.length; propertyIndex++) {
+        var property = datatype.properties[propertyIndex];
+%><%- getWrapperPropertyDefinition(property) %><%
+    } // end for %>
+};
+<% } // end for %>
+} // namespace Wrappers
+} // namespace PlayFab

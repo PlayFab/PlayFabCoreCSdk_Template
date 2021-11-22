@@ -1,0 +1,370 @@
+#include "TestAppPch.h"
+#include "TestContext.h"
+#include "TestApp.h"
+#include "AutoGen<%- featureGroup.name %>Tests.h"
+#include "XAsyncHelper.h"
+#include "playfab/PFAuthentication.h"
+
+namespace PlayFabUnit
+{
+
+using namespace PlayFab::Wrappers;
+
+AutoGen<%- featureGroup.name %>Tests::<%- featureGroup.name %>TestData AutoGen<%- featureGroup.name %>Tests::testData;
+
+void AutoGen<%- featureGroup.name %>Tests::Log(std::stringstream& ss)
+{
+    TestApp::LogPut(ss.str().c_str());
+    ss.str(std::string());
+    ss.clear();
+}
+
+HRESULT AutoGen<%- featureGroup.name %>Tests::LogHR(HRESULT hr)
+{
+    if( TestApp::ShouldTrace(PFTestTraceLevel::Information) )
+    {
+        TestApp::Log("Result: 0x%0.8x", hr);
+    }
+
+    return hr;
+}
+
+void AutoGen<%- featureGroup.name %>Tests::AddTests()
+{
+    // Generated tests <%
+
+for (var i = 0; i < featureGroup.calls.length; i++) 
+{
+%>
+<%
+    var call = featureGroup.calls[i];
+    var testName = "Test" + featureGroup.name + call.name;
+    let testStatusListStatus = testStatusMap[testName];
+    let passingWithDataTest = (testStatusListStatus == "PassingWithData");
+    let passingButNoDataTest = (testStatusListStatus == "PassingButNoData");
+    let failingTest = (testStatusListStatus == "Failing");
+    let crashingTest = (testStatusListStatus == "Crashing");
+    if( ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends" ].includes(featureGroup.name)) && (!passingWithDataTest && !passingButNoDataTest && !failingTest && !crashingTest) ) {
+        throw Error('Test ' + testName + ' not found in TestStatus.json');
+    }
+
+    let skipTest = (failingTest || crashingTest);
+
+    if( call.name ) {
+        for (var j = 0; j < prerequisiteCalls[call.name].length; j++)
+        {
+            var prereqCall = prerequisiteCalls[call.name][j];
+            var prereqName = "Test" + featureGroup.name + call.name + "Prerequisite" + prereqCall.name;
+      %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- prereqName %>", &AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>);
+<%
+        }
+%>    <% if( skipTest ) { %>//<% } %>AddTest("<%- testName %>", &AutoGen<%- featureGroup.name %>Tests::<%- testName %>);<% if( crashingTest ) { %> // TODO: debug crashing test<% } %><% if( passingButNoDataTest ) { %> // TODO: debug passing test but no data<% } %><% if( failingTest ) { %> // TODO: debug failing test<% } %>
+<%  
+        for (var j = 0; j < cleanupCalls[call.name].length; j++)
+        {
+            var cleanupCall = cleanupCalls[call.name][j];
+            var cleanupName = "Test" + featureGroup.name + call.name + "Cleanup" + cleanupCall.name;
+      %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- cleanupName %>", &AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>);
+<%
+        }
+} } %>}
+
+void AutoGen<%- featureGroup.name %>Tests::ClassSetUp()
+{
+    HRESULT hr = PFAdminInitialize(testTitleData.titleId.data(), testTitleData.developerSecretKey.data(), nullptr, &stateHandle);
+    assert(SUCCEEDED(hr));
+    if (SUCCEEDED(hr))
+    {
+        PFAuthenticationLoginWithCustomIDRequest request{};
+        request.customId = "CustomId";
+        request.createAccount = true;
+
+        PFGetPlayerCombinedInfoRequestParams combinedInfoRequestParams{};
+        combinedInfoRequestParams.getCharacterInventories = true;
+        combinedInfoRequestParams.getCharacterList = true;
+        combinedInfoRequestParams.getPlayerProfile = true;
+        combinedInfoRequestParams.getPlayerStatistics = true;
+        combinedInfoRequestParams.getTitleData = true;
+        combinedInfoRequestParams.getUserAccountInfo = true;
+        combinedInfoRequestParams.getUserData = true;
+        combinedInfoRequestParams.getUserInventory = true;
+        combinedInfoRequestParams.getUserReadOnlyData = true;
+        combinedInfoRequestParams.getUserVirtualCurrency = true;
+        request.infoRequestParameters = &combinedInfoRequestParams;
+
+        XAsyncBlock async{};
+        hr = PFAuthenticationClientLoginWithCustomIDAsync(stateHandle, &request, &async);
+        assert(SUCCEEDED(hr));
+        if (SUCCEEDED(hr))
+        {
+            // Synchronously wait for login to complete
+            hr = XAsyncGetStatus(&async, true);
+            assert(SUCCEEDED(hr));
+            if (SUCCEEDED(hr))
+            {
+                hr = PFAuthenticationClientLoginGetResult(&async, &titlePlayerHandle);
+                assert(SUCCEEDED(hr) && titlePlayerHandle);
+
+                hr = PFTitlePlayerGetEntityHandle(titlePlayerHandle, &entityHandle);
+                assert(SUCCEEDED(hr) && entityHandle);
+            }
+        }
+
+        request.customId = "CustomId2";
+        async = {};
+        hr = PFAuthenticationClientLoginWithCustomIDAsync(stateHandle, &request, &async);
+        assert(SUCCEEDED(hr));
+        if (SUCCEEDED(hr))
+        {
+            // Synchronously what for login to complete
+            hr = XAsyncGetStatus(&async, true);
+            assert(SUCCEEDED(hr));
+            if (SUCCEEDED(hr))
+            {
+                hr = PFAuthenticationClientLoginGetResult(&async, &titlePlayerHandle2);
+                assert(SUCCEEDED(hr) && titlePlayerHandle2);
+
+                hr = PFTitlePlayerGetEntityHandle(titlePlayerHandle2, &entityHandle2);
+                assert(SUCCEEDED(hr) && entityHandle2);
+            }
+        }
+
+        PFAuthenticationGetEntityTokenRequest titleTokenRequest{};
+        async = {};
+        hr = PFAuthenticationGetEntityTokenAsync(stateHandle, &titleTokenRequest, &async);
+        assert(SUCCEEDED(hr));
+        if (SUCCEEDED(hr))
+        {
+            // Synchronously wait for login to complete
+            hr = XAsyncGetStatus(&async, true);
+            assert(SUCCEEDED(hr));
+            
+            if (SUCCEEDED(hr))
+            {
+                hr = PFAuthenticationGetEntityTokenGetResult(&async, &titleEntityHandle);
+                assert(SUCCEEDED(hr));
+            }
+        }
+    }
+}
+
+void AutoGen<%- featureGroup.name %>Tests::ClassTearDown()
+{
+    PFTitlePlayerCloseHandle(titlePlayerHandle);
+    PFEntityCloseHandle(entityHandle);
+    PFEntityCloseHandle(titleEntityHandle);
+
+    XAsyncBlock async{};
+    HRESULT hr = PFUninitializeAsync(stateHandle, &async);
+    assert(SUCCEEDED(hr));
+
+    hr = XAsyncGetStatus(&async, true);
+    assert(SUCCEEDED(hr));
+
+    UNREFERENCED_PARAMETER(hr);
+}
+
+void AutoGen<%- featureGroup.name %>Tests::SetUp(TestContext& testContext)
+{
+    if (!entityHandle)
+    {
+        testContext.Skip("Skipping test because login failed");
+    }
+
+
+}
+<% for (var i = 0; i < featureGroup.calls.length; i++) 
+{
+    var call = featureGroup.calls[i];
+%>
+#pragma region <%- call.name %>
+
+<%  for (var j = 0; j < prerequisiteCalls[call.name].length; j++)
+    {
+        var prereqCall = prerequisiteCalls[call.name][j];
+        var prereqContextHandleParam = "stateHandle";
+        if (prereqCall.entityRequired)
+        {
+            if (prereqCall.entityRequired === "TitlePlayer") {
+                prereqContextHandleParam = "titlePlayerHandle";
+            } else {
+                prereqContextHandleParam = "entityHandle";
+            }
+        }
+        if (prereqCall.name in callingEntityOverrides)
+        {
+            prereqContextHandleParam = callingEntityOverrides[prereqCall.name];
+        }
+        var prereqAsyncName = prefix + prereqCall.name + "Async"; 
+        var prereqName =  "Test" + featureGroup.name + call.name + "Prerequisite" + prereqCall.name;
+%>void AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>(TestContext& testContext)
+{<% 
+var resultHolderType = "XAsyncResult";
+if (prereqCall.resultDatatype) {
+    resultHolderType = prereqCall.name + "ResultHolder"; %>
+    struct <%- prereqCall.name %>ResultHolder : public <%- prereqCall.resultDatatype.name %>Holder
+    {
+        HRESULT Get(XAsyncBlock* async) override
+        {<%
+    if (isFixedSize(prereqCall.resultDatatype)) { %>
+            RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResult(async, &result)));
+            Log<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(&result);<%
+    } else { %>
+            size_t requiredBufferSize;
+            RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResultSize(async, &requiredBufferSize)));
+
+            resultBuffer.resize(requiredBufferSize);
+            RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResult(async, resultBuffer.size(), resultBuffer.data(), &result, nullptr)));
+            
+            Log<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(result);<%
+    } // end if %>
+            return Store<%- call.name %>Prerequisite<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(shared_from_this());
+        }
+    };<%   
+} // end if %>
+    auto async = std::make_unique<XAsyncHelper<<%- resultHolderType %>>>(testContext);
+<% if (prereqCall.requestDatatype) { %>
+    <%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<> request;
+    Fill<%- call.name %>Prerequisite<%- prereqCall.requestDatatype.name %>(request);
+    Log<%- prereqCall.requestDatatype.name %>(&request.Model(), "<%- testName %>");
+    HRESULT hr = <%- prereqAsyncName %>(<%- prereqContextHandleParam %>, &request.Model(), &async->asyncBlock);<%
+} else { %>
+    HRESULT hr = <%- prereqAsyncName %>(<%- prereqContextHandleParam %>, &async->asyncBlock);<%
+} %>
+    if (FAILED(hr))
+    {
+        testContext.Fail("<%- prefix %><%- featureGroup.name + call.name + "Prerequisite" + prereqCall.name %>Async", hr);
+        return;
+    }
+    async.release(); 
+} 
+<% }
+
+    var contextHandleParam = "stateHandle";
+    if (call.entityRequired)
+    {
+        if (call.entityRequired === "TitlePlayer") {
+            contextHandleParam = "titlePlayerHandle";
+        } else {
+            contextHandleParam = "entityHandle";
+        }
+    }
+    if (call.name in callingEntityOverrides)
+    {
+        contextHandleParam = callingEntityOverrides[call.name];
+    }
+    var asyncName = prefix + call.name + "Async"; 
+    var testName =  "Test" + featureGroup.name + call.name;
+%>void AutoGen<%- featureGroup.name %>Tests::<%- testName %>(TestContext& testContext)
+{<% 
+var resultHolderType = "XAsyncResult";
+if (call.resultDatatype) {
+    resultHolderType = call.name + "ResultHolder"; %>
+    struct <%- call.name %>ResultHolder : public <%- call.resultDatatype.name %>Holder
+    {
+        HRESULT Get(XAsyncBlock* async) override
+        {<%
+    if (isFixedSize(call.resultDatatype)) { %>
+            RETURN_IF_FAILED(LogHR(<%- prefix + call.name %>GetResult(async, &result)));
+            Log<%- call.resultDatatype.prefix + call.resultDatatype.name %>(&result);<%
+    } else { %>
+            size_t requiredBufferSize;
+            RETURN_IF_FAILED(LogHR(<%- prefix + call.name %>GetResultSize(async, &requiredBufferSize)));
+
+            resultBuffer.resize(requiredBufferSize);
+            RETURN_IF_FAILED(LogHR(<%- prefix + call.name %>GetResult(async, resultBuffer.size(), resultBuffer.data(), &result, nullptr)));
+            
+            Log<%- call.resultDatatype.prefix + call.resultDatatype.name %>(result);<%
+    } // end if %>
+            return S_OK;
+        }
+
+        HRESULT Validate() override
+        {<%
+    if (isFixedSize(call.resultDatatype)) { %>
+            return Validate<%- call.resultDatatype.prefix + call.resultDatatype.name %>(&result);<%
+    } else { %>
+            return Validate<%- call.resultDatatype.prefix + call.resultDatatype.name %>(result);<%
+    } %>
+        }
+    };<%   
+} // end if %>
+    auto async = std::make_unique<XAsyncHelper<<%- resultHolderType %>>>(testContext);
+<% if (call.requestDatatype) { %>
+    <%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<> request;
+    Fill<%- call.requestDatatype.name %>(request);
+    Log<%- call.requestDatatype.name %>(&request.Model(), "<%- testName %>");
+    HRESULT hr = <%- asyncName %>(<%- contextHandleParam %>, &request.Model(), &async->asyncBlock);<%
+} else { %>
+    HRESULT hr = <%- asyncName %>(<%- contextHandleParam %>, &async->asyncBlock);<%
+} %>
+    if (FAILED(hr))
+    {
+        testContext.Fail("<%- prefix %><%- featureGroup.name + call.name %>Async", hr);
+        return;
+    }
+    async.release(); 
+}
+<%
+    for (var j = 0; j < cleanupCalls[call.name].length; j++)
+    {
+        var cleanupCall = cleanupCalls[call.name][j];
+        var cleanupContextHandleParam = "stateHandle";
+        if (cleanupCall.entityRequired)
+        {
+            if (cleanupCall.entityRequired === "TitlePlayer") {
+                cleanupContextHandleParam = "titlePlayerHandle";
+            } else {
+                cleanupContextHandleParam = "entityHandle";
+            }
+        }
+        if (cleanupCall.name in callingEntityOverrides)
+        {
+            cleanupContextHandleParam = callingEntityOverrides[cleanupCall.name];
+        }
+        var cleanupAsyncName = prefix + cleanupCall.name + "Async"; 
+        var cleanupName =  "Test" + featureGroup.name + call.name + "Cleanup" + cleanupCall.name;
+%>void AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>(TestContext& testContext)
+{<% 
+var resultHolderType = "XAsyncResult";
+if (cleanupCall.resultDatatype) {
+    resultHolderType = cleanupCall.name + "ResultHolder"; %>
+    struct <%- cleanupCall.name %>ResultHolder : public <%- cleanupCall.resultDatatype.name %>Holder
+    {
+        HRESULT Get(XAsyncBlock* async) override
+        {<%
+    if (isFixedSize(cleanupCall.resultDatatype)) { %>
+            RETURN_IF_FAILED(LogHR(<%- prefix + cleanupCall.name %>GetResult(async, &result)));
+            Log<%- call.resultDatatype.prefix + cleanupCall.resultDatatype.name %>(&result);<%
+    } else { %>
+            size_t requiredBufferSize;
+            RETURN_IF_FAILED(LogHR(<%- prefix + cleanupCall.name %>GetResultSize(async, &requiredBufferSize)));
+
+            resultBuffer.resize(requiredBufferSize);
+            RETURN_IF_FAILED(LogHR(<%- prefix + cleanupCall.name %>GetResult(async, resultBuffer.size(), resultBuffer.data(), &result, nullptr)));<%
+    } // end if %>
+            return Store<%- call.name %>Cleanup<%- cleanupCall.resultDatatype.prefix + cleanupCall.resultDatatype.name %>(shared_from_this());
+        }
+    };<%   
+} // end if %>
+    auto async = std::make_unique<XAsyncHelper<<%- resultHolderType %>>>(testContext);
+<% if (cleanupCall.requestDatatype) { %>
+    <%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<> request;
+    Fill<%- call.name %>Cleanup<%- cleanupCall.requestDatatype.name %>(request);
+    Log<%- cleanupCall.requestDatatype.name %>(&request.Model(), "<%- cleanupName %>");
+    HRESULT hr = <%- cleanupAsyncName %>(<%- cleanupContextHandleParam %>, &request.Model(), &async->asyncBlock);<%
+} else { %>
+    HRESULT hr = <%- cleanupAsyncName %>(<%- cleanupContextHandleParam %>, &async->asyncBlock);<%
+} %>
+    if (FAILED(hr))
+    {
+        testContext.Fail("<%- prefix %><%- featureGroup.name + call.name + "Cleanup" + cleanupCall.name %>Async", hr);
+        return;
+    }
+    async.release(); 
+} 
+<% } %>
+#pragma endregion
+<% } %>
+
+}

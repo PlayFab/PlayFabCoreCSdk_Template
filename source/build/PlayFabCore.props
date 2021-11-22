@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup Label="Paths">
+    <PlayFabRoot>$(MSBuildThisFileDirectory)..\</PlayFabRoot>
+    <PlayFabExternalDir>$(PlayFabRoot)external\</PlayFabExternalDir>
+    <PlayFabSourceDir>$(PlayFabRoot)code\</PlayFabSourceDir>
+    <PlayFabTestDir>$(PlayFabRoot)test\</PlayFabTestDir>
+  </PropertyGroup>
+
+  <!--Reuse libHttpClient platform detection logic-->
+  <Import Condition="'$(HCPlatform)' == ''" Project="$(PlayFabExternalDir)\libHttpClient\platform_select.props" />
+  <PropertyGroup>
+    <PlayFabPlatform>$(HCPlatform)</PlayFabPlatform>
+    <PlayFabProjectName>PlayFabCore.$(PlayFabPlatform)</PlayFabProjectName>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabSourceDir)/include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Lib>
+      <!-- Are these needed on all platforms? -->
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+
+  <!--Add reference to appropriate PlayFab static lib-->
+  <ItemGroup Label="PlayFab project reference" Condition="'$(PlayFabExcludeProjectReferences)' != 'true'">
+    <ProjectReference Include="$(PlayFabRoot)Build\$(PlayFabPlatform)\$(PlayFabProjectName).vcxproj">
+      <Project>{92F6EC5F-B66C-4572-A74D-79329AFF3129}</Project>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!--RapidJSON dependency-->
+  <PropertyGroup Label="RapidJson">
+    <RapidJsonSdkRoot>$(PlayFabExternalDir)\rapidjson\</RapidJsonSdkRoot>
+    <RapidJsonSdkInclude>$(RapidJsonSdkRoot)include\</RapidJsonSdkInclude>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(RapidJsonSdkInclude)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RAPIDJSON_NO_INT64DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!--LibHttpClient dependency-->
+  <Import Project="$(PlayFabExternalDir)\libHttpClient\libHttpClient.props" />
+</Project>

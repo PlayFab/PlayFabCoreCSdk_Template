@@ -1,0 +1,20 @@
+{
+<% 
+for (let featureGroupName in SDKFeatureGroups) 
+{
+    var featureGroup = SDKFeatureGroups[featureGroupName];
+    for (var j = 0; j < featureGroup.calls.length; j++) 
+    {
+        var call = featureGroup.calls[j];
+        var asyncName = globalPrefix + featureGroupName + call.name + "Async"; 
+        var docForCall = getCallDoc(featureGroupName, call);
+        var remarks = docForCall.remarks;
+%>  "<%- asyncName %>" : { 
+    "summary": "<%- docForCall.summary %>"<% if (remarks !== undefined) { %>,
+    "remarks": "<%- remarks %>"<% } %>
+  },
+<%
+    }
+}
+%> 
+}

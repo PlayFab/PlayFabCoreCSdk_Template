@@ -1,0 +1,266 @@
+#include "stdafx.h"
+#include "<%- featureGroup.name %>DataModels.h"
+#include "JsonUtils.h"
+
+namespace PlayFab
+{<%
+if (!(featureGroup.name === "Shared")) { %>
+namespace <%- featureGroup.name %>
+{<%
+} %>
+<%
+// Consider moving to make.js locals
+var primitiveTypesMap = {
+    "Boolean": "bool", "int16": "int16_t", "uint16": "uint16_t", "int32": "int32_t", "uint32": "uint32_t",
+    "int64": "int64_t", "uint64": "uint64_t", "float": "float", "double": "double", "DateTime": "time_t"
+};
+
+for (var typeIndex = 0; typeIndex < featureGroup.sortedClasses.length; typeIndex++) {
+    var datatype = featureGroup.sortedClasses[typeIndex]; 
+    var CModelName = datatype.prefix + datatype.name;
+    
+    if (datatype.isInput) { %>
+JsonValue <%- datatype.name %>::ToJson() const
+{
+    return <%- datatype.name %>::ToJson(this->Model());
+}
+
+JsonValue <%- datatype.name %>::ToJson(const <%- CModelName %>& input)
+{
+    JsonValue output{ rapidjson::kObjectType };<%
+for (var propIdx = 0; propIdx < datatype.properties.length; propIdx++) { 
+    var property = datatype.properties[propIdx];
+    var publicPropName = getPropertyName(property, false);
+    var addMemberMethod = "ObjectAddMember";
+    var countParam = "";
+
+    if (property.actualtype === "DateTime") {
+        addMemberMethod = "ObjectAddMemberTime";
+    } else if(property.collection && property.actualtype != "object") {
+        countParam = ", input." + publicPropName + "Count";
+        if (property.collection === "map") {
+            addMemberMethod = "ObjectAddMemberDictionary";
+        } else if (property.collection === "array") {
+            addMemberMethod = "ObjectAddMemberArray";
+        }
+    }
+    if (property.isclass) {
+        addMemberMethod += ("<" + property.datatype.name + ">");
+    }%>
+    JsonUtils::<%- addMemberMethod %>(output, "<%- property.name %>", input.<%- publicPropName %><%- countParam %>);<%
+} // end for %>
+    return output;
+}
+<%  } // end if
+    if (datatype.isOutput) { %>
+void <%- datatype.name %>::FromJson(const JsonValue& input)
+{<%
+// C++ type to store json value in
+function fromJsonType(property) {
+    if ((property.actualtype in primitiveTypesMap) || property.isenum) {
+        var type = property.datatype ? property.datatype.prefix + property.datatype.name : primitiveTypesMap[property.actualtype];
+        if (property.collection === "map") {
+            return "DictionaryEntryVector<" + getDictionaryEntryType(property) + ">";
+        } else if (property.collection === "array") {
+            return "Vector<" + type + ">";
+        } else if (property.optional) {
+            return "StdExtra::optional<" + type + ">";
+        } else {
+            throw Error("Property should be retrieved in place!");
+        }
+    } else if (property.datatype.actualtype === "object") {
+        return "JsonObject";
+    } else {
+        throw Error("TODO");
+    }
+}
+
+for (var propIdx = 0; propIdx < datatype.properties.length; propIdx++) {
+    var property = datatype.properties[propIdx]; 
+    var CPropName = getPropertyName(property, false);
+    var setPropMethod = "Set" + getPropertyName(property, false, false);
+    var getMemberMethod = property.actualtype === "DateTime" ? "ObjectGetMemberTime" : "ObjectGetMember"
+
+    if (datatype.isInternalOnly) {
+        /* For internalOnly datatypes, get the property from Json in place */ %>
+    JsonUtils::<%- getMemberMethod %>(input, "<%- property.name %>", <%- CPropName %>);<%
+    } else if (!requiresDynamicStorage(property)) { 
+        /* get property in place */ %>
+    JsonUtils::<%- getMemberMethod %>(input, "<%- property.name %>", this->m_model.<%- CPropName %>);
+<%  } else if (property.actualtype === "object") { %>
+    JsonObject <%- CPropName %>{};
+    JsonUtils::<%- getMemberMethod %>(input, "<%- property.name %>", <%- CPropName %>);
+    this-><%- setPropMethod %>(std::move(<%- CPropName %>));
+<%  } else if (property.isclass) {
+        if (property.collection === "map") { %>
+    ModelDictionaryEntryVector<<%- property.datatype.name %>> <%- CPropName %>{};
+    JsonUtils::<%- getMemberMethod %><<%- property.datatype.name %>>(input, "<%- property.name %>", <%- CPropName %>);
+    this-><%- setPropMethod %>(std::move(<%- CPropName %>));
+<%      } else if(property.collection === "array") { %>
+    ModelVector<<%- property.datatype.name %>> <%- CPropName %>{};
+    JsonUtils::<%- getMemberMethod %><<%- property.datatype.name %>>(input, "<%- property.name %>", <%- CPropName %>);
+    this-><%- setPropMethod %>(std::move(<%- CPropName %>));
+<%      } else if (property.optional) { %>
+    StdExtra::optional<<%- property.datatype.name %>> <%- CPropName %>{};
+    JsonUtils::<%- getMemberMethod %>(input, "<%- property.name %>", <%- CPropName %>);
+    if (<%- CPropName %>)
+    {
+        this-><%- setPropMethod %>(std::move(*<%- CPropName %>));
+    }
+<%      } else { %>
+    <%- property.datatype.name %> <%- CPropName %>{};
+    JsonUtils::<%- getMemberMethod %>(input, "<%- property.name %>", <%- CPropName %>);
+    this-><%- setPropMethod %>(std::move(<%- CPropName %>));
+<%      } // endif
+    } else if (property.actualtype === "String") {
+        var propType = "String";
+        if (property.collection === "array") {
+            propType = "CStringVector";
+        } else if (property.collection === "map") {
+            propType = "StringDictionaryEntryVector";
+        } %>
+    <%- propType %> <%- CPropName %>{};
+    JsonUtils::<%- getMemberMethod %>(input, "<%- property.name %>", <%- CPropName %>);
+    this-><%- setPropMethod %>(std::move(<%- CPropName %>));
+<%  } else { 
+        var propType = fromJsonType(property); %>
+    <%- propType %> <%- CPropName %>{};
+    JsonUtils::<%- getMemberMethod %>(input, "<%- property.name %>", <%- CPropName %>);
+    this-><%- setPropMethod %>(std::move(<%- CPropName %>));
+<%  } // end if
+} // end for
+%>}
+<%      if (!datatype.isInternalOnly) { %>
+size_t <%- datatype.name %>::RequiredBufferSize() const
+{
+    return RequiredBufferSize(this->Model());
+}
+
+Result<<%- CModelName %> const*> <%- datatype.name %>::Copy(ModelBuffer& buffer) const
+{
+    return buffer.CopyTo<<%- datatype.name %>>(&this->Model());
+}
+
+size_t <%- datatype.name %>::RequiredBufferSize(const <%- CModelName %>& model)
+{<%
+if (isFixedSize(datatype)) { %>
+    UNREFERENCED_PARAMETER(model); // Fixed size
+    return sizeof(ModelType);<%
+} else { %>
+    size_t requiredSize{ alignof(ModelType) + sizeof(ModelType) };<%
+
+    for (var propIdx = 0; propIdx < datatype.properties.length; propIdx++) {
+        var property = datatype.properties[propIdx];
+        var propName = getPropertyName(property, false);
+
+        if (property.actualtype === "object") { %>
+    if (model.<%- propName %>.stringValue)
+    {
+    requiredSize += (std::strlen(model.<%- propName %>.stringValue) + 1);
+    }<%
+        } else if (property.collection === "map") { 
+            var entryType = getDictionaryEntryType(property); %>
+    requiredSize += (alignof(<%- entryType %>) + sizeof(<%- entryType %>) * model.<%- propName %>Count);
+    for (size_t i = 0; i < model.<%- propName %>Count; ++i)
+    {
+        requiredSize += (std::strlen(model.<%- propName %>[i].key) + 1);<%
+            if (property.isclass) { %>
+        requiredSize += <%- property.datatype.name %>::RequiredBufferSize(*model.<%- propName %>[i].value);<%
+            } else if (property.actualtype === "String") { %>
+        requiredSize += (std::strlen(model.<%- propName %>[i].value) + 1);<%
+            } %>
+    }<%
+        } else if (property.collection === "array") { 
+            var entryType;
+            if (property.actualtype in primitiveTypesMap) {
+                entryType = primitiveTypesMap[property.actualtype];
+            } else if (property.isclass) {
+                entryType = property.datatype.prefix + property.datatype.name + "*";
+            } else if (property.isenum) {
+                entryType = property.datatype.prefix + property.datatype.name;
+            } else if (property.actualtype === "String") {
+                entryType = "char*"
+            } %>
+    requiredSize += (alignof(<%- entryType %>) + sizeof(<%- entryType %>) * model.<%- propName %>Count);<%
+            if (property.isclass) { %>
+    for (size_t i = 0; i < model.<%- propName %>Count; ++i)
+    {
+        requiredSize += <%- property.datatype.name %>::RequiredBufferSize(*model.<%- propName %>[i]);
+    }<%
+            } else if (property.actualtype === "String") { %>
+    for (size_t i = 0; i < model.<%- propName %>Count; ++i)
+    {
+        requiredSize += (std::strlen(model.<%- propName %>[i]) + 1);
+    }<%
+            } // end if
+        } else if (property.actualtype === "String") { %>
+    if (model.<%- propName %>)
+    {
+        requiredSize += (std::strlen(model.<%- propName %>) + 1);
+    }<%
+        } else if (property.isclass) { %>
+    if (model.<%- propName %>)
+    {
+        requiredSize += <%- property.datatype.name %>::RequiredBufferSize(*model.<%- propName %>);
+    }<%
+        } else if (property.optional) { 
+            var propType = property.datatype ? property.datatype.prefix + property.datatype.name : primitiveTypesMap[property.actualtype]; %>
+    if (model.<%- propName %>)
+    {
+        requiredSize += (alignof(<%- propType %>) + sizeof(<%- propType %>));
+    }<%
+        } else if (requiresDynamicStorage(property)) {
+            throw Error("Missed property requiring dynamic storage when calculating required buffer size.");
+        } // end if
+    } // end for %>
+    return requiredSize;<%
+} // end if %>
+}
+
+HRESULT <%- datatype.name %>::Copy(const <%- CModelName %>& input, <%- CModelName %>& output, ModelBuffer& buffer)
+{
+    output = input;<%
+if (isFixedSize(datatype)) { %>
+    UNREFERENCED_PARAMETER(buffer); // Fixed size<%
+}
+for (var propIdx = 0; propIdx < datatype.properties.length; propIdx++) {
+    var property = datatype.properties[propIdx];
+    var propName = getPropertyName(property, false);
+    var templateParam = property.isclass ? ("<" + property.datatype.name + ">") : "";
+
+    if (property.actualtype === "object") { %>
+    {
+        auto propCopyResult = buffer.CopyTo(input.<%- propName %>.stringValue);
+        RETURN_IF_FAILED(propCopyResult.hr);
+        output.<%- propName %>.stringValue = propCopyResult.ExtractPayload();
+    }<%
+    } else if (property.collection === "map") { %>
+    {
+        auto propCopyResult = buffer.CopyToDictionary<%- templateParam %>(input.<%- propName %>, input.<%- propName %>Count);
+        RETURN_IF_FAILED(propCopyResult.hr);
+        output.<%- propName %> = propCopyResult.ExtractPayload();
+    }<%
+    } else if (property.collection === "array") { %>
+    {
+        auto propCopyResult = buffer.CopyToArray<%- templateParam %>(input.<%- propName %>, input.<%- propName %>Count);
+        RETURN_IF_FAILED(propCopyResult.hr);
+        output.<%- propName %> = propCopyResult.ExtractPayload();
+    }<%
+    } else if (requiresDynamicStorage(property)) { %>
+    {
+        auto propCopyResult = buffer.CopyTo<%- templateParam %>(input.<%- propName %>); 
+        RETURN_IF_FAILED(propCopyResult.hr);
+        output.<%- propName %> = propCopyResult.ExtractPayload();
+    }<%
+    }
+} // end for %>
+    return S_OK;
+}
+<%      } // end if
+    } // end if
+} // end for 
+
+if (!(featureGroup.name === "Shared")) { %>
+} // namespace <%- featureGroup.name %><%
+} %>
+} // namespace PlayFab
