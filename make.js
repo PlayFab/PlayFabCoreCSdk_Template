@@ -103,7 +103,6 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
         prerequisiteCalls: prerequisiteCalls,
         cleanupCalls: cleanupCalls,
         callingEntityOverrides: callingEntityOverrides,
-        platformExclusions: customizations.platformExclusions,
         requiresDynamicStorage: requiresDynamicStorage,
         getPropertyDefinition: getPropertyDefinition,
         getWrapperPropertyType: getWrapperPropertyType,
@@ -111,6 +110,8 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
         getPropertyName: getPropertyName,
         canDefaultCopyConstructor: canDefaultCopyConstructor,
         getWrapConstructorInitializationList: getWrapConstructorInitializationList,
+        callExclusionMacroBegin: callExclusionMacroBegin,
+        callExclusionMacroEnd: callExclusionMacroEnd,
         isFixedSize: isFixedSize,
         getFormattedDatatypeDescription: getFormattedDatatypeDescription,
         getFormattedCallDescription: getFormattedCallDescription,
@@ -606,6 +607,47 @@ function setPrerequisiteAndCleanupCalls() {
 
 // Used by functions which return code snippets
 var tab = "    ";
+
+// Used to insert if platform macros to exclude output per call
+function callExclusionMacroBegin(call) {
+    let excludedPlatforms = new Set();
+    if (customizations.platformExclusions.calls.hasOwnProperty(call.name)) {
+        for (let i = 0; i < customizations.platformExclusions.calls[call.name].length; i++) {
+            excludedPlatforms.add(customizations.platformExclusions.calls[call.name][i]);
+        }
+    }
+    let apiName = call.url.split("/")[1];
+    if (customizations.platformExclusions.apis.hasOwnProperty(apiName)) {
+        for (let i = 0; i < customizations.platformExclusions.apis[apiName].length; i++) {
+            excludedPlatforms.add(customizations.platformExclusions.apis[apiName][i]);
+        }
+    }
+    if (customizations.platformExclusions.subgroups.hasOwnProperty(call.subgroup)) {
+        for (let i = 0; i < customizations.platformExclusions.subgroups[call.subgroup].length; i++) {
+            excludedPlatforms.add(customizations.platformExclusions.subgroups[call.subgroup][i]);
+        }
+    }
+
+    if (excludedPlatforms.size == 0) {
+        return "";
+    }
+    var macro = "#if "
+    for (let platform of excludedPlatforms) {
+        if (macro !== "#if ") {
+            macro = macro + " && ";
+        }
+        macro = macro + "HC_PLATFORM != " + platform;
+    }
+    return macro + "\n";
+}
+
+// Used to insert endif platform macros to end excluded code section
+function callExclusionMacroEnd(call) {
+    if (callExclusionMacroBegin(call).length > 0) {
+        return "#endif\n";
+    }
+    return "";
+}
 
 // Returns whether the C++ model for a datatype is fixed size
 function isFixedSize(datatype) {

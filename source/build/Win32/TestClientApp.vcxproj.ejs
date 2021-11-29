@@ -117,7 +117,7 @@ for (var file in projectFiles.TestClientAppFiles) {
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile><%
 for(var featureGroupName in SDKFeatureGroups) { 
-    if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends" ].includes(featureGroupName)) {  %>
+    if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events" ].includes(featureGroupName)) {  %>
     <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>Tests.h" />
     <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>ResultHolders.h" />
     <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>TestData.cpp" />

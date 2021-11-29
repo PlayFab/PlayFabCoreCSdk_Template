@@ -8,7 +8,20 @@
       "SetGlobalPolicy": "Profiles",
       "SetProfileLanguage": "Profiles",
       "SetProfilePolicy": "Profiles",
-      "AdminSetPublisherData": "TitleDataManagement"
+      "AdminSetPublisherData": "TitleDataManagement",
+      "AdminAddPlayerTag": "Events",
+      "AdminGetPlayerTags": "Events",
+      "AdminRemovePlayerTag": "Events",
+      "ClientGetPlayerTags": "Events",
+      "ClientWriteCharacterEvent": "Events",
+      "ClientWritePlayerEvent": "Events",
+      "ClientWriteTitleEvent": "Events",
+      "ServerAddPlayerTag": "Events",
+      "ServerGetPlayerTags": "Events",
+      "ServerRemovePlayerTag": "Events",
+      "ServerWriteCharacterEvent": "Events",
+      "ServerWritePlayerEvent": "Events",
+      "ServerWriteTitleEvent": "Events"
     },
     "apis": {},
     "subgroups": {
@@ -16,16 +29,16 @@
       "Characters": "Character",
       "Character Data": "Character",
       "Server-Side Cloud Script": "CloudScript",
+      "Object": "Data",
+      "File": "Data",
+      "PlayStream Events": "Events",
       "Friend List Management": "Friends",
       "Custom Server Management": "GameServer",
       "Platform Specific Methods": "PlatformSpecific",
       "Player Data Management": "PlayerDataManagement",
       "Player Item Management": "PlayerItemManagement",
-      "PlayStream Events": "PlayStream",
       "Shared Group Data": "SharedGroups",
-      "Title-Wide Data Management": "TitleDataManagement",
-      "Object": "Data",
-      "File": "Data"
+      "Title-Wide Data Management": "TitleDataManagement"
     }
   },
   "platformExclusions": {
@@ -122,6 +135,7 @@
     },
     "apis": {
       "Admin": [ "HC_PLATFORM_GDK" ],
+      "Server": [ "HC_PLATFORM_GDK" ],
       "Insights": [ "HC_PLATFORM_GDK" ],
       "Experimentation": [ "HC_PLATFORM_GDK" ]
     },
