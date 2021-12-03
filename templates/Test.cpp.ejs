@@ -44,7 +44,7 @@ for (var i = 0; i < featureGroup.calls.length; i++)
     let passingButNoDataTest = (testStatusListStatus == "PassingButNoData");
     let failingTest = (testStatusListStatus == "Failing");
     let crashingTest = (testStatusListStatus == "Crashing");
-    if( ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends" ].includes(featureGroup.name)) && (!passingWithDataTest && !passingButNoDataTest && !failingTest && !crashingTest) ) {
+    if( ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events" ].includes(featureGroup.name)) && (!passingWithDataTest && !passingButNoDataTest && !failingTest && !crashingTest) ) {
         throw Error('Test ' + testName + ' not found in TestStatus.json');
     }
 
@@ -55,17 +55,17 @@ for (var i = 0; i < featureGroup.calls.length; i++)
         {
             var prereqCall = prerequisiteCalls[call.name][j];
             var prereqName = "Test" + featureGroup.name + call.name + "Prerequisite" + prereqCall.name;
-      %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- prereqName %>", &AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>);
-<%
+      %><%- callExclusionMacroBegin(call) %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- prereqName %>", &AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>);
+<%- callExclusionMacroEnd(call) %><%
         }
-%>    <% if( skipTest ) { %>//<% } %>AddTest("<%- testName %>", &AutoGen<%- featureGroup.name %>Tests::<%- testName %>);<% if( crashingTest ) { %> // TODO: debug crashing test<% } %><% if( passingButNoDataTest ) { %> // TODO: debug passing test but no data<% } %><% if( failingTest ) { %> // TODO: debug failing test<% } %>
-<%  
+%><%- callExclusionMacroBegin(call) %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- testName %>", &AutoGen<%- featureGroup.name %>Tests::<%- testName %>);<% if( crashingTest ) { %> // TODO: debug crashing test<% } %><% if( passingButNoDataTest ) { %> // TODO: debug passing test but no data<% } %><% if( failingTest ) { %> // TODO: debug failing test<% } %>
+<%- callExclusionMacroEnd(call) %><%  
         for (var j = 0; j < cleanupCalls[call.name].length; j++)
         {
             var cleanupCall = cleanupCalls[call.name][j];
             var cleanupName = "Test" + featureGroup.name + call.name + "Cleanup" + cleanupCall.name;
-      %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- cleanupName %>", &AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>);
-<%
+      %><%- callExclusionMacroBegin(call) %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- cleanupName %>", &AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>);
+<%- callExclusionMacroEnd(call) %><%
         }
 } } %>}
 
@@ -197,12 +197,12 @@ void AutoGen<%- featureGroup.name %>Tests::SetUp(TestContext& testContext)
         }
         var prereqAsyncName = prefix + prereqCall.name + "Async"; 
         var prereqName =  "Test" + featureGroup.name + call.name + "Prerequisite" + prereqCall.name;
-%>void AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>(TestContext& testContext)
+%><%- callExclusionMacroBegin(call) %>void AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>(TestContext& testContext)
 {<% 
 var resultHolderType = "XAsyncResult";
 if (prereqCall.resultDatatype) {
-    resultHolderType = prereqCall.name + "ResultHolder"; %>
-    struct <%- prereqCall.name %>ResultHolder : public <%- prereqCall.resultDatatype.name %>Holder
+    resultHolderType = prereqCall.name + "ResultHolderStruct"; %>
+    struct <%- resultHolderType %> : public <%- prereqCall.resultDatatype.name %>Holder
     {
         HRESULT Get(XAsyncBlock* async) override
         {<%
@@ -238,7 +238,7 @@ if (prereqCall.resultDatatype) {
     }
     async.release(); 
 } 
-<% }
+<%- callExclusionMacroEnd(call) %><% }
 
     var contextHandleParam = "stateHandle";
     if (call.entityRequired)
@@ -255,12 +255,12 @@ if (prereqCall.resultDatatype) {
     }
     var asyncName = prefix + call.name + "Async"; 
     var testName =  "Test" + featureGroup.name + call.name;
-%>void AutoGen<%- featureGroup.name %>Tests::<%- testName %>(TestContext& testContext)
+%><%- callExclusionMacroBegin(call) %>void AutoGen<%- featureGroup.name %>Tests::<%- testName %>(TestContext& testContext)
 {<% 
 var resultHolderType = "XAsyncResult";
 if (call.resultDatatype) {
-    resultHolderType = call.name + "ResultHolder"; %>
-    struct <%- call.name %>ResultHolder : public <%- call.resultDatatype.name %>Holder
+    resultHolderType = call.name + "ResultHolderStruct"; %>
+    struct <%- resultHolderType %> : public <%- call.resultDatatype.name %>Holder
     {
         HRESULT Get(XAsyncBlock* async) override
         {<%
@@ -305,7 +305,7 @@ if (call.resultDatatype) {
     }
     async.release(); 
 }
-<%
+<%- callExclusionMacroEnd(call) %><%
     for (var j = 0; j < cleanupCalls[call.name].length; j++)
     {
         var cleanupCall = cleanupCalls[call.name][j];
@@ -324,12 +324,12 @@ if (call.resultDatatype) {
         }
         var cleanupAsyncName = prefix + cleanupCall.name + "Async"; 
         var cleanupName =  "Test" + featureGroup.name + call.name + "Cleanup" + cleanupCall.name;
-%>void AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>(TestContext& testContext)
+%><%- callExclusionMacroBegin(call) %>void AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>(TestContext& testContext)
 {<% 
 var resultHolderType = "XAsyncResult";
 if (cleanupCall.resultDatatype) {
-    resultHolderType = cleanupCall.name + "ResultHolder"; %>
-    struct <%- cleanupCall.name %>ResultHolder : public <%- cleanupCall.resultDatatype.name %>Holder
+    resultHolderType = cleanupCall.name + "ResultHolderStruct"; %>
+    struct <%- resultHolderType %> : public <%- cleanupCall.resultDatatype.name %>Holder
     {
         HRESULT Get(XAsyncBlock* async) override
         {<%
@@ -363,7 +363,7 @@ if (cleanupCall.resultDatatype) {
     }
     async.release(); 
 } 
-<% } %>
+<%- callExclusionMacroEnd(call) %><% } %>
 #pragma endregion
 <% } %>
 

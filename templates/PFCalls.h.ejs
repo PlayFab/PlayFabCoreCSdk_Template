@@ -14,44 +14,6 @@
 extern "C"
 {
 <%
-function callExclusionMacroBegin(call) {
-    let excludedPlatforms = new Set();
-    if (platformExclusions.calls.hasOwnProperty(call.name)) {
-        for (let i = 0; i < platformExclusions.calls[call.name].length; i++) {
-            excludedPlatforms.add(platformExclusions.calls[call.name][i]);
-        }
-    }
-    let apiName = call.url.split("/")[1];
-    if (platformExclusions.apis.hasOwnProperty(apiName)) {
-        for (let i = 0; i < platformExclusions.apis[apiName].length; i++) {
-            excludedPlatforms.add(platformExclusions.apis[apiName][i]);
-        }
-    }
-    if (platformExclusions.subgroups.hasOwnProperty(call.subgroup)) {
-        for (let i = 0; i < platformExclusions.subgroups[call.subgroup].length; i++) {
-            excludedPlatforms.add(platformExclusions.subgroups[call.subgroup][i]);
-        }
-    }
-
-    if (excludedPlatforms.size == 0) {
-        return "";
-    }
-    var macro = "#if "
-    for (let platform of excludedPlatforms) {
-        if (macro !== "#if ") {
-            macro = macro + " && ";
-        }
-        macro = macro + "HC_PLATFORM != " + platform;
-    }
-    return macro + "\n";
-}
-
-function callExclusionMacroEnd(call){
-    if(callExclusionMacroBegin(call).length > 0) {
-        return "#endif\n";
-    }
-    return "";
-}
 
 // There are many Login methods for both Client and Server, but we only want to define a single GetLoginResult method for each
 var getClientLoginResultDeclared = false;

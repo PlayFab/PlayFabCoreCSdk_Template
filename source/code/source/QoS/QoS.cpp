@@ -3,12 +3,12 @@
 #include "QoSSocket.h"
 #include "JsonUtils.h"
 #include <MultiplayerServer/MultiplayerServer.h>
-#include <PlayStream/PlayStream.h>
+#include <Events/Events.h>
 
 namespace PlayFab
 {
 
-using namespace PlayStream;
+using namespace Events;
 using namespace MultiplayerServer;
 
 namespace QoS
@@ -49,9 +49,9 @@ AsyncOp<Measurements> QoSAPI::GetMeasurements(SharedPtr<Entity> entity, uint32_t
             JsonUtils::ObjectAddMember(eventJson, "RegionResults", std::move(regionResultsJson));
         }
 
-        PFPlayStreamWriteEventsRequest request{};
-        PFPlayStreamEventContents event{};
-        Vector<PFPlayStreamEventContents*> events{ &event };
+        PFEventsWriteEventsRequest request{};
+        PFEventsEventContents event{};
+        Vector<PFEventsEventContents*> events{ &event };
         auto eventJsonString = JsonUtils::WriteToString(eventJson);
 
         event.name = "qos_result";
@@ -60,7 +60,7 @@ AsyncOp<Measurements> QoSAPI::GetMeasurements(SharedPtr<Entity> entity, uint32_t
         request.events = events.data();
         request.eventsCount = static_cast<uint32_t>(events.size());
 
-        return PlayStreamAPI::WriteTelemetryEvents(entity, request, workerQueue).Then([qosResult = std::move(result) ](Result<WriteEventsResponse> result)
+        return EventsAPI::WriteTelemetryEvents(entity, request, workerQueue).Then([qosResult = std::move(result) ](Result<WriteEventsResponse> result)
         {
             // Wait for WriteTelemetryEvents to complete prior to returning result to client. Although though they won't 
             // see that result, we don't want to continue work in the background in case they want to close the XTaskQueue

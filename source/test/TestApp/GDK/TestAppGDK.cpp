@@ -410,7 +410,7 @@ bool TestApp::LoadTitleDataJson(std::shared_ptr<char*>& testDataJson, size_t& te
 {
     // Read the title data from the file into the output character array.
     std::ifstream titleDataFile;
-    titleDataFile.open("TestTitle.json", std::ios::binary | std::ios::in);
+    titleDataFile.open("testTitleData.json", std::ios::binary | std::ios::in);
 
     if (!titleDataFile)
     {

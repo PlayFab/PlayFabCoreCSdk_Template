@@ -22,19 +22,19 @@ private:
     for (var j = 0; j < prerequisiteCalls[call.name].length; j++)
     {
         var prereqCall = prerequisiteCalls[call.name][j];
-    %>    void Test<%- featureGroup.name + call.name %>Prerequisite<%- prereqCall.name %>(TestContext& testContext);
-<%
+    %><%- callExclusionMacroBegin(call) %>    void Test<%- featureGroup.name + call.name %>Prerequisite<%- prereqCall.name %>(TestContext& testContext);
+<%- callExclusionMacroEnd(call) %><%
     }
 
     var asyncName = prefix + call.name + "Async"; 
-%>    void Test<%- featureGroup.name + call.name %>(TestContext& testContext);
-<%
+%><%- callExclusionMacroBegin(call) %>    void Test<%- featureGroup.name + call.name %>(TestContext& testContext);
+<%- callExclusionMacroEnd(call) %><%
 
     for (var j = 0; j < cleanupCalls[call.name].length; j++)
     {
         var cleanupCall = cleanupCalls[call.name][j];
-    %>    void Test<%- featureGroup.name + call.name %>Cleanup<%- cleanupCall.name %>(TestContext& testContext);
-<%
+    %><%- callExclusionMacroBegin(call) %>    void Test<%- featureGroup.name + call.name %>Cleanup<%- cleanupCall.name %>(TestContext& testContext);
+<%- callExclusionMacroEnd(call) %><%
     }
 %>
 <%
