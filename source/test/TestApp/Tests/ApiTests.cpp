@@ -304,7 +304,7 @@ void ApiTests::AddTests()
     AddTest("TestGetEntityTokenWithAuthContext", &ApiTests::TestGetEntityTokenWithAuthContext);
     AddTest("TestGetEntityTokenWithSecretKey", &ApiTests::TestGetEntityTokenWithSecretKey);
     AddTest("TestGetQoSMeasurements", &ApiTests::TestGetQoSMeasurements);
-    AddTest("TestManualDispatcher", &ApiTests::TestManualDispatcher);
+    //AddTest("TestManualDispatcher", &ApiTests::TestManualDispatcher);
 }
 
 void ApiTests::ClassSetUp()

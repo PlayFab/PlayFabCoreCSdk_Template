@@ -14,7 +14,6 @@
 #include <httpClient/httpClient.h>
 #include "ApiTests.h" 
 #include "EntityTests.h"
-#include "GlobalTests.h"
 <% for(var featureGroupName in SDKFeatureGroups) 
 { 
     if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events" ].includes(featureGroupName)) { %>
@@ -32,6 +31,13 @@ PFTestTraceLevel TestApp::traceLevel = PFTestTraceLevel::Important;
     // Time out if waiting for the final cloudscript submission longer than this
     constexpr int CLOUDSCRIPT_TIMEOUT_MS = 30000;
 #endif // !defined(DISABLE_PLAYFABCLIENT_API)
+
+
+    void TestApp::LogInit()
+    {
+        // Delete existing log file if it exists
+        std::remove(s_logfileName);
+    }
 
 #if HC_PLATFORM != HC_PLATFORM_GDK
     void TestApp::Log(const char* format, ...)
@@ -56,6 +62,8 @@ PFTestTraceLevel TestApp::traceLevel = PFTestTraceLevel::Important;
 
     int TestApp::Main()
     {
+        TestApp::LogInit();
+
         HCSettingsSetTraceLevel(HCTraceLevel::Verbose);
         HCTraceSetTraceToDebugger(true);
 
@@ -75,10 +83,6 @@ PFTestTraceLevel TestApp::traceLevel = PFTestTraceLevel::Important;
 
         // Initialize the test runner/test data.
         TestRunner testRunner;
-
-        GlobalTests globalTests;
-        globalTests.SetTitleInfo(testTitleData);
-        testRunner.Add(globalTests);
 
         EntityTests entityTests;
         entityTests.SetTitleInfo(testTitleData);

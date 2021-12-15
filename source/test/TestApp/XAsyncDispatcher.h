@@ -16,7 +16,7 @@ public:
 private:
     static void CALLBACK OnWorkSubmitted(void* context, XTaskQueueHandle queue, XTaskQueuePort);
 
-    XTaskQueueHandle m_queue;
+    XTaskQueueHandle m_queue{ nullptr };
     std::thread m_dispatchThread;
     std::atomic<bool> m_shutdown{ false };
     XTaskQueueRegistrationToken m_monitorToken{};

@@ -72,8 +72,6 @@
     "TestApp\\Tests\\ApiTests.h": "Source\\Tests",
     "TestApp\\Tests\\EntityTests.cpp": "Source\\Tests",
     "TestApp\\Tests\\EntityTests.h": "Source\\Tests",
-    "TestApp\\Tests\\GlobalTests.cpp": "Source\\Tests",
-    "TestApp\\Tests\\GlobalTests.h": "Source\\Tests",
     "TestApp\\TestApp.cpp": "Source",
     "TestApp\\TestApp.h": "Source",
     "TestApp\\TestCase.h": "Source",
