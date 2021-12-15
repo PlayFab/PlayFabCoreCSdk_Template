@@ -4,9 +4,7 @@
         "AddMembers": "titleEntityHandle",
         "ApplyToGroup": "entityHandle2",
         "ListMembershipOpportunities": "entityHandle2",
-        "SetObjects": "entityHandle2",
-        "GetGlobalPolicy": "titleEntityHandle",
-        "SetGlobalPolicy": "titleEntityHandle"
+        "SetObjects": "entityHandle2"
     },
     "prerequisitesAndCleanup": {
         "ClientAddFriend": {
