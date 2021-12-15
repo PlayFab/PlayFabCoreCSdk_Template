@@ -14,6 +14,7 @@
 #include <httpClient/httpClient.h>
 #include "ApiTests.h" 
 #include "EntityTests.h"
+#include "GlobalTests.h"
 <% for(var featureGroupName in SDKFeatureGroups) 
 { 
     if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events" ].includes(featureGroupName)) { %>
@@ -55,8 +56,6 @@ PFTestTraceLevel TestApp::traceLevel = PFTestTraceLevel::Important;
 
     int TestApp::Main()
     {
-        HRESULT hr = HCInitialize(nullptr);
-        assert(SUCCEEDED(hr));
         HCSettingsSetTraceLevel(HCTraceLevel::Verbose);
         HCTraceSetTraceToDebugger(true);
 
@@ -76,6 +75,10 @@ PFTestTraceLevel TestApp::traceLevel = PFTestTraceLevel::Important;
 
         // Initialize the test runner/test data.
         TestRunner testRunner;
+
+        GlobalTests globalTests;
+        globalTests.SetTitleInfo(testTitleData);
+        testRunner.Add(globalTests);
 
         EntityTests entityTests;
         entityTests.SetTitleInfo(testTitleData);
