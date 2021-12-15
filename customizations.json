@@ -131,7 +131,9 @@
       "ClientRestoreIOSPurchases": [ "HC_PLATFORM_GDK" ],
       "ClientValidateAmazonIAPReceipt": [ "HC_PLATFORM_GDK" ],
       "ClientValidateGooglePlayPurchase": [ "HC_PLATFORM_GDK" ],
-      "ClientValidateIOSReceipt": [ "HC_PLATFORM_GDK" ]
+      "ClientValidateIOSReceipt": [ "HC_PLATFORM_GDK" ],
+      "GetGlobalPolicy": [ "HC_PLATFORM_GDK" ],
+      "SetGlobalPolicy": [ "HC_PLATFORM_GDK" ]
     },
     "apis": {
       "Admin": [ "HC_PLATFORM_GDK" ],
