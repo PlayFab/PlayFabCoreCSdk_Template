@@ -107,10 +107,17 @@ namespace PlayFabUnit
 
         int64_t timeNow = PlayFab::GetMilliTicks();
         int64_t testStartTime, testEndTime;
-        size_t testsFinishedCount = 0, testsPassedCount = 0, testsFailedCount = 0, testsSkippedCount = 0;
+        size_t testsCount = 0, testsFinishedCount = 0, testsPassedCount = 0, testsFailedCount = 0, testsSkippedCount = 0;
 
         for (auto& test : suiteTests)
         {
+            if (test->testName.find("Prerequisite") != std::string::npos || test->testName.find("Cleanup") != std::string::npos)
+            {
+                continue;
+            }
+
+            testsCount += 1;
+
             // Count tests
             if (TestActiveState::COMPLETE == test->activeState)
             {
@@ -151,7 +158,7 @@ namespace PlayFabUnit
         }
 
         summaryStream << " - Testing complete:  ";
-        summaryStream << testsFinishedCount << "/" << suiteTests.size() << " tests run, ";
+        summaryStream << testsFinishedCount << "/" << testsCount << " tests run, ";
         summaryStream << testsPassedCount << " tests passed, ";
         summaryStream << testsFailedCount << " tests failed, ";
         summaryStream << testsSkippedCount << " tests skipped.";
