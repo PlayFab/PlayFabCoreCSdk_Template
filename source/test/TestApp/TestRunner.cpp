@@ -158,7 +158,7 @@ namespace PlayFabUnit
         }
 
         summaryStream << " - Testing complete:  ";
-        summaryStream << testsFinishedCount << "/" << suiteTests.size() << " tests run, ";
+        summaryStream << testsFinishedCount << "/" << testsCount << " tests run, ";
         summaryStream << testsPassedCount << " tests passed, ";
         summaryStream << testsFailedCount << " tests failed, ";
         summaryStream << testsSkippedCount << " tests skipped.";
