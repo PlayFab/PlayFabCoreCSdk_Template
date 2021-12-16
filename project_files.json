@@ -84,6 +84,8 @@
     "TestApp\\TestRunner.h": "Source",
     "TestApp\\TestUtils.cpp": "Source",
     "TestApp\\TestUtils.h": "Source",
+    "TestApp\\XAsyncDispatcher.cpp": "Source",
+    "TestApp\\XAsyncDispatcher.h": "Source",
     "TestApp\\XAsyncHelper.h": "Source"
   }
 }

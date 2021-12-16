@@ -29,6 +29,9 @@ private:
     // Test for QoS API
     void TestGetQoSMeasurements(TestContext& testContext);
 
+    // Test Manual XAsync Dispatching
+    void TestManualDispatcher(TestContext& testContext);
+
 protected:
     void AddTests() override;
 

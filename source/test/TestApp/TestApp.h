@@ -37,6 +37,7 @@ namespace PlayFabUnit
     {
     public:
         int Main();
+        static void LogInit();
         static void Log(const char* format, ...);
         static void LogPut(const char* message);
         static void SetTraceLevel(PFTestTraceLevel level);
@@ -51,6 +52,8 @@ namespace PlayFabUnit
         std::string cloudPlayFabId = "";
         std::mutex cloudResponseMutex;
         std::condition_variable cloudResponseConditionVar;
+
+        static constexpr char s_logfileName[] = "TestClientApp.log";
 
         std::shared_ptr<PlayFab::PlayFabClientInstanceAPI> clientApi;
         void OnPostReportLogin(const PlayFab::ClientModels::LoginResult& result, TestReport& testReport);

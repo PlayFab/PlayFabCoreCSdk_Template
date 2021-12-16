@@ -391,6 +391,7 @@ void TestApp::Log(_Printf_format_string_ char const* format, ...)
     vsprintf_s(message, format, varArgs);
     va_end(varArgs);
 
+    // Log to screen
     if (g_Sample && g_Sample->m_log != nullptr)
     {
         std::wstring wstr = DX::Utf8ToWide(message);
@@ -400,6 +401,14 @@ void TestApp::Log(_Printf_format_string_ char const* format, ...)
     {
         std::cout << message;
         std::cout << "\n";
+    }
+
+    // Log to file
+    std::ofstream file{ s_logfileName, std::ios::app };
+    if (file.is_open())
+    {
+        file << message << std::endl;
+        file.close();
     }
 }
 

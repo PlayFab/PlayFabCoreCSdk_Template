@@ -32,6 +32,13 @@ PFTestTraceLevel TestApp::traceLevel = PFTestTraceLevel::Important;
     constexpr int CLOUDSCRIPT_TIMEOUT_MS = 30000;
 #endif // !defined(DISABLE_PLAYFABCLIENT_API)
 
+
+    void TestApp::LogInit()
+    {
+        // Delete existing log file if it exists
+        std::remove(s_logfileName);
+    }
+
 #if HC_PLATFORM != HC_PLATFORM_GDK
     void TestApp::Log(const char* format, ...)
     {
@@ -55,8 +62,8 @@ PFTestTraceLevel TestApp::traceLevel = PFTestTraceLevel::Important;
 
     int TestApp::Main()
     {
-        HRESULT hr = HCInitialize(nullptr);
-        assert(SUCCEEDED(hr));
+        TestApp::LogInit();
+
         HCSettingsSetTraceLevel(HCTraceLevel::Verbose);
         HCTraceSetTraceToDebugger(true);
 
