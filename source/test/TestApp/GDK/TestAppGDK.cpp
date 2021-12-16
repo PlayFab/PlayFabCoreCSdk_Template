@@ -164,7 +164,7 @@ void Sample::Update(DX::StepTimer const& timer)
 
     if (m_testsCompleted)
     {
-        //ExitSample();
+        ExitSample();
     }
 
     auto pad = m_gamePad->GetState(0);
