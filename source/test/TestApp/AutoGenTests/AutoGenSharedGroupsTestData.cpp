@@ -11,6 +11,18 @@ using namespace PlayFab::Wrappers;
 
 #pragma region ClientAddSharedGroupMembers
 
+void AutoGenSharedGroupsTests::FillClientAddSharedGroupMembersPrerequisiteCreateSharedGroupRequest(PFSharedGroupsCreateSharedGroupRequestWrapper<>& request)
+{
+    // Example request: "{ \"SharedGroupId\": \"Clan Data\"}"
+    request.SetSharedGroupId("AddSharedGroupMembers");
+}
+
+HRESULT AutoGenSharedGroupsTests::StoreClientAddSharedGroupMembersPrerequisitePFSharedGroupsCreateSharedGroupResult(std::shared_ptr<CreateSharedGroupResultHolder> result)
+{
+    testData.m_CreateSharedGroupResult = result;
+    return S_OK;
+}
+
 void AutoGenSharedGroupsTests::FillAddSharedGroupMembersRequest(PFSharedGroupsAddSharedGroupMembersRequestWrapper<>& request)
 {
     // Example Request: "{ \"SharedGroupId\": \"Clan Data\", \"PlayFabIds\": [ \"D984A64B832\", \"F74A523E1562\" ]}"
@@ -47,6 +59,18 @@ HRESULT AutoGenSharedGroupsTests::ValidatePFSharedGroupsCreateSharedGroupResult(
 
 #pragma region ClientGetSharedGroupData
 
+void AutoGenSharedGroupsTests::FillClientGetSharedGroupDataPrerequisiteCreateSharedGroupRequest(PFSharedGroupsCreateSharedGroupRequestWrapper<>& request)
+{
+    // Example request: "{ \"SharedGroupId\": \"Clan Data\"}"
+    request.SetSharedGroupId("GetSharedGroupData");
+}
+
+HRESULT AutoGenSharedGroupsTests::StoreClientGetSharedGroupDataPrerequisitePFSharedGroupsCreateSharedGroupResult(std::shared_ptr<CreateSharedGroupResultHolder> result)
+{
+    testData.m_CreateSharedGroupResult = result;
+    return S_OK;
+}
+
 void AutoGenSharedGroupsTests::FillClientGetSharedGroupDataPrerequisiteUpdateSharedGroupDataRequest(PFSharedGroupsUpdateSharedGroupDataRequestWrapper<>& request)
 {
     // Example request: "{ \"SharedGroupId\": \"Clan Data\", \"Data\": { \"ClanKills\": \"34\", \"LastClanUpdate\": \"2014-10-03T09:21:14Z\" }, \"Permission\": \"Public\"}"
@@ -78,6 +102,18 @@ HRESULT AutoGenSharedGroupsTests::ValidatePFSharedGroupsGetSharedGroupDataResult
 
 #pragma region ClientRemoveSharedGroupMembers
 
+void AutoGenSharedGroupsTests::FillClientRemoveSharedGroupMembersPrerequisiteCreateSharedGroupRequest(PFSharedGroupsCreateSharedGroupRequestWrapper<>& request)
+{
+    // Example request: "{ \"SharedGroupId\": \"Clan Data\"}"
+    request.SetSharedGroupId("RemoveSharedGroupMembers");
+}
+
+HRESULT AutoGenSharedGroupsTests::StoreClientRemoveSharedGroupMembersPrerequisitePFSharedGroupsCreateSharedGroupResult(std::shared_ptr<CreateSharedGroupResultHolder> result)
+{
+    testData.m_CreateSharedGroupResult = result;
+    return S_OK;
+}
+
 void AutoGenSharedGroupsTests::FillClientRemoveSharedGroupMembersPrerequisiteAddSharedGroupMembersRequest(PFSharedGroupsAddSharedGroupMembersRequestWrapper<>& request)
 {
     // Example request: "{ \"SharedGroupId\": \"Clan Data\", \"PlayFabIds\": [ \"D984A64B832\", \"F74A523E1562\" ]}"
@@ -95,6 +131,18 @@ void AutoGenSharedGroupsTests::FillRemoveSharedGroupMembersRequest(PFSharedGroup
 #pragma endregion
 
 #pragma region ClientUpdateSharedGroupData
+
+void AutoGenSharedGroupsTests::FillClientUpdateSharedGroupDataPrerequisiteCreateSharedGroupRequest(PFSharedGroupsCreateSharedGroupRequestWrapper<>& request)
+{
+    // Example request: "{ \"SharedGroupId\": \"Clan Data\"}"
+    request.SetSharedGroupId("UpdateSharedGroupData");
+}
+
+HRESULT AutoGenSharedGroupsTests::StoreClientUpdateSharedGroupDataPrerequisitePFSharedGroupsCreateSharedGroupResult(std::shared_ptr<CreateSharedGroupResultHolder> result)
+{
+    testData.m_CreateSharedGroupResult = result;
+    return S_OK;
+}
 
 void AutoGenSharedGroupsTests::FillUpdateSharedGroupDataRequest(PFSharedGroupsUpdateSharedGroupDataRequestWrapper<>& request)
 {
