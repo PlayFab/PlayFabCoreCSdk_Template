@@ -44,7 +44,7 @@ for (var i = 0; i < featureGroup.calls.length; i++)
     let passingButNoDataTest = (testStatusListStatus == "PassingButNoData");
     let failingTest = (testStatusListStatus == "Failing");
     let crashingTest = (testStatusListStatus == "Crashing");
-    if( ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events" ].includes(featureGroup.name)) && (!passingWithDataTest && !passingButNoDataTest && !failingTest && !crashingTest) ) {
+    if( ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement" ].includes(featureGroup.name)) && (!passingWithDataTest && !passingButNoDataTest && !failingTest && !crashingTest) ) {
         throw Error('Test ' + testName + ' not found in TestStatus.json');
     }
 
