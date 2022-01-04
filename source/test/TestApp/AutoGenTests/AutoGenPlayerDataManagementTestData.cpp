@@ -32,9 +32,8 @@ HRESULT AutoGenPlayerDataManagementTests::ValidatePFPlayerDataManagementGetDataR
 
 void AutoGenPlayerDataManagementTests::FillGetUserDataRequest(PFPlayerDataManagementGetUserDataRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"PlayFabId\": \"{{PlayFabId}}\", \"Keys\": [ \"preferences\", \"progress\" ], \"IfChangedFromDataVersion\": 13}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    UNREFERENCED_PARAMETER(request);
 }
 
 HRESULT AutoGenPlayerDataManagementTests::ValidatePFPlayerDataManagementAdminGetUserDataResult(PFPlayerDataManagementAdminGetUserDataResult* result)
@@ -159,7 +158,6 @@ HRESULT AutoGenPlayerDataManagementTests::ValidatePFPlayerDataManagementClientGe
 
 void AutoGenPlayerDataManagementTests::FillClientUpdateUserDataRequest(PFPlayerDataManagementClientUpdateUserDataRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"Data\": { \"Class\": \"Fighter\", \"Gender\": \"Female\", \"Icon\": \"Guard 3\", \"Theme\": \"Colorful\" }, \"Permission\": \"Public\"}"
     StringDictionaryEntryVector<> data{};
     data.insert_or_assign({ "TestUserDataKey","TestUserDataValue" });
