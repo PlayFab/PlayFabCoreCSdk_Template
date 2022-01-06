@@ -21,7 +21,7 @@ void AutoGen<%- featureGroup.name %>Tests::Log(std::stringstream& ss)
 
 HRESULT AutoGen<%- featureGroup.name %>Tests::LogHR(HRESULT hr)
 {
-    if( TestApp::ShouldTrace(PFTestTraceLevel::Information) )
+    if (TestApp::ShouldTrace(PFTestTraceLevel::Information))
     {
         TestApp::Log("Result: 0x%0.8x", hr);
     }
@@ -44,27 +44,27 @@ for (var i = 0; i < featureGroup.calls.length; i++)
     let passingButNoDataTest = (testStatusListStatus == "PassingButNoData");
     let failingTest = (testStatusListStatus == "Failing");
     let crashingTest = (testStatusListStatus == "Crashing");
-    if( ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement" ].includes(featureGroup.name)) && (!passingWithDataTest && !passingButNoDataTest && !failingTest && !crashingTest) ) {
+    if (([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement" ].includes(featureGroup.name)) && (!passingWithDataTest && !passingButNoDataTest && !failingTest && !crashingTest)) {
         throw Error('Test ' + testName + ' not found in TestStatus.json');
     }
 
     let skipTest = (failingTest || crashingTest);
 
-    if( call.name ) {
+    if (call.name) {
         for (var j = 0; j < prerequisiteCalls[call.name].length; j++)
         {
             var prereqCall = prerequisiteCalls[call.name][j];
             var prereqName = "Test" + featureGroup.name + call.name + "Prerequisite" + prereqCall.name;
-      %><%- callExclusionMacroBegin(call) %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- prereqName %>", &AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>);
+      %><%- callExclusionMacroBegin(call) %>    <% if (skipTest) { %>//<% } %>AddTest("<%- prereqName %>", &AutoGen<%- featureGroup.name %>Tests::<%- prereqName %>);
 <%- callExclusionMacroEnd(call) %><%
         }
-%><%- callExclusionMacroBegin(call) %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- testName %>", &AutoGen<%- featureGroup.name %>Tests::<%- testName %>);<% if( crashingTest ) { %> // TODO: debug crashing test<% } %><% if( passingButNoDataTest ) { %> // TODO: debug passing test but no data<% } %><% if( failingTest ) { %> // TODO: debug failing test<% } %>
+%><%- callExclusionMacroBegin(call) %>    <% if (skipTest) { %>//<% } %>AddTest("<%- testName %>", &AutoGen<%- featureGroup.name %>Tests::<%- testName %>);<% if (crashingTest) { %> // TODO: debug crashing test<% } %><% if (passingButNoDataTest) { %> // TODO: debug passing test but no data<% } %><% if (failingTest) { %> // TODO: debug failing test<% } %>
 <%- callExclusionMacroEnd(call) %><%  
         for (var j = 0; j < cleanupCalls[call.name].length; j++)
         {
             var cleanupCall = cleanupCalls[call.name][j];
             var cleanupName = "Test" + featureGroup.name + call.name + "Cleanup" + cleanupCall.name;
-      %><%- callExclusionMacroBegin(call) %>    <% if( skipTest ) { %>//<% } %>AddTest("<%- cleanupName %>", &AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>);
+      %><%- callExclusionMacroBegin(call) %>    <% if (skipTest) { %>//<% } %>AddTest("<%- cleanupName %>", &AutoGen<%- featureGroup.name %>Tests::<%- cleanupName %>);
 <%- callExclusionMacroEnd(call) %><%
         }
 } } %>}
@@ -207,26 +207,22 @@ if (prereqCall.resultDatatype) {
         HRESULT Get(XAsyncBlock* async) override
         {<%
     if (isFixedSize(prereqCall.resultDatatype)) { %>
-            RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResult(async, &result)));
-            Log<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(&result);<%
+            RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResult(async, &result)));<%
     } else { %>
             size_t requiredBufferSize;
             RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResultSize(async, &requiredBufferSize)));
 
             resultBuffer.resize(requiredBufferSize);
-            RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResult(async, resultBuffer.size(), resultBuffer.data(), &result, nullptr)));
-            
-            Log<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(result);<%
+            RETURN_IF_FAILED(LogHR(<%- prefix + prereqCall.name %>GetResult(async, resultBuffer.size(), resultBuffer.data(), &result, nullptr)));<%
     } // end if %>
-            return Store<%- call.name %>Prerequisite<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(shared_from_this());
+            return Store<%- call.name %>Prerequisite<%- prereqCall.name %>Response(shared_from_this());
         }
     };<%   
 } // end if %>
     auto async = std::make_unique<XAsyncHelper<<%- resultHolderType %>>>(testContext);
 <% if (prereqCall.requestDatatype) { %>
     <%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<> request;
-    Fill<%- call.name %>Prerequisite<%- prereqCall.requestDatatype.name %>(request);
-    Log<%- prereqCall.requestDatatype.name %>(&request.Model(), "<%- testName %>");
+    Fill<%- call.name %>Prerequisite<%- prereqCall.name %>Request(request);
     HRESULT hr = <%- prereqAsyncName %>(<%- prereqContextHandleParam %>, &request.Model(), &async->asyncBlock);<%
 } else { %>
     HRESULT hr = <%- prereqAsyncName %>(<%- prereqContextHandleParam %>, &async->asyncBlock);<%
@@ -266,7 +262,7 @@ if (call.resultDatatype) {
         {<%
     if (isFixedSize(call.resultDatatype)) { %>
             RETURN_IF_FAILED(LogHR(<%- prefix + call.name %>GetResult(async, &result)));
-            Log<%- call.resultDatatype.prefix + call.resultDatatype.name %>(&result);<%
+            Log<%- call.resultDatatype.name %>(&result);<%
     } else { %>
             size_t requiredBufferSize;
             RETURN_IF_FAILED(LogHR(<%- prefix + call.name %>GetResultSize(async, &requiredBufferSize)));
@@ -274,7 +270,7 @@ if (call.resultDatatype) {
             resultBuffer.resize(requiredBufferSize);
             RETURN_IF_FAILED(LogHR(<%- prefix + call.name %>GetResult(async, resultBuffer.size(), resultBuffer.data(), &result, nullptr)));
             
-            Log<%- call.resultDatatype.prefix + call.resultDatatype.name %>(result);<%
+            Log<%- call.resultDatatype.name %>(result);<%
     } // end if %>
             return S_OK;
         }
@@ -282,9 +278,9 @@ if (call.resultDatatype) {
         HRESULT Validate() override
         {<%
     if (isFixedSize(call.resultDatatype)) { %>
-            return Validate<%- call.resultDatatype.prefix + call.resultDatatype.name %>(&result);<%
+            return Validate<%- call.name %>Response(&result);<%
     } else { %>
-            return Validate<%- call.resultDatatype.prefix + call.resultDatatype.name %>(result);<%
+            return Validate<%- call.name %>Response(result);<%
     } %>
         }
     };<%   
@@ -292,7 +288,7 @@ if (call.resultDatatype) {
     auto async = std::make_unique<XAsyncHelper<<%- resultHolderType %>>>(testContext);
 <% if (call.requestDatatype) { %>
     <%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<> request;
-    Fill<%- call.requestDatatype.name %>(request);
+    Fill<%- call.name %>Request(request);
     Log<%- call.requestDatatype.name %>(&request.Model(), "<%- testName %>");
     HRESULT hr = <%- asyncName %>(<%- contextHandleParam %>, &request.Model(), &async->asyncBlock);<%
 } else { %>
@@ -334,8 +330,7 @@ if (cleanupCall.resultDatatype) {
         HRESULT Get(XAsyncBlock* async) override
         {<%
     if (isFixedSize(cleanupCall.resultDatatype)) { %>
-            RETURN_IF_FAILED(LogHR(<%- prefix + cleanupCall.name %>GetResult(async, &result)));
-            Log<%- call.resultDatatype.prefix + cleanupCall.resultDatatype.name %>(&result);<%
+            RETURN_IF_FAILED(LogHR(<%- prefix + cleanupCall.name %>GetResult(async, &result)));<%
     } else { %>
             size_t requiredBufferSize;
             RETURN_IF_FAILED(LogHR(<%- prefix + cleanupCall.name %>GetResultSize(async, &requiredBufferSize)));
@@ -343,15 +338,14 @@ if (cleanupCall.resultDatatype) {
             resultBuffer.resize(requiredBufferSize);
             RETURN_IF_FAILED(LogHR(<%- prefix + cleanupCall.name %>GetResult(async, resultBuffer.size(), resultBuffer.data(), &result, nullptr)));<%
     } // end if %>
-            return Store<%- call.name %>Cleanup<%- cleanupCall.resultDatatype.prefix + cleanupCall.resultDatatype.name %>(shared_from_this());
+            return Store<%- call.name %>Cleanup<%- cleanupCall.name %>Response(shared_from_this());
         }
     };<%   
 } // end if %>
     auto async = std::make_unique<XAsyncHelper<<%- resultHolderType %>>>(testContext);
 <% if (cleanupCall.requestDatatype) { %>
     <%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<> request;
-    Fill<%- call.name %>Cleanup<%- cleanupCall.requestDatatype.name %>(request);
-    Log<%- cleanupCall.requestDatatype.name %>(&request.Model(), "<%- cleanupName %>");
+    Fill<%- call.name %>Cleanup<%- cleanupCall.name %>Request(request);
     HRESULT hr = <%- cleanupAsyncName %>(<%- cleanupContextHandleParam %>, &request.Model(), &async->asyncBlock);<%
 } else { %>
     HRESULT hr = <%- cleanupAsyncName %>(<%- cleanupContextHandleParam %>, &async->asyncBlock);<%
