@@ -262,7 +262,7 @@ void ApiTests::TestManualDispatcher(TestContext& testContext)
             std::unique_ptr<XAsyncBlock> reclaim{ async };
         };
 
-        HRESULT hr = PFTitleDataManagementClientGetTimeAsync(titlePlayerHandle, async.get());
+        hr = PFTitleDataManagementClientGetTimeAsync(titlePlayerHandle, async.get());
         if (FAILED(hr))
         {
             testContext.Fail("PFTitleDataManagementClientGetTimeAsync", hr);

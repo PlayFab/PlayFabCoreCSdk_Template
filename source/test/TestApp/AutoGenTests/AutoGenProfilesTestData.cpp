@@ -17,7 +17,7 @@ void AutoGenProfilesTests::FillGetGlobalPolicyRequest(PFProfilesGetGlobalPolicyR
     UNREFERENCED_PARAMETER(request); // TODO
 }
 
-HRESULT AutoGenProfilesTests::ValidatePFProfilesGetGlobalPolicyResponse(PFProfilesGetGlobalPolicyResponse* result)
+HRESULT AutoGenProfilesTests::ValidateGetGlobalPolicyResponse(PFProfilesGetGlobalPolicyResponse* result)
 {
     // result.permissions = PFProfilesEntityPermissionStatement const* const*;
     // result.permissionsCount = uint32_t;
@@ -30,7 +30,7 @@ HRESULT AutoGenProfilesTests::ValidatePFProfilesGetGlobalPolicyResponse(PFProfil
 
 #pragma region GetProfile
 
-void AutoGenProfilesTests::FillGetEntityProfileRequest(PFProfilesGetEntityProfileRequestWrapper<>& request)
+void AutoGenProfilesTests::FillGetProfileRequest(PFProfilesGetEntityProfileRequestWrapper<>& request)
 {
     // Example Request: "{ \"Entity\": { \"Id\": \"1234567787392\", \"Type\": \"title_player_account\", \"TypeString\": \"title_player_account\" }}"
     PFEntityKeyWrapper<> entity{};
@@ -39,7 +39,7 @@ void AutoGenProfilesTests::FillGetEntityProfileRequest(PFProfilesGetEntityProfil
     request.SetEntity(entity);
 }
 
-HRESULT AutoGenProfilesTests::ValidatePFProfilesGetEntityProfileResponse(PFProfilesGetEntityProfileResponse* result)
+HRESULT AutoGenProfilesTests::ValidateGetProfileResponse(PFProfilesGetEntityProfileResponse* result)
 {
     // result.profile = PFProfilesEntityProfileBody const*;
 
@@ -51,7 +51,7 @@ HRESULT AutoGenProfilesTests::ValidatePFProfilesGetEntityProfileResponse(PFProfi
 
 #pragma region GetProfiles
 
-void AutoGenProfilesTests::FillGetEntityProfilesRequest(PFProfilesGetEntityProfilesRequestWrapper<>& request)
+void AutoGenProfilesTests::FillGetProfilesRequest(PFProfilesGetEntityProfilesRequestWrapper<>& request)
 {
     // Example Request: "{ \"Entities\": [ {  \"Id\": \"1234567787392\",  \"Type\": \"title_player_account\",  \"TypeString\": \"title_player_account\" }, {  \"Id\": \"42434567785265\",  \"Type\": \"title_player_account\",  \"TypeString\": \"title_player_account\" } ]}"
     PFEntityKeyWrapper<> entity1{};
@@ -68,7 +68,7 @@ void AutoGenProfilesTests::FillGetEntityProfilesRequest(PFProfilesGetEntityProfi
     request.SetEntities(entities);
 }
 
-HRESULT AutoGenProfilesTests::ValidatePFProfilesGetEntityProfilesResponse(PFProfilesGetEntityProfilesResponse* result)
+HRESULT AutoGenProfilesTests::ValidateGetProfilesResponse(PFProfilesGetEntityProfilesResponse* result)
 {
     // result.profiles = PFProfilesEntityProfileBody const* const*;
     // result.profilesCount = uint32_t;
@@ -87,7 +87,7 @@ void AutoGenProfilesTests::FillGetTitlePlayersFromMasterPlayerAccountIdsRequest(
     request.SetMasterPlayerAccountIds({ "8C2294C98CAFA174" });
 }
 
-HRESULT AutoGenProfilesTests::ValidatePFProfilesGetTitlePlayersFromMasterPlayerAccountIdsResponse(PFProfilesGetTitlePlayersFromMasterPlayerAccountIdsResponse* result)
+HRESULT AutoGenProfilesTests::ValidateGetTitlePlayersFromMasterPlayerAccountIdsResponse(PFProfilesGetTitlePlayersFromMasterPlayerAccountIdsResponse* result)
 {
     // result.titleId = const char*;
     // result.titlePlayerAccounts = struct PFEntityKeyDictionaryEntry const*;
@@ -122,7 +122,7 @@ void AutoGenProfilesTests::FillSetProfileLanguageRequest(PFProfilesSetProfileLan
     request.SetLanguage("en");
 }
 
-HRESULT AutoGenProfilesTests::ValidatePFProfilesSetProfileLanguageResponse(PFProfilesSetProfileLanguageResponse* result)
+HRESULT AutoGenProfilesTests::ValidateSetProfileLanguageResponse(PFProfilesSetProfileLanguageResponse* result)
 {
     // result.operationResult = PFOperationTypes const*;
     // result.versionNumber = int32_t const*;
@@ -135,7 +135,7 @@ HRESULT AutoGenProfilesTests::ValidatePFProfilesSetProfileLanguageResponse(PFPro
 
 #pragma region SetProfilePolicy
 
-void AutoGenProfilesTests::FillSetEntityProfilePolicyRequest(PFProfilesSetEntityProfilePolicyRequestWrapper<>& request)
+void AutoGenProfilesTests::FillSetProfilePolicyRequest(PFProfilesSetEntityProfilePolicyRequestWrapper<>& request)
 {
     // Example Request: "{ \"Statements\": [ {  \"Resource\": \"pfrn:data--*!*/Profile/Files/avatar.png\",  \"Action\": \"Read\",  \"Effect\": \"Allow\",  \"Principal\": {  \"FriendOf\": \"true\"  },  \"Comment\": \"Allow my friends to read my avatar\" } ], \"Entity\": { \"Id\": \"90901000\", \"Type\": \"title_player_account\", \"TypeString\": \"title_player_account\" }}"
     PFEntityKeyWrapper<> entity{};
@@ -166,7 +166,7 @@ void AutoGenProfilesTests::FillSetEntityProfilePolicyRequest(PFProfilesSetEntity
     request.SetStatements(permissions);
 }
 
-HRESULT AutoGenProfilesTests::ValidatePFProfilesSetEntityProfilePolicyResponse(PFProfilesSetEntityProfilePolicyResponse* result)
+HRESULT AutoGenProfilesTests::ValidateSetProfilePolicyResponse(PFProfilesSetEntityProfilePolicyResponse* result)
 {
     // result.permissions = PFProfilesEntityPermissionStatement const* const*;
     // result.permissionsCount = uint32_t;

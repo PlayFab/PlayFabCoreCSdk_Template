@@ -42,9 +42,24 @@ private:
 protected:
     void AddTests();
 <% 
-var hasFillBeenDefinedMap = {};
-var hasValidateBeenDefinedMap = {};
+var hasLogRequestBeenDefinedMap = {};
+var hasLogResponseBeenDefinedMap = {};
 var storedResponseTypes = [];
+for (var i = 0; i < featureGroup.calls.length; i++)
+{
+    var call = featureGroup.calls[i];
+
+    if (call.requestDatatype && !(call.requestDatatype.name in hasLogRequestBeenDefinedMap) ) {
+        hasLogRequestBeenDefinedMap[call.requestDatatype.name] = true; %>
+    static void Log<%- call.requestDatatype.name %>(<%- call.requestDatatype.prefix + call.requestDatatype.name %> const* request, const char* testName);<%
+    } // end if
+    if (call.resultDatatype && !(call.resultDatatype.name in hasLogResponseBeenDefinedMap) ) { 
+        hasLogResponseBeenDefinedMap[call.resultDatatype.name] = true; %>
+    static HRESULT Log<%- call.resultDatatype.name %>(<%- call.resultDatatype.prefix + call.resultDatatype.name %> const* result);<%
+    } // end if
+}%>
+<%
+
 for (var i = 0; i < featureGroup.calls.length; i++) 
 {
     var call = featureGroup.calls[i];
@@ -53,46 +68,38 @@ for (var i = 0; i < featureGroup.calls.length; i++)
     {
         var prereqCall = prerequisiteCalls[call.name][j];
         
-        if (prereqCall.requestDatatype && !(call.name + prereqCall.requestDatatype.name in hasFillBeenDefinedMap) ) {
-            hasFillBeenDefinedMap[call.name + prereqCall.requestDatatype.name] = true; %>
-    static void Fill<%- call.name %>Prerequisite<%- prereqCall.requestDatatype.name %>(PlayFab::Wrappers::<%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<>& request);<%
+        if (prereqCall.requestDatatype) {%>
+    static void Fill<%- call.name %>Prerequisite<%- prereqCall.name %>Request(PlayFab::Wrappers::<%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<>& request);<%
         } // end if 
-        if (prereqCall.resultDatatype && !(call.name + prereqCall.resultDatatype.name in hasValidateBeenDefinedMap) ) { 
-            hasValidateBeenDefinedMap[call.name + prereqCall.resultDatatype.name] = true;
+        if (prereqCall.resultDatatype) {
             if (!(storedResponseTypes.some(elem => elem.name === prereqCall.resultDatatype.name)))
             {
                  storedResponseTypes.push(prereqCall.resultDatatype);
             } %>
-    static HRESULT Store<%- call.name %>Prerequisite<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(std::shared_ptr<<%- prereqCall.resultDatatype.name %>Holder> result);<%
+    static HRESULT Store<%- call.name %>Prerequisite<%- prereqCall.name %>Response(std::shared_ptr<<%- prereqCall.resultDatatype.name %>Holder> result);<%
         } // end if
     } // end for
 
-    if (call.requestDatatype && !(call.requestDatatype.name in hasFillBeenDefinedMap) ) {
-        hasFillBeenDefinedMap[call.requestDatatype.name] = true; %>
-    static void Log<%- call.requestDatatype.name %>(<%- call.requestDatatype.prefix + call.requestDatatype.name %> const* request, const char* testName);
-    static void Fill<%- call.requestDatatype.name %>(PlayFab::Wrappers::<%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<>& request);<%
+    if (call.requestDatatype) {%>
+    static void Fill<%- call.name %>Request(PlayFab::Wrappers::<%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<>& request);<%
     } // end if
-    if (call.resultDatatype && !(call.resultDatatype.name in hasValidateBeenDefinedMap) ) { 
-        hasValidateBeenDefinedMap[call.resultDatatype.name] = true; %>
-    static HRESULT Log<%- call.resultDatatype.prefix + call.resultDatatype.name %>(<%- call.resultDatatype.prefix + call.resultDatatype.name %> const* result);
-    static HRESULT Validate<%- call.resultDatatype.prefix + call.resultDatatype.name %>(<%- call.resultDatatype.prefix + call.resultDatatype.name %>* result);<%
+    if (call.resultDatatype) {%>
+    static HRESULT Validate<%- call.name %>Response(<%- call.resultDatatype.prefix + call.resultDatatype.name %>* result);<%
     } // end if
 
     for (var j = 0; j < cleanupCalls[call.name].length; j++)
     {
         var cleanupCall = cleanupCalls[call.name][j];
         
-        if (cleanupCall.requestDatatype && !(call.name + cleanupCall.requestDatatype.name in hasFillBeenDefinedMap) ) {
-            hasFillBeenDefinedMap[call.name + cleanupCall.requestDatatype.name] = true; %>
-    static void Fill<%- call.name %>Cleanup<%- cleanupCall.requestDatatype.name %>(PlayFab::Wrappers::<%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<>& request);<%
+        if (cleanupCall.requestDatatype) {%>
+    static void Fill<%- call.name %>Cleanup<%- cleanupCall.name %>Request(PlayFab::Wrappers::<%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<>& request);<%
         } // end if 
-        if (cleanupCall.resultDatatype && !(call.name + cleanupCall.resultDatatype.name in hasValidateBeenDefinedMap) ) { 
-            hasValidateBeenDefinedMap[call.name + cleanupCall.resultDatatype.name] = true;
+        if (cleanupCall.resultDatatype) { 
             if (!(storedResponseTypes.some(elem => elem.name === cleanupCall.resultDatatype.name)))
             {
                  storedResponseTypes.push(cleanupCall.resultDatatype);
             }%>
-    static HRESULT Store<%- call.name %>Cleanup<%- cleanupCall.resultDatatype.prefix + cleanupCall.resultDatatype.name %>(std::shared_ptr<<%- cleanupCall.resultDatatype.name %>Holder> result);<%
+    static HRESULT Store<%- call.name %>Cleanup<%- cleanupCall.name %>Response(std::shared_ptr<<%- cleanupCall.resultDatatype.name %>Holder> result);<%
         } // end if
     } // end for %>
 <% } // end for %>

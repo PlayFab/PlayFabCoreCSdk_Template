@@ -17,7 +17,7 @@ void AutoGenFriendsTests::FillClientAddFriendRequest(PFFriendsClientAddFriendReq
     request.SetFriendPlayFabId("76D9E1E588B0CFFC");
 }
 
-HRESULT AutoGenFriendsTests::ValidatePFFriendsAddFriendResult(PFFriendsAddFriendResult* result)
+HRESULT AutoGenFriendsTests::ValidateClientAddFriendResponse(PFFriendsAddFriendResult* result)
 {
     // result.created = bool;
 
@@ -41,7 +41,7 @@ void AutoGenFriendsTests::FillClientGetFriendsListRequest(PFFriendsClientGetFrie
     UNREFERENCED_PARAMETER(request);
 }
 
-HRESULT AutoGenFriendsTests::ValidatePFFriendsGetFriendsListResult(PFFriendsGetFriendsListResult* result)
+HRESULT AutoGenFriendsTests::ValidateClientGetFriendsListResponse(PFFriendsGetFriendsListResult* result)
 {
     // result.friends = PFFriendsFriendInfo const* const*;
     // result.friendsCount = uint32_t;
@@ -60,7 +60,7 @@ void AutoGenFriendsTests::FillClientRemoveFriendPrerequisiteClientAddFriendReque
     request.SetFriendPlayFabId("76D9E1E588B0CFFC");
 }
 
-HRESULT AutoGenFriendsTests::StoreClientRemoveFriendPrerequisitePFFriendsAddFriendResult(std::shared_ptr<AddFriendResultHolder> result)
+HRESULT AutoGenFriendsTests::StoreClientRemoveFriendPrerequisiteClientAddFriendResponse(std::shared_ptr<AddFriendResultHolder> result)
 {
     testData.m_AddFriendResult = result;
     return S_OK;
@@ -104,6 +104,15 @@ void AutoGenFriendsTests::FillServerGetFriendsListRequest(PFFriendsServerGetFrie
     // TODO: debug Failing test
     // Example Request: "{ \"PlayFabId\": \"{{PlayFabId}}\", \"IncludeSteamFriends\": true}"
     UNREFERENCED_PARAMETER(request); // TODO
+}
+
+HRESULT AutoGenFriendsTests::ValidateServerGetFriendsListResponse(PFFriendsGetFriendsListResult* result)
+{
+    // result.friends = PFFriendsFriendInfo const* const*;
+    // result.friendsCount = uint32_t;
+
+    UNREFERENCED_PARAMETER(result);
+    return S_OK;
 }
 
 #pragma endregion

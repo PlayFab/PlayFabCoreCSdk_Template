@@ -40,7 +40,7 @@ void AutoGenDataTests::FillAbortFileUploadsPrerequisiteInitiateFileUploadsReques
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::StoreAbortFileUploadsPrerequisitePFDataInitiateFileUploadsResponse(std::shared_ptr<InitiateFileUploadsResponseHolder> result)
+HRESULT AutoGenDataTests::StoreAbortFileUploadsPrerequisiteInitiateFileUploadsResponse(std::shared_ptr<InitiateFileUploadsResponseHolder> result)
 {
     testData.m_InitiateFileUploadsResponse = result;
     return S_OK;
@@ -53,7 +53,7 @@ void AutoGenDataTests::FillAbortFileUploadsRequest(PFDataAbortFileUploadsRequest
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::ValidatePFDataAbortFileUploadsResponse(PFDataAbortFileUploadsResponse* result)
+HRESULT AutoGenDataTests::ValidateAbortFileUploadsResponse(PFDataAbortFileUploadsResponse* result)
 {
     // result.entity = PFEntityKey const*;
     // result.profileVersion = int32_t;
@@ -73,7 +73,7 @@ void AutoGenDataTests::FillDeleteFilesPrerequisiteInitiateFileUploadsRequest(PFD
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::StoreDeleteFilesPrerequisitePFDataInitiateFileUploadsResponse(std::shared_ptr<InitiateFileUploadsResponseHolder> result)
+HRESULT AutoGenDataTests::StoreDeleteFilesPrerequisiteInitiateFileUploadsResponse(std::shared_ptr<InitiateFileUploadsResponseHolder> result)
 {
     testData.m_InitiateFileUploadsResponse = result;
 
@@ -90,7 +90,7 @@ void AutoGenDataTests::FillDeleteFilesPrerequisiteFinalizeFileUploadsRequest(PFD
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::StoreDeleteFilesPrerequisitePFDataFinalizeFileUploadsResponse(std::shared_ptr<FinalizeFileUploadsResponseHolder> result)
+HRESULT AutoGenDataTests::StoreDeleteFilesPrerequisiteFinalizeFileUploadsResponse(std::shared_ptr<FinalizeFileUploadsResponseHolder> result)
 {
     testData.m_FinalizeFileUploadsResponse = result;
     return S_OK;
@@ -104,7 +104,7 @@ void AutoGenDataTests::FillDeleteFilesRequest(PFDataDeleteFilesRequestWrapper<>&
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::ValidatePFDataDeleteFilesResponse(PFDataDeleteFilesResponse* result)
+HRESULT AutoGenDataTests::ValidateDeleteFilesResponse(PFDataDeleteFilesResponse* result)
 {
     // result.entity = PFEntityKey const*;
     // result.profileVersion = int32_t;
@@ -124,7 +124,7 @@ void AutoGenDataTests::FillFinalizeFileUploadsPrerequisiteInitiateFileUploadsReq
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::StoreFinalizeFileUploadsPrerequisitePFDataInitiateFileUploadsResponse(std::shared_ptr<InitiateFileUploadsResponseHolder> result)
+HRESULT AutoGenDataTests::StoreFinalizeFileUploadsPrerequisiteInitiateFileUploadsResponse(std::shared_ptr<InitiateFileUploadsResponseHolder> result)
 {
     testData.m_InitiateFileUploadsResponse = result;
 
@@ -142,7 +142,7 @@ void AutoGenDataTests::FillFinalizeFileUploadsRequest(PFDataFinalizeFileUploadsR
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::ValidatePFDataFinalizeFileUploadsResponse(PFDataFinalizeFileUploadsResponse* result)
+HRESULT AutoGenDataTests::ValidateFinalizeFileUploadsResponse(PFDataFinalizeFileUploadsResponse* result)
 {
     // result.entity = PFEntityKey const*;
     // result.metadata = struct PFDataGetFileMetadataDictionaryEntry const*;
@@ -160,7 +160,7 @@ void AutoGenDataTests::FillFinalizeFileUploadsCleanupDeleteFilesRequest(PFDataDe
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::StoreFinalizeFileUploadsCleanupPFDataDeleteFilesResponse(std::shared_ptr<DeleteFilesResponseHolder> result)
+HRESULT AutoGenDataTests::StoreFinalizeFileUploadsCleanupDeleteFilesResponse(std::shared_ptr<DeleteFilesResponseHolder> result)
 {
     testData.m_DeleteFilesResponse = result;
     return S_OK;
@@ -176,7 +176,7 @@ void AutoGenDataTests::FillGetFilesRequest(PFDataGetFilesRequestWrapper<>& reque
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::ValidatePFDataGetFilesResponse(PFDataGetFilesResponse* result)
+HRESULT AutoGenDataTests::ValidateGetFilesResponse(PFDataGetFilesResponse* result)
 {
     // result.entity = PFEntityKey const*;
     // result.metadata = struct PFDataGetFileMetadataDictionaryEntry const*;
@@ -197,7 +197,7 @@ void AutoGenDataTests::FillGetObjectsRequest(PFDataGetObjectsRequestWrapper<>& r
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::ValidatePFDataGetObjectsResponse(PFDataGetObjectsResponse* result)
+HRESULT AutoGenDataTests::ValidateGetObjectsResponse(PFDataGetObjectsResponse* result)
 {
     // result.entity = PFEntityKey const*;
     // result.objects = struct PFDataObjectResultDictionaryEntry const*;
@@ -220,7 +220,7 @@ void AutoGenDataTests::FillInitiateFileUploadsRequest(PFDataInitiateFileUploadsR
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::ValidatePFDataInitiateFileUploadsResponse(PFDataInitiateFileUploadsResponse* result)
+HRESULT AutoGenDataTests::ValidateInitiateFileUploadsResponse(PFDataInitiateFileUploadsResponse* result)
 {
     // result.entity = PFEntityKey const*;
     // result.profileVersion = int32_t;
@@ -238,7 +238,7 @@ void AutoGenDataTests::FillInitiateFileUploadsCleanupAbortFileUploadsRequest(PFD
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::StoreInitiateFileUploadsCleanupPFDataAbortFileUploadsResponse(std::shared_ptr<AbortFileUploadsResponseHolder> result)
+HRESULT AutoGenDataTests::StoreInitiateFileUploadsCleanupAbortFileUploadsResponse(std::shared_ptr<AbortFileUploadsResponseHolder> result)
 {
     testData.m_AbortFileUploadsResponse = result;
     return S_OK;
@@ -261,7 +261,7 @@ void AutoGenDataTests::FillSetObjectsPrerequisiteSetObjectsRequest(PFDataSetObje
     request.SetEntity(PFEntityKey{ "33D5E873FB4D8629", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::StoreSetObjectsPrerequisitePFDataSetObjectsResponse(std::shared_ptr<SetObjectsResponseHolder> result)
+HRESULT AutoGenDataTests::StoreSetObjectsPrerequisiteSetObjectsResponse(std::shared_ptr<SetObjectsResponseHolder> result)
 {
     testData.m_SetObjectsResponse = result;
     return S_OK;
@@ -280,7 +280,7 @@ void AutoGenDataTests::FillSetObjectsRequest(PFDataSetObjectsRequestWrapper<>& r
     request.SetEntity(PFEntityKey{ "33D5E873FB4D8629", "title_player_account" });
 }
 
-HRESULT AutoGenDataTests::ValidatePFDataSetObjectsResponse(PFDataSetObjectsResponse* result)
+HRESULT AutoGenDataTests::ValidateSetObjectsResponse(PFDataSetObjectsResponse* result)
 {
     // result.profileVersion = int32_t;
     // result.setResults = PFDataSetObjectInfo const* const*;

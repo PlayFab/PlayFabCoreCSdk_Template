@@ -17,7 +17,7 @@ void AutoGenGroupsTests::FillAcceptGroupApplicationPrerequisiteGetGroupRequest(P
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreAcceptGroupApplicationPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreAcceptGroupApplicationPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -29,7 +29,7 @@ void AutoGenGroupsTests::FillAcceptGroupApplicationPrerequisiteApplyToGroupReque
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::StoreAcceptGroupApplicationPrerequisitePFGroupsApplyToGroupResponse(std::shared_ptr<ApplyToGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreAcceptGroupApplicationPrerequisiteApplyToGroupResponse(std::shared_ptr<ApplyToGroupResponseHolder> result)
 {
     testData.m_ApplyToGroupResponse = result;
     return S_OK;
@@ -61,7 +61,7 @@ void AutoGenGroupsTests::FillAcceptGroupInvitationPrerequisiteGetGroupRequest(PF
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreAcceptGroupInvitationPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreAcceptGroupInvitationPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -74,7 +74,7 @@ void AutoGenGroupsTests::FillAcceptGroupInvitationPrerequisiteInviteToGroupReque
     request.SetEntity(PFEntityKey{ "33D5E873FB4D8629", "title_player_account" });
 }
 
-HRESULT AutoGenGroupsTests::StoreAcceptGroupInvitationPrerequisitePFGroupsInviteToGroupResponse(std::shared_ptr<InviteToGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreAcceptGroupInvitationPrerequisiteInviteToGroupResponse(std::shared_ptr<InviteToGroupResponseHolder> result)
 {
     testData.m_InviteToGroupResponse = result;
     return S_OK;
@@ -105,7 +105,7 @@ void AutoGenGroupsTests::FillAddMembersPrerequisiteGetGroupRequest(PFGroupsGetGr
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreAddMembersPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreAddMembersPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -139,7 +139,7 @@ void AutoGenGroupsTests::FillApplyToGroupPrerequisiteGetGroupRequest(PFGroupsGet
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreApplyToGroupPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreApplyToGroupPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -151,7 +151,7 @@ void AutoGenGroupsTests::FillApplyToGroupRequest(PFGroupsApplyToGroupRequestWrap
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsApplyToGroupResponse(PFGroupsApplyToGroupResponse* result)
+HRESULT AutoGenGroupsTests::ValidateApplyToGroupResponse(PFGroupsApplyToGroupResponse* result)
 {
     // result.entity = PFGroupsEntityWithLineage const*;
     // result.expires = time_t;
@@ -178,7 +178,7 @@ void AutoGenGroupsTests::FillBlockEntityPrerequisiteGetGroupRequest(PFGroupsGetG
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreBlockEntityPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreBlockEntityPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -208,7 +208,7 @@ void AutoGenGroupsTests::FillChangeMemberRolePrerequisiteGetGroupRequest(PFGroup
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreChangeMemberRolePrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreChangeMemberRolePrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -246,7 +246,7 @@ void AutoGenGroupsTests::FillCreateGroupRequest(PFGroupsCreateGroupRequestWrappe
     request.SetGroupName("Example Group");
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsCreateGroupResponse(PFGroupsCreateGroupResponse* result)
+HRESULT AutoGenGroupsTests::ValidateCreateGroupResponse(PFGroupsCreateGroupResponse* result)
 {
     // result.adminRoleId = const char*;
     // result.created = time_t;
@@ -267,7 +267,7 @@ void AutoGenGroupsTests::FillCreateGroupCleanupGetGroupRequest(PFGroupsGetGroupR
     request.SetGroupName("Example Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreCreateGroupCleanupPFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreCreateGroupCleanupGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -289,13 +289,13 @@ void AutoGenGroupsTests::FillCreateRolePrerequisiteGetGroupRequest(PFGroupsGetGr
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreCreateRolePrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreCreateRolePrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
 }
 
-void AutoGenGroupsTests::FillCreateGroupRoleRequest(PFGroupsCreateGroupRoleRequestWrapper<>& request)
+void AutoGenGroupsTests::FillCreateRoleRequest(PFGroupsCreateGroupRoleRequestWrapper<>& request)
 {
     // Example Request: "{ \"RoleId\": \"example\", \"RoleName\": \"Example Role\", \"Group\": { \"Id\": \"ABC1234ABC\" }}"
     request.SetRoleId("example");
@@ -303,7 +303,7 @@ void AutoGenGroupsTests::FillCreateGroupRoleRequest(PFGroupsCreateGroupRoleReque
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsCreateGroupRoleResponse(PFGroupsCreateGroupRoleResponse* result)
+HRESULT AutoGenGroupsTests::ValidateCreateRoleResponse(PFGroupsCreateGroupRoleResponse* result)
 {
     // result.profileVersion = int32_t;
     // result.roleId = const char*;
@@ -330,7 +330,7 @@ void AutoGenGroupsTests::FillDeleteGroupPrerequisiteCreateGroupRequest(PFGroupsC
     request.SetGroupName("Example Group2");
 }
 
-HRESULT AutoGenGroupsTests::StoreDeleteGroupPrerequisitePFGroupsCreateGroupResponse(std::shared_ptr<CreateGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreDeleteGroupPrerequisiteCreateGroupResponse(std::shared_ptr<CreateGroupResponseHolder> result)
 {
     testData.m_CreateGroupResponse = result;
     return S_OK;
@@ -352,13 +352,13 @@ void AutoGenGroupsTests::FillDeleteRolePrerequisiteGetGroupRequest(PFGroupsGetGr
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreDeleteRolePrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreDeleteRolePrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
 }
 
-void AutoGenGroupsTests::FillDeleteRolePrerequisiteCreateGroupRoleRequest(PFGroupsCreateGroupRoleRequestWrapper<>& request)
+void AutoGenGroupsTests::FillDeleteRolePrerequisiteCreateRoleRequest(PFGroupsCreateGroupRoleRequestWrapper<>& request)
 {
     // Example request: "{ \"RoleId\": \"example\", \"RoleName\": \"Example Role\", \"Group\": { \"Id\": \"ABC1234ABC\" }}"
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
@@ -366,7 +366,7 @@ void AutoGenGroupsTests::FillDeleteRolePrerequisiteCreateGroupRoleRequest(PFGrou
     request.SetRoleName("Example Role");
 }
 
-HRESULT AutoGenGroupsTests::StoreDeleteRolePrerequisitePFGroupsCreateGroupRoleResponse(std::shared_ptr<CreateGroupRoleResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreDeleteRolePrerequisiteCreateRoleResponse(std::shared_ptr<CreateGroupRoleResponseHolder> result)
 {
     testData.m_CreateGroupRoleResponse = result;
     return S_OK;
@@ -389,7 +389,7 @@ void AutoGenGroupsTests::FillGetGroupRequest(PFGroupsGetGroupRequestWrapper<>& r
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsGetGroupResponse(PFGroupsGetGroupResponse* result)
+HRESULT AutoGenGroupsTests::ValidateGetGroupResponse(PFGroupsGetGroupResponse* result)
 {
     // result.adminRoleId = const char*;
     // result.created = time_t;
@@ -414,7 +414,7 @@ void AutoGenGroupsTests::FillInviteToGroupPrerequisiteGetGroupRequest(PFGroupsGe
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreInviteToGroupPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreInviteToGroupPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -427,7 +427,7 @@ void AutoGenGroupsTests::FillInviteToGroupRequest(PFGroupsInviteToGroupRequestWr
     request.SetEntity(PFEntityKey{ "33D5E873FB4D8629", "title_player_account" });
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsInviteToGroupResponse(PFGroupsInviteToGroupResponse* result)
+HRESULT AutoGenGroupsTests::ValidateInviteToGroupResponse(PFGroupsInviteToGroupResponse* result)
 {
     // result.expires = time_t;
     // result.group = PFEntityKey const*;
@@ -456,7 +456,7 @@ void AutoGenGroupsTests::FillIsMemberPrerequisiteGetGroupRequest(PFGroupsGetGrou
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreIsMemberPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreIsMemberPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -469,7 +469,7 @@ void AutoGenGroupsTests::FillIsMemberRequest(PFGroupsIsMemberRequestWrapper<>& r
     request.SetEntity(PFEntityKey{ "B64BE91E5DBD5597", "title_player_account" });
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsIsMemberResponse(PFGroupsIsMemberResponse* result)
+HRESULT AutoGenGroupsTests::ValidateIsMemberResponse(PFGroupsIsMemberResponse* result)
 {
     // result.isMember = bool;
 
@@ -487,7 +487,7 @@ void AutoGenGroupsTests::FillListGroupApplicationsPrerequisiteGetGroupRequest(PF
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreListGroupApplicationsPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreListGroupApplicationsPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -499,7 +499,7 @@ void AutoGenGroupsTests::FillListGroupApplicationsRequest(PFGroupsListGroupAppli
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsListGroupApplicationsResponse(PFGroupsListGroupApplicationsResponse* result)
+HRESULT AutoGenGroupsTests::ValidateListGroupApplicationsResponse(PFGroupsListGroupApplicationsResponse* result)
 {
     // result.applications = PFGroupsGroupApplication const* const*;
     // result.applicationsCount = uint32_t;
@@ -518,7 +518,7 @@ void AutoGenGroupsTests::FillListGroupBlocksPrerequisiteGetGroupRequest(PFGroups
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreListGroupBlocksPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreListGroupBlocksPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -530,7 +530,7 @@ void AutoGenGroupsTests::FillListGroupBlocksRequest(PFGroupsListGroupBlocksReque
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsListGroupBlocksResponse(PFGroupsListGroupBlocksResponse* result)
+HRESULT AutoGenGroupsTests::ValidateListGroupBlocksResponse(PFGroupsListGroupBlocksResponse* result)
 {
     // result.blockedEntities = PFGroupsGroupBlock const* const*;
     // result.blockedEntitiesCount = uint32_t;
@@ -549,7 +549,7 @@ void AutoGenGroupsTests::FillListGroupInvitationsPrerequisiteGetGroupRequest(PFG
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreListGroupInvitationsPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreListGroupInvitationsPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -561,7 +561,7 @@ void AutoGenGroupsTests::FillListGroupInvitationsRequest(PFGroupsListGroupInvita
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsListGroupInvitationsResponse(PFGroupsListGroupInvitationsResponse* result)
+HRESULT AutoGenGroupsTests::ValidateListGroupInvitationsResponse(PFGroupsListGroupInvitationsResponse* result)
 {
     // result.invitations = PFGroupsGroupInvitation const* const*;
     // result.invitationsCount = uint32_t;
@@ -580,7 +580,7 @@ void AutoGenGroupsTests::FillListGroupMembersPrerequisiteGetGroupRequest(PFGroup
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreListGroupMembersPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreListGroupMembersPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -592,7 +592,7 @@ void AutoGenGroupsTests::FillListGroupMembersRequest(PFGroupsListGroupMembersReq
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsListGroupMembersResponse(PFGroupsListGroupMembersResponse* result)
+HRESULT AutoGenGroupsTests::ValidateListGroupMembersResponse(PFGroupsListGroupMembersResponse* result)
 {
     // result.members = PFGroupsEntityMemberRole const* const*;
     // result.membersCount = uint32_t;
@@ -611,7 +611,7 @@ void AutoGenGroupsTests::FillListMembershipPrerequisiteGetGroupRequest(PFGroupsG
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreListMembershipPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreListMembershipPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -622,7 +622,7 @@ void AutoGenGroupsTests::FillListMembershipRequest(PFGroupsListMembershipRequest
     // Example Request: "{}"
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsListMembershipResponse(PFGroupsListMembershipResponse* result)
+HRESULT AutoGenGroupsTests::ValidateListMembershipResponse(PFGroupsListMembershipResponse* result)
 {
     // result.groups = PFGroupsGroupWithRoles const* const*;
     // result.groupsCount = uint32_t;
@@ -641,7 +641,7 @@ void AutoGenGroupsTests::FillListMembershipOpportunitiesPrerequisiteGetGroupRequ
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreListMembershipOpportunitiesPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreListMembershipOpportunitiesPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -653,7 +653,7 @@ void AutoGenGroupsTests::FillListMembershipOpportunitiesPrerequisiteApplyToGroup
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::StoreListMembershipOpportunitiesPrerequisitePFGroupsApplyToGroupResponse(std::shared_ptr<ApplyToGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreListMembershipOpportunitiesPrerequisiteApplyToGroupResponse(std::shared_ptr<ApplyToGroupResponseHolder> result)
 {
     testData.m_ApplyToGroupResponse = result;
     return S_OK;
@@ -664,7 +664,7 @@ void AutoGenGroupsTests::FillListMembershipOpportunitiesRequest(PFGroupsListMemb
     // Example Request: "{}"
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsListMembershipOpportunitiesResponse(PFGroupsListMembershipOpportunitiesResponse* result)
+HRESULT AutoGenGroupsTests::ValidateListMembershipOpportunitiesResponse(PFGroupsListMembershipOpportunitiesResponse* result)
 {
     // result.applications = PFGroupsGroupApplication const* const*;
     // result.applicationsCount = uint32_t;
@@ -692,7 +692,7 @@ void AutoGenGroupsTests::FillRemoveGroupApplicationPrerequisiteGetGroupRequest(P
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreRemoveGroupApplicationPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreRemoveGroupApplicationPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -704,7 +704,7 @@ void AutoGenGroupsTests::FillRemoveGroupApplicationPrerequisiteApplyToGroupReque
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
 }
 
-HRESULT AutoGenGroupsTests::StoreRemoveGroupApplicationPrerequisitePFGroupsApplyToGroupResponse(std::shared_ptr<ApplyToGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreRemoveGroupApplicationPrerequisiteApplyToGroupResponse(std::shared_ptr<ApplyToGroupResponseHolder> result)
 {
     testData.m_ApplyToGroupResponse = result;
     return S_OK;
@@ -727,7 +727,7 @@ void AutoGenGroupsTests::FillRemoveGroupInvitationPrerequisiteGetGroupRequest(PF
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreRemoveGroupInvitationPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreRemoveGroupInvitationPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -740,7 +740,7 @@ void AutoGenGroupsTests::FillRemoveGroupInvitationPrerequisiteInviteToGroupReque
     request.SetEntity(PFEntityKey{ "33D5E873FB4D8629", "title_player_account" });
 }
 
-HRESULT AutoGenGroupsTests::StoreRemoveGroupInvitationPrerequisitePFGroupsInviteToGroupResponse(std::shared_ptr<InviteToGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreRemoveGroupInvitationPrerequisiteInviteToGroupResponse(std::shared_ptr<InviteToGroupResponseHolder> result)
 {
     testData.m_InviteToGroupResponse = result;
     return S_OK;
@@ -763,7 +763,7 @@ void AutoGenGroupsTests::FillRemoveMembersPrerequisiteGetGroupRequest(PFGroupsGe
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreRemoveMembersPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreRemoveMembersPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -797,7 +797,7 @@ void AutoGenGroupsTests::FillUnblockEntityPrerequisiteGetGroupRequest(PFGroupsGe
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreUnblockEntityPrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreUnblockEntityPrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
@@ -827,7 +827,7 @@ void AutoGenGroupsTests::FillUpdateGroupPrerequisiteCreateGroupRequest(PFGroupsC
     request.SetGroupName("Example Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreUpdateGroupPrerequisitePFGroupsCreateGroupResponse(std::shared_ptr<CreateGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreUpdateGroupPrerequisiteCreateGroupResponse(std::shared_ptr<CreateGroupResponseHolder> result)
 {
     testData.m_CreateGroupResponse = result;
     return S_OK;
@@ -840,7 +840,7 @@ void AutoGenGroupsTests::FillUpdateGroupRequest(PFGroupsUpdateGroupRequestWrappe
     request.SetGroupName("My New Group Name");
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsUpdateGroupResponse(PFGroupsUpdateGroupResponse* result)
+HRESULT AutoGenGroupsTests::ValidateUpdateGroupResponse(PFGroupsUpdateGroupResponse* result)
 {
     // result.operationReason = const char*;
     // result.profileVersion = int32_t;
@@ -866,13 +866,13 @@ void AutoGenGroupsTests::FillUpdateRolePrerequisiteGetGroupRequest(PFGroupsGetGr
     request.SetGroupName("Permanent Group");
 }
 
-HRESULT AutoGenGroupsTests::StoreUpdateRolePrerequisitePFGroupsGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreUpdateRolePrerequisiteGetGroupResponse(std::shared_ptr<GetGroupResponseHolder> result)
 {
     testData.m_GetGroupResponse = result;
     return S_OK;
 }
 
-void AutoGenGroupsTests::FillUpdateRolePrerequisiteUpdateGroupRoleRequest(PFGroupsUpdateGroupRoleRequestWrapper<>& request)
+void AutoGenGroupsTests::FillUpdateRolePrerequisiteUpdateRoleRequest(PFGroupsUpdateGroupRoleRequestWrapper<>& request)
 {
     // Example request: "{ \"Group\": { \"Id\": \"ABC1234ABC\" }, \"RoleId\": \"ABC1234DEF\", \"RoleName\": \"My New Role Name\", \"ExpectedProfileVersion\": 17}"
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
@@ -880,13 +880,13 @@ void AutoGenGroupsTests::FillUpdateRolePrerequisiteUpdateGroupRoleRequest(PFGrou
     request.SetRoleName("Prereq Role");
 }
 
-HRESULT AutoGenGroupsTests::StoreUpdateRolePrerequisitePFGroupsUpdateGroupRoleResponse(std::shared_ptr<UpdateGroupRoleResponseHolder> result)
+HRESULT AutoGenGroupsTests::StoreUpdateRolePrerequisiteUpdateRoleResponse(std::shared_ptr<UpdateGroupRoleResponseHolder> result)
 {
     testData.m_UpdateGroupRoleResponse = result;
     return S_OK;
 }
 
-void AutoGenGroupsTests::FillUpdateGroupRoleRequest(PFGroupsUpdateGroupRoleRequestWrapper<>& request)
+void AutoGenGroupsTests::FillUpdateRoleRequest(PFGroupsUpdateGroupRoleRequestWrapper<>& request)
 {
     // Example Request: "{ \"Group\": { \"Id\": \"ABC1234ABC\" }, \"RoleId\": \"ABC1234DEF\", \"RoleName\": \"My New Role Name\", \"ExpectedProfileVersion\": 17}"
     request.SetGroup(*testData.m_GetGroupResponse->result->group);
@@ -894,7 +894,7 @@ void AutoGenGroupsTests::FillUpdateGroupRoleRequest(PFGroupsUpdateGroupRoleReque
     request.SetRoleName("Test Role");
 }
 
-HRESULT AutoGenGroupsTests::ValidatePFGroupsUpdateGroupRoleResponse(PFGroupsUpdateGroupRoleResponse* result)
+HRESULT AutoGenGroupsTests::ValidateUpdateRoleResponse(PFGroupsUpdateGroupRoleResponse* result)
 {
     // result.operationReason = const char*;
     // result.profileVersion = int32_t;

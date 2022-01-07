@@ -10,13 +10,13 @@ function debugLogProp(varName, propName, propCoutName, property, prefix, padding
     var propType = getPublicPropertyType(property, false);
     var propTypeWithConst = getPublicPropertyType(property, true);
     if (propType == "PFJsonObject") {%>
-<%- padding %>if( <%- varName %>-><%- propName %>.stringValue ) { ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>.stringValue; Log(ss); } else { ss << "  <%- propName %> = nullptr"; Log(ss); }<%} else 
+<%- padding %>if (<%- varName %>-><%- propName %>.stringValue) { ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>.stringValue; Log(ss); } else { ss << "  <%- propName %> = nullptr"; Log(ss); }<%} else 
 if (propTypeWithConst == "PFClientRegion const*") {%>
-<%- padding %>if( <%- varName %>-><%- propName %> ) { ss << "  <%- propCoutName %> " << (int)*<%- varName %>-><%- propName %>; Log(ss); }<%} else 
+<%- padding %>if (<%- varName %>-><%- propName %>) { ss << "  <%- propCoutName %> " << (int)*<%- varName %>-><%- propName %>; Log(ss); }<%} else 
 if (propType == "PFClientRegion" || propType == "PFClientAdActivity") {%>
 <%- padding %>ss << "  <%- propCoutName %> " << (int)<%- varName %>-><%- propName %>; Log(ss);<%} else 
 if (propType == "bool const*" || propType == "const char*") {%>
-<%- padding %>if( <%- varName %>-><%- propName %> ) { ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>; Log(ss); } else { ss << "  <%- propCoutName %> = nullptr"; Log(ss); }<%} else {%>
+<%- padding %>if (<%- varName %>-><%- propName %>) { ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>; Log(ss); } else { ss << "  <%- propCoutName %> = nullptr"; Log(ss); }<%} else {%>
 <%- padding %>ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>; Log(ss);<%} %> // Class: <%-propType%> <%
 }
 
@@ -26,9 +26,9 @@ function debugLogCollection(varName, propName, property, prefix, apiName) {
     ss << "  <%- propName %>Count " << <%- varName %>-><%- propName %>Count; Log(ss);
 
     // <%- propType %>
-    for( uint32_t i=0; i<<%- varName %>-><%- propName %>Count; i++ )
+    for (uint32_t i=0; i<<%- varName %>-><%- propName %>Count; i++)
     {<%
-        if( property.isclass && !property.collection )
+        if (property.isclass && !property.collection)
         {
             var datatype = property.datatype;
             for (var propIdx = 0; propIdx < datatype.properties.length; propIdx++) 
@@ -42,9 +42,9 @@ function debugLogCollection(varName, propName, property, prefix, apiName) {
         }
         else
         {
-            if( propType == "PFJsonObject" ) {%>
+            if (propType == "PFJsonObject") {%>
             ss << "  <%- varName + "->" + propName %>[" << i << "]:" << <%- varName + "->" + propName %>[i].stringValue; Log(ss);
-            <%} else if( property.collection === "map") {%>
+            <%} else if (property.collection === "map") {%>
             ss << "  <%- varName + "->" + propName %>[" << i << "]:" << <%- varName + "->" + propName %>[i].key << "=" << <%- varName + "->" + propName %>[i].value; Log(ss);
             <%}
             else {%>
@@ -59,8 +59,6 @@ function debugLogCollection(varName, propName, property, prefix, apiName) {
 
 using namespace PlayFab::Wrappers;
 <% 
-var hasFillBeenDefinedMap = {};
-var hasValidateBeenDefinedMap = {};
 for (var i = 0; i < featureGroup.calls.length; i++) 
 {
     var call = featureGroup.calls[i];
@@ -77,17 +75,15 @@ for (var i = 0; i < featureGroup.calls.length; i++)
     {
         var prereqCall = prerequisiteCalls[call.name][j];
 
-        if(prereqCall.requestDatatype && !(call.name + "Prereq" + prereqCall.requestDatatype.name in hasFillBeenDefinedMap)) {  // prereqCall.name == "AcceptTrade"
-        hasFillBeenDefinedMap[call.name + "Prereq" + prereqCall.requestDatatype.name] = true;
-%>void AutoGen<%- featureGroup.name %>Tests::Fill<%- call.name %>Prerequisite<%- prereqCall.requestDatatype.name %>(<%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<>& request)
+        if (prereqCall.requestDatatype) {  // prereqCall.name == "AcceptTrade"
+%>void AutoGen<%- featureGroup.name %>Tests::Fill<%- call.name %>Prerequisite<%- prereqCall.name %>Request(<%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<>& request)
 {
     // Example request: <%- getRequestExample(featureGroup, prereqCall) %>
     UNREFERENCED_PARAMETER(request); // TODO
 }
 
-<% } if (prereqCall.resultDatatype && !(call.name + prereqCall.resultDatatype.name in hasValidateBeenDefinedMap)) {
-    hasValidateBeenDefinedMap[call.name + prereqCall.resultDatatype.name] = true;
-%>HRESULT AutoGen<%- featureGroup.name %>Tests::Store<%- call.name %>Prerequisite<%- prereqCall.resultDatatype.prefix + prereqCall.resultDatatype.name %>(std::shared_ptr<<%- prereqCall.resultDatatype.name %>Holder> result)
+<% } if (prereqCall.resultDatatype) {
+%>HRESULT AutoGen<%- featureGroup.name %>Tests::Store<%- call.name %>Prerequisite<%- prereqCall.name %>Response(std::shared_ptr<<%- prereqCall.resultDatatype.name %>Holder> result)
 {
     testData.m_<%- prereqCall.resultDatatype.name %> = result;
     return S_OK;
@@ -96,18 +92,16 @@ for (var i = 0; i < featureGroup.calls.length; i++)
 <% } 
     }
 
-    if(call.requestDatatype && !(call.requestDatatype.name in hasFillBeenDefinedMap)) {  // call.name == "AcceptTrade"
-        hasFillBeenDefinedMap[call.requestDatatype.name] = true;
-%>void AutoGen<%- featureGroup.name %>Tests::Fill<%- call.requestDatatype.name %>(<%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<>& request)
+    if (call.requestDatatype) {  // call.name == "AcceptTrade"
+%>void AutoGen<%- featureGroup.name %>Tests::Fill<%- call.name %>Request(<%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<>& request)
 {<% if (addDebugMarker) { %>
     // TODO: debug <%- testStatusListStatus %> test<% } %>
     // Example Request: <%- getRequestExample(featureGroup, call) %>
     UNREFERENCED_PARAMETER(request); // TODO
 }
-<% } if (call.resultDatatype && !(call.resultDatatype.name in hasValidateBeenDefinedMap)) {
-    hasValidateBeenDefinedMap[call.resultDatatype.name] = true;
+<% } if (call.resultDatatype) {
 %>
-HRESULT AutoGen<%- featureGroup.name %>Tests::Validate<%- call.resultDatatype.prefix + call.resultDatatype.name %>(<%- call.resultDatatype.prefix + call.resultDatatype.name %>* result)
+HRESULT AutoGen<%- featureGroup.name %>Tests::Validate<%- call.name %>Response(<%- call.resultDatatype.prefix + call.resultDatatype.name %>* result)
 {
 <% for (var propIdx = 0; propIdx < call.resultDatatype.properties.length; propIdx++) 
     {
@@ -132,19 +126,17 @@ HRESULT AutoGen<%- featureGroup.name %>Tests::Validate<%- call.resultDatatype.pr
     {
         var cleanupCall = cleanupCalls[call.name][j];
 
-        if(cleanupCall.requestDatatype && !(call.name + "Cleanup" + cleanupCall.requestDatatype.name in hasFillBeenDefinedMap)) {  // cleanupCall.name == "AcceptTrade"
-        hasFillBeenDefinedMap[call.name + "Cleanup" + cleanupCall.requestDatatype.name] = true;
+        if (cleanupCall.requestDatatype) {  // cleanupCall.name == "AcceptTrade"
 %>
-void AutoGen<%- featureGroup.name %>Tests::Fill<%- call.name %>Cleanup<%- cleanupCall.requestDatatype.name %>(<%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<>& request)
+void AutoGen<%- featureGroup.name %>Tests::Fill<%- call.name %>Cleanup<%- cleanupCall.name %>Request(<%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<>& request)
 {
     // Example Request: <%- getRequestExample(featureGroup, cleanupCall) %>
     UNREFERENCED_PARAMETER(request); // TODO
 }
-<% } if (cleanupCall.resultDatatype && !(call.name + cleanupCall.resultDatatype.name in hasValidateBeenDefinedMap)) {
-    hasValidateBeenDefinedMap[call.name + cleanupCall.resultDatatype.name] = true;
+<% } if (cleanupCall.resultDatatype) {
     let resultNamespace = "PlayFab::" + (cleanupCall.resultDatatype.isShared ? "" : featureGroup.name + "Models::");
 %>
-HRESULT AutoGen<%- featureGroup.name %>Tests::Store<%- call.name %>Cleanup<%- cleanupCall.resultDatatype.prefix + cleanupCall.resultDatatype.name %>(std::shared_ptr<<%- cleanupCall.resultDatatype.name %>Holder> result)
+HRESULT AutoGen<%- featureGroup.name %>Tests::Store<%- call.name %>Cleanup<%- cleanupCall.name %>Response(std::shared_ptr<<%- cleanupCall.resultDatatype.name %>Holder> result)
 {
     testData.m_<%- cleanupCall.resultDatatype.name %> = result;
     return S_OK;
