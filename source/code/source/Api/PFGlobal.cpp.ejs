@@ -47,22 +47,24 @@ STDAPI <%- prefix %>MemGetFunctions(
 
 HRESULT <%- prefix %>Initialize(
     _In_z_ const char* titleId,
+    _In_opt_z_ const char* connectionString,
     _In_opt_ XTaskQueueHandle backgroundQueue,
     _Outptr_ <%- prefix %>StateHandle* stateHandle
 ) noexcept
 {
-    return <%- prefix %>GlobalState::Create(titleId, nullptr, backgroundQueue, stateHandle);
+    return <%- prefix %>GlobalState::Create(titleId, nullptr, connectionString, backgroundQueue, stateHandle);
 }
 
 HRESULT <%- prefix %>AdminInitialize(
     _In_z_ const char* titleId,
     _In_z_ const char* secretKey,
+    _In_opt_z_ const char* connectionString,
     _In_opt_ XTaskQueueHandle backgroundQueue,
     _Outptr_ <%- prefix %>StateHandle* stateHandle
 ) noexcept
 {
     RETURN_HR_INVALIDARG_IF_NULL(secretKey);
-    return <%- prefix %>GlobalState::Create(titleId, secretKey, backgroundQueue, stateHandle);
+    return <%- prefix %>GlobalState::Create(titleId, secretKey, connectionString, backgroundQueue, stateHandle);
 }
 
 HRESULT <%- prefix %>UninitializeAsync(

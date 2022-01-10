@@ -245,7 +245,7 @@ void ApiTests::TestManualDispatcher(TestContext& testContext)
     XAsyncDispatcher dispatcher{};
 
     PFStateHandle state{ nullptr };
-    HRESULT hr = PFInitialize(testTitleData.titleId.data(), dispatcher.Queue(), &state);
+    HRESULT hr = PFInitialize(testTitleData.titleId.data(), testTitleData.connectionString.data(), dispatcher.Queue(), &state);
     if (FAILED(hr))
     {
         testContext.Fail("PFInitialize", hr);
@@ -309,7 +309,7 @@ void ApiTests::AddTests()
 
 void ApiTests::ClassSetUp()
 {
-    HRESULT hr = PFAdminInitialize(testTitleData.titleId.data(), testTitleData.developerSecretKey.data(), nullptr, &stateHandle);
+    HRESULT hr = PFAdminInitialize(testTitleData.titleId.data(), testTitleData.developerSecretKey.data(), nullptr, nullptr, &stateHandle);
     if (SUCCEEDED(hr))
     {
         PFAuthenticationLoginWithCustomIDRequest request{};
