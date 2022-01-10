@@ -71,7 +71,7 @@ for (var i = 0; i < featureGroup.calls.length; i++)
 
 void AutoGen<%- featureGroup.name %>Tests::ClassSetUp()
 {
-    HRESULT hr = PFAdminInitialize(testTitleData.titleId.data(), testTitleData.developerSecretKey.data(), nullptr, &stateHandle);
+    HRESULT hr = PFAdminInitialize(testTitleData.titleId.data(), testTitleData.developerSecretKey.data(), testTitleData.connectionString.data(), nullptr, &stateHandle);
     assert(SUCCEEDED(hr));
     if (SUCCEEDED(hr))
     {

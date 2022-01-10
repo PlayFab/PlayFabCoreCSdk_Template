@@ -319,7 +319,7 @@ void EntityTests::AddTests()
 
 void EntityTests::ClassSetUp()
 {
-    HRESULT hr = PFInitialize(testTitleData.titleId.data(), nullptr, &stateHandle);
+    HRESULT hr = PFInitialize(testTitleData.titleId.data(), testTitleData.connectionString.data(), nullptr, &stateHandle);
     UNREFERENCED_PARAMETER(hr);
 }
 

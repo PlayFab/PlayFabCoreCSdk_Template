@@ -21,7 +21,7 @@ class HttpClient
 {
 public:
     HttpClient(String titleId);
-    HttpClient(String&& baseServiceHost, String titleId);
+    HttpClient(String titleId, String connectionString);
     HttpClient(const HttpClient&) = default;
     ~HttpClient() = default;
 
@@ -53,8 +53,8 @@ public:
 private:
     String GetUrl(const char* path) const;
 
-    String m_baseServiceHost;
     String m_titleId;
+    String m_connectionString;
 };
 
 // Wrapper around PlayFab service response.

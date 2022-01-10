@@ -80,21 +80,32 @@ private:
 };
 
 HttpClient::HttpClient(String titleId) :
-    m_baseServiceHost{ productionEnvironmentURL },
     m_titleId{ std::move(titleId) }
 {
 }
 
-HttpClient::HttpClient(String&& baseServiceHost, String titleId) :
-    m_baseServiceHost{ std::move(baseServiceHost) },
-    m_titleId{ std::move(titleId) }
+HttpClient::HttpClient(String titleId, String connectionString) :
+    m_titleId{ std::move(titleId) },
+    m_connectionString{ std::move(connectionString) }
 {
 }
 
 String HttpClient::GetUrl(const char* path) const
 {
     Stringstream fullUrl;
-    fullUrl << "https://" << m_titleId << m_baseServiceHost << path;
+    if (m_connectionString.empty())
+    {
+        // Construct default url using titleId 
+        fullUrl << "https://" << m_titleId << productionEnvironmentURL;
+    }
+    else
+    {
+        // Construct url from connection string
+        fullUrl << m_connectionString;
+    }
+
+    // Append path
+    fullUrl << path;
 
     // Add sdk version param (used by service for telemetry)
     fullUrl << "?sdk=" << versionString;
