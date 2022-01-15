@@ -18,7 +18,9 @@ if (propTypeWithConst == "PFClientRegion const*") {%>
 if (propType == "PFClientRegion" || propType == "PFClientAdActivity") {%>
 <%- padding %>ss << "  <%- propCoutName %> " << (int)<%- varName %>-><%- propName %>; Log(ss);<%} else 
 if (propType == "bool const*" || propType == "const char*") {%>
-<%- padding %>if (<%- varName %>-><%- propName %>) { ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>; Log(ss); } else { ss << "  <%- propCoutName %> = nullptr"; Log(ss); }<%} else {%>
+<%- padding %>if (<%- varName %>-><%- propName %>) { ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>; Log(ss); } else { ss << "  <%- propCoutName %> = nullptr"; Log(ss); }<%} else 
+if (property.isenum && !property.optional) {%>
+<%- padding %>ss << "  <%- propCoutName %> " << static_cast<uint32_t>(<%- varName %>-><%- propName %>); Log(ss);<%} else {%>
 <%- padding %>ss << "  <%- propCoutName %> " << <%- varName %>-><%- propName %>; Log(ss);<%} %> // Class: <%-propType%> <%
 }
 

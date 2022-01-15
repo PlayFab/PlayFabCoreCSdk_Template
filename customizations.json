@@ -43,7 +43,11 @@
       "ServerUpdatePlayerStatistics": "Leaderboard",
       "AdminRefundPurchase": "Economy",
       "AdminResolvePurchaseDispute": "Economy",
-      "ServerGetPlayerCombinedInfo": "AccountManagement"
+      "ServerGetPlayerCombinedInfo": "AccountManagement",
+      "ServerDeletePushNotificationTemplate": "PushNotifications",
+      "ServerSavePushNotificationTemplate": "PushNotifications",
+      "ServerSendPushNotification": "PushNotifications",
+      "ServerSendPushNotificationFromTemplate": "PushNotifications"
     },
     "apis": {},
     "subgroups": {
