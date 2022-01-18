@@ -16,7 +16,7 @@
 #include "EntityTests.h"
 <% for(var featureGroupName in SDKFeatureGroups) 
 { 
-    if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement" ].includes(featureGroupName)) { %>
+    if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement", "AccountManagement" ].includes(featureGroupName)) { %>
 #include "AutoGenTests/AutoGen<%- featureGroupName %>Tests.h" <%
     }
 } %>
@@ -98,7 +98,7 @@ var verNum = 0;
 for(var featureGroupName in SDKFeatureGroups) 
 {
     verNum++;
-    if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement" ].includes(featureGroupName)) { %>
+    if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement", "AccountManagement" ].includes(featureGroupName)) { %>
         AutoGen<%- featureGroupName %>Tests apiTests<%- verNum %>;
         apiTests<%- verNum %>.SetTitleInfo(testTitleData);
         testRunner.Add(apiTests<%- verNum %>);
