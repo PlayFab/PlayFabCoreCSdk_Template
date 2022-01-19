@@ -1,0 +1,177 @@
+parameters:
+  - name: platform
+    type: string
+  - name: configuration
+    type: string
+  - name: publishArtifacts
+    type: boolean
+
+steps:
+  - template: checkout.yml
+  
+  - task: PkgESSetupBuild@12
+    displayName: 'Initialize build'
+    inputs:
+      useDfs: false
+      productName: PFCoreCSDK
+      branchVersion: true
+      extSync: true
+
+  - task: NuGetAuthenticate@0
+  
+  - task: BatchScript@1
+    displayName: 'fetchTools.cmd '
+    inputs:
+      filename: Utilities/Pipelines/Scripts/fetchTools.cmd
+      arguments: '"$(PAT)" EXT main'
+      modifyEnvironment: false
+
+  - task: NuGetToolInstaller@1
+    displayName: 'Use NuGet 5.8'
+    inputs:
+      versionSpec: 5.8
+      
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      packageType: sdk
+      version: 3.1.411
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  - task: BatchScript@1
+    displayName: vsvars.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/vsvars.cmd
+      modifyEnvironment: true
+      
+  - task: BatchScript@1
+    displayName: gdkvars.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/gdkvars.cmd
+      arguments: '2019 $(GDKVer)'
+      modifyEnvironment: true
+    timeoutInMinutes: 10
+
+  - task: BatchScript@1
+    displayName: gdkvars-check.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/gdkvars-check.cmd
+ 
+  - task: BatchScript@1
+    displayName: preCompileScript.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/preCompileScript.cmd
+      modifyEnvironment: false
+    timeoutInMinutes: 10
+
+  - task: VSBuild@1
+    displayName: PlayFabCore.GDK.VS2017.sln
+    inputs:
+      solution: build/GDK/PlayFabCore.GDK.sln
+      vsVersion: 16.0
+      msbuildArgs: '/p:XdkEditionTarget=$(GDKVer) /p:GDKUseBWOI=true'
+      platform: Gaming.Desktop.x64
+      configuration: ${{ parameters.configuration }}
+      maximumCpuCount: true
+      msbuildArchitecture: x64
+      createLogFile: true
+      logProjectEvents: true
+      logFileVerbosity: 'diagnostic'
+
+  # Security and compliance, failure here should fail the build
+  - task: PkgESSecComp@10
+    displayName: 'Security and Compliance tasks'
+    inputs:
+      fileNewBugs: false
+      dropOverride: $(Build.ArtifactStagingDirectory)
+      secCompConfigFromTask: |
+        tools:
+          - toolName: CheckCFlags
+            enable: true
+          - toolName: CFGCheck
+            enable: false
+          - toolName: Policheck
+            enable: false
+          - toolName: CredScan
+            enable: false
+
+  - task: CmdLine@1
+    displayName: postBuildScript.cmd
+    inputs:
+      filename: 'Utilities/Pipelines/Scripts/postBuildScript.cmd'
+    continueOnError: true
+
+  # Security and compliance, failure here should fail the build
+  - task: PkgESSecComp@10
+    displayName: 'Security and Compliance tasks'
+    inputs:
+      fileNewBugs: false
+      taskLogVerbosity: Diagnostic
+      scanAll: true
+      failOnStdErr: true
+      dropOverride: $(Build.ArtifactStagingDirectory)
+      secCompConfigFromTask: |
+        tools:
+          - toolName: CheckCFlags
+            enable: true
+          - toolName: CFGCheck
+            enable: false
+          - toolName: Policheck
+            enable: true
+          - toolName: XFGCheck
+            enable: true
+          - toolName: CredScan
+            enable: true
+      binVersion: 'PreProduction'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PkgESVPack@12
+      displayName: 'Package ES - VPack - GDK VS2019'
+      inputs:
+        sourceDirectory: '$(Pipeline.Workspace)\b\SDK\GDK\c\binaries'
+        description: 'PFCoreC.${{ parameters.configuration }}.Gaming.Desktop.x64.VS2019'
+        pushPkgName: 'PFCoreC.${{ parameters.configuration }}.Gaming.Desktop.x64.VS2019'
+        vpackToken: '$(VPackToken)'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: CmdLine@1
+      displayName: postBuildScriptVPack.cmd
+      inputs:
+        filename: 'Utilities/Pipelines/Scripts/postBuildScriptVPack.cmd'
+      continueOnError: true
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Pipeline Artifact - GDK VS2019'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)\b\SDK\GDK\c\binaries'
+        artifact: 'PFCoreC_GDK2019_${{ parameters.configuration }}'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Pipeline Artifact - GDK VS2019 Docs'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)\b\SDK\GDK-Docs'
+        artifact: 'PFCoreC_GDK2019_Docs_${{ parameters.configuration }}'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Pipeline Artifact - GDK VS2019 VPack'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)\b\SDK\GDK-VPack'
+        artifact: 'PFCoreC_GDK2019_VPack_${{ parameters.configuration }}'
+
+  - task: BatchScript@1
+    displayName: preCompileScript.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/collectLogs.cmd
+      arguments: 'build\GDK'
+      modifyEnvironment: false
+    condition: always() 
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Pipeline Artifact - Logs'
+    inputs:
+      targetPath: '$(Pipeline.Workspace)\b\Logs'
+      artifact: 'PFCoreC_GDK2019_Logs_${{ parameters.configuration }}'
+    condition: always() 

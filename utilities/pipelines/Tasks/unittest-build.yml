@@ -1,0 +1,85 @@
+parameters:
+  - name: platform
+    type: string
+  - name: configuration
+    type: string
+
+steps:
+  - template: checkout.yml
+
+  - task: PkgESSetupBuild@12
+    displayName: PkgES build setup
+    inputs:
+      useDfs: false
+      productName: PFCoreCSDK
+      branchVersion: true
+      extSync: true
+      disableMsbuildVersion: true
+
+  - task: BatchScript@1
+    displayName: preCompileScript.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/preCompileScript.cmd
+      modifyEnvironment: false
+
+  - task: NuGetAuthenticate@0
+
+  # Install NuGet dependencies. The GUID below is the NuGetCommand for MSFT internal.
+  # Refs:
+  # - https://developercommunity.visualstudio.com/t/vsts-yaml-build-failure-the-task-name-nugetcommand/288534
+  # - https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/package/nuget
+  - task: 333b11bd-d341-40d9-afcf-b32d5ce6f23b@2
+    displayName: NuGet restore
+    inputs:
+      solution: "build\Win32\PlayFabCore.Win32.sln"
+
+  # Build the Visual Studio 17 solution.
+  # Ref: https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/build/visual-studio-build
+  - task: VSBuild@1
+    displayName: Build ${{ parameters.platform }}+${{ parameters.configuration }} Solution
+    inputs:
+      solution: build\Win32\PlayFabCore.Win32.sln
+      vsVersion: 15.0
+      msbuildArchitecture: x64
+      platform: ${{ parameters.platform }}
+      configuration: ${{ parameters.configuration }}
+
+  - task: VSTest@2
+    displayName: 'VsTest - testAssemblies'
+    inputs:
+      testAssemblyVer2: PlayFabCore.UnitTests.dll
+      searchFolder: '$(BUILD.BINARIESDIRECTORY)\Debug\x64\PlayFabCore.UnitTests.TE'
+      runSettingsFile: Build/PlayFabCore.UnitTests.TE/TestAll.runsettings
+      runTestsInIsolation: true
+      otherConsoleOptions: '/blame -- RunConfiguration.TestSessionTimeout=3600000'
+      diagnosticsEnabled: true
+    timeoutInMinutes: 120
+
+  - task: PowerShell@2
+    displayName: unitTestGetResults.ps1
+    inputs:
+      targetType: filePath
+      filePath: Utilities/Pipelines/Scripts/unitTestGetResults.ps1
+      arguments: '$(Agent.TempDirectory)\TestResults\*.trx'
+    condition: succeededOrFailed()
+  
+  - task: AzureFileCopy@4
+    displayName: 'AzureBlob Unit Test Results'
+    inputs:
+      SourcePath: '$(Agent.TempDirectory)\TestResults\UnitTestResults.json'
+      azureSubscription: 'XboxLive.ClientSDK.Prod RM Service Connection'
+      Destination: AzureBlob
+      storage: xsapitestresults
+      ContainerName: 'xsapi-unittest-results'
+    condition: succeededOrFailed()
+
+  - task: AzureFileCopy@4
+    displayName: 'AzureBlob Unit Test Aggregate Result'
+    inputs:
+      SourcePath: '$(Agent.TempDirectory)\TestResults\UnitTestAggregateResult.json'
+      azureSubscription: 'XboxLive.ClientSDK.Prod RM Service Connection'
+      Destination: AzureBlob
+      storage: xsapitestresults
+      ContainerName: 'xsapi-unittest-results'
+    condition: succeededOrFailed()
+

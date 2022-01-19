@@ -47,7 +47,7 @@ public:
         JsonDocument inputJson{ rapidjson::kObjectType };
         JsonValue timesJson{ rapidjson::kObjectType };
         auto& a{ inputJson.GetAllocator() };
-        for (auto i = 0; i < times.size(); ++i)
+        for (size_t i = 0; i < times.size(); ++i)
         {
             std::stringstream ss;
             ss << "DateTime" << i << "_" << times[i];
@@ -60,7 +60,7 @@ public:
 
         Assert::IsTrue(times.size() == inputJson["times"].MemberCount());
         Assert::IsTrue(times.size() == dictionary.size());
-        for (auto i = 0; i < times.size(); ++i)
+        for (size_t i = 0; i < times.size(); ++i)
         {
             Assert::IsTrue(times[i] == dictionary.data()[i].value);
         }

@@ -1,0 +1,45 @@
+# Disable default CI trigger. Otherwise, runs on every push to every branch.
+# Ref: https://docs.microsoft.com/en-us/azure/devops/pipelines/repos/azure-repos-git#opting-out-of-ci
+trigger: none
+
+# Nightly trigger. Builds on the specified schedule.
+# Refs:
+# - https://docs.microsoft.com/en-us/azure/devops/pipelines/process/scheduled-triggers
+# - https://docs.microsoft.com/en-us/azure/devops/pipelines/process/scheduled-triggers#cron-syntax
+schedules:
+  # Schedule is specified in `cron` syntax. The below means: "Every two hours".
+  - cron: "0 */2 * * *"
+    displayName: Hourly Unit Test
+    branches:
+      include:
+        - main
+    always: true
+    
+# Name builds with the definition name, date, and build-count-for-that-day. For
+# example, "PF.UnitTest_20210214.1".
+# Refs:
+# - https://docs.microsoft.com/en-us/azure/devops/pipelines/process/run-number
+# - https://docs.microsoft.com/en-us/azure/devops/pipelines/build/variables
+name: $(Build.DefinitionName)_$(date:yyMM).$(date:dd)$(rev:rrr)
+
+jobs:
+
+  ####################
+  # Unit Tests
+  ####################
+
+  - job: UnitTestBuild
+    displayName: PF Unit Tests
+    pool:
+      name: xbl-1es-vs2017
+    timeoutInMinutes: 180
+    strategy:
+      matrix:
+        x64_Debug:
+          Platform: x64
+          Configuration: Debug
+    steps:
+      - template: Tasks/unittest-build.yml
+        parameters:
+          platform: $(Platform)
+          configuration: $(Configuration)

@@ -1,0 +1,9 @@
+steps:
+  - template: checkout.yml
+
+  # Run PoliCheck.
+  # Ref: https://www.1eswiki.com/index.php?title=PoliCheck_Build_Task
+  - task: PoliCheck@1
+    displayName: Run PoliCheck
+    inputs:
+        optionsUEPATH: Utilities/Pipelines/Scripts/PoliCheckExclude.xml
