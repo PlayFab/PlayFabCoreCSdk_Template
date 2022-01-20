@@ -1,0 +1,8 @@
+# Run Component Governance.
+# Ref: https://docs.opensource.microsoft.com/tools/cg/buildtask.html
+#
+# Component Governance (CG) (https://docs.opensource.microsoft.com/tools/cg/index.html). 
+
+steps:
+  - task: ComponentGovernanceComponentDetection@0
+    displayName: Run Component Governance

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<PoliCheckExclusions>
+
+  <!-- All the exclusions and attribute names are case insensitive -->
+
+  <!-- Each of these exclusions is a folder name - if \[name]\ exists in the file path, it will be skipped -->
+  <!-- <Exclusion Type="FolderPathFull">fullFolder</Exclusion> -->
+
+  <!-- Each of these exclusions is a folder name - if any folder or file starts with "\[name]", it will be skipped -->
+  <!-- <Exclusion Type="FolderPathStart">folderPathStart</Exclusion> -->
+  
+  <!-- Each of these file types will be completely skipped for the entire scan -->
+  <!-- <Exclusion Type="FileType">.sample1|.sample2</Exclusion> -->
+  
+  <!-- The specified file names will be skipped during the scan regardless which folder they are in -->
+  <Exclusion Type="FileName">bin\jsonchecker\fail32.json</Exclusion>
+  
+</PoliCheckExclusions>

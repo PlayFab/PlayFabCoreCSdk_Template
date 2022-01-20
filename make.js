@@ -79,12 +79,23 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     };
 
     templatizeTree(locals, path.resolve(sourceDir, "source"), apiOutputDir);
+    templatizeTree(locals, path.resolve(sourceDir, "utilities"), path.resolve(apiOutputDir, "utilities"));
     for (var featureGroupName in SDKFeatureGroups) {
         makeFeatureGroupFiles(SDKFeatureGroups[featureGroupName], sourceDir, apiOutputDir);
     }
 
     var testXMLRefDocsJsonTemplate = getCompiledTemplate(path.resolve(sourceDir, "templates/XMLRefDocs.json.ejs"));
     writeFile(path.resolve(apiOutputDir, "test/", "XMLRefDocs.json.autogen"), testXMLRefDocsJsonTemplate(locals));
+
+    let rootFilesToCopy = [];
+    rootFilesToCopy.push("ThirdPartyNotices.txt");
+    rootFilesToCopy.push("LICENSE.md");
+    rootFilesToCopy.push("CONTRIBUTING.md");
+    rootFilesToCopy.push("SECURITY.md");
+
+    rootFilesToCopy.forEach(file => {
+        copyFile(path.resolve(sourceDir, file), path.resolve(apiOutputDir, file));        
+    });
 };
 
 function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {

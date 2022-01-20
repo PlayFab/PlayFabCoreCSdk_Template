@@ -1,0 +1,193 @@
+parameters:
+  - name: platform
+    type: string
+  - name: configuration
+    type: string
+  - name: publishArtifacts
+    type: boolean
+
+steps:
+  - template: checkout.yml
+  
+  - task: PkgESSetupBuild@12
+    displayName: 'Initialize build'
+    inputs:
+      useDfs: false
+      productName: PFCoreCSDK
+      branchVersion: true
+      extSync: true
+
+  - task: BatchScript@1
+    displayName: 'fetchTools.cmd '
+    inputs:
+      filename: Utilities/Pipelines/Scripts/fetchTools.cmd
+      arguments: '"$(PAT)" EXT main'
+      modifyEnvironment: false
+
+  - task: NuGetToolInstaller@1
+    displayName: 'Use NuGet 5.8'
+    inputs:
+      versionSpec: 5.8
+
+  - task: BatchScript@1
+    displayName: vsvars.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/vsvars.cmd
+      modifyEnvironment: true
+      
+  - task: BatchScript@1
+    displayName: gdkvars.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/gdkvars.cmd
+      arguments: '2017 $(GDKVer)'
+      modifyEnvironment: true
+    timeoutInMinutes: 10
+
+  - task: NuGetAuthenticate@0
+
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      packageType: sdk
+      version: 2.1.x
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      packageType: sdk
+      version: 3.1.x
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  - task: BatchScript@1
+    displayName: preCompileScript.cmd
+    inputs:
+      filename: Utilities/Pipelines/Scripts/preCompileScript.cmd
+      modifyEnvironment: false
+    timeoutInMinutes: 10
+
+  - task: VSBuild@1
+    displayName: PlayFabCore.GDK.2017.sln
+    inputs:
+      solution: build/GDK/PlayFabCore.GDK.sln
+      vsVersion: 15.0
+      msbuildArgs: '/p:XdkEditionTarget=$(GDKVer) /p:GDKUseBWOI=true'
+      platform: Gaming.Desktop.x64
+      configuration: ${{ parameters.configuration }}
+      maximumCpuCount: true
+      msbuildArchitecture: x64
+      createLogFile: true
+      logProjectEvents: true
+      logFileVerbosity: 'diagnostic'
+      
+  # - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  #   displayName: 'ESRP CodeSigning'
+  #   inputs:
+  #     ConnectedServiceName: 'XboxLive.ClientSDK Connection'
+  #     FolderPath: '$(BUILD.BINARIESDIRECTORY)'
+  #     Pattern: '*PlayFab_141_GDK_C_Thunks.dll'
+  #     signConfigType: inlineSignParams
+  #     inlineOperation: |
+  #      [
+  #              {
+  #                  "KeyCode" : "CP-230012",
+  #                  "OperationCode" : "SigntoolSign",
+  #                  "Parameters" : {
+  #                      "OpusName" : "Microsoft",
+  #                      "OpusInfo" : "http://www.microsoft.com",
+  #                      "FileDigest" : "/fd \"SHA256\"",
+  #                      "PageHash" : "/NPH",
+  #                      "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+  #                  },
+  #                  "ToolName" : "sign",
+  #                  "ToolVersion" : "1.0"
+  #              },
+  #              {
+  #                  "KeyCode" : "CP-230012",
+  #                  "OperationCode" : "SigntoolVerify",
+  #                  "Parameters" : {},
+  #                  "ToolName" : "sign",
+  #                  "ToolVersion" : "1.0"
+  #              }
+  #      ]
+
+  - task: CmdLine@1
+    displayName: postBuildScript.cmd
+    inputs:
+      filename: 'utilities/pipelines/Scripts/postBuildScript.cmd'
+    continueOnError: true
+
+  # Security and compliance, failure here should fail the build
+  - task: PkgESSecComp@10
+    displayName: 'Security and Compliance tasks'
+    inputs:
+      fileNewBugs: false
+      taskLogVerbosity: Diagnostic
+      scanAll: true
+      failOnStdErr: true
+      dropOverride: $(Build.ArtifactStagingDirectory)
+      secCompConfigFromTask: |
+        tools:
+          - toolName: CheckCFlags
+            enable: true
+          - toolName: CFGCheck
+            enable: false
+          - toolName: Policheck
+            enable: true
+          - toolName: XFGCheck
+            enable: true
+          - toolName: CredScan
+            enable: true
+      binVersion: 'PreProduction'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PkgESVPack@12
+      displayName: 'Package ES - VPack - GDK VS2017'
+      inputs:
+        sourceDirectory: '$(Pipeline.Workspace)\b\SDK\GDK\c\binaries'
+        description: 'PFCoreC.${{ parameters.configuration }}.Gaming.Desktop.x64.VS2017'
+        pushPkgName: 'PFCoreC.${{ parameters.configuration }}.Gaming.Desktop.x64.VS2017'
+        vpackToken: '$(VPackToken)'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: CmdLine@1
+      displayName: postBuildScriptVPack.cmd
+      inputs:
+        filename: 'utilities/pipelines/Scripts/postBuildScriptVPack.cmd'
+      continueOnError: true
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Pipeline Artifact - GDK VS2017'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)\b\SDK\GDK\c\binaries'
+        artifact: 'PFCoreC_GDK2017_${{ parameters.configuration }}'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Pipeline Artifact - GDK VS2017 Docs'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)\b\SDK\GDK-Docs'
+        artifact: 'PFCoreC_GDK2017_Docs_${{ parameters.configuration }}'
+
+  - ${{ if parameters.publishArtifacts }}:
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Pipeline Artifact - GDK VS2017 VPack'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)\b\SDK\GDK-VPack'
+        artifact: 'PFCoreC_GDK2017_VPack_${{ parameters.configuration }}'
+
+  - task: BatchScript@1
+    displayName: preCompileScript.cmd
+    inputs:
+      filename: utilities/pipelines/Scripts/collectLogs.cmd
+      arguments: 'build\GDK'
+      modifyEnvironment: false
+    condition: always() 
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Pipeline Artifact - Logs'
+    inputs:
+      targetPath: '$(Pipeline.Workspace)\b\Logs'
+      artifact: 'PFCoreC_GDK2017_Logs_${{ parameters.configuration }}'
+    condition: always() 
