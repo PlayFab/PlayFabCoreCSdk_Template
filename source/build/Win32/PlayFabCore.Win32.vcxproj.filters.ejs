@@ -57,6 +57,9 @@ for(var featureGroupName in SDKFeatureGroups) { %>
     </ClCompile><%
     }
 } %>
+    <ClInclude Include="$(PlayFabSourceDir)\source\stdafx.h" >
+      <Filter>Source</Filter>
+    </ClInclude>
     <ClCompile Include="$(PlayFabSourceDir)\source\stdafx.cpp">
       <Filter>Source</Filter>
     </ClCompile>
