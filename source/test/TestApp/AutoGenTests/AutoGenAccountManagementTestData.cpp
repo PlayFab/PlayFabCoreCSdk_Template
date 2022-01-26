@@ -309,9 +309,12 @@ HRESULT AutoGenAccountManagementTests::ValidateAdminUpdateUserTitleDisplayNameRe
 
 void AutoGenAccountManagementTests::FillClientAddGenericIDRequest(PFAccountManagementClientAddGenericIDRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"GenericId\": { \"ServiceName\": \"BigBizSocial\", \"UserId\": \"1234567890\" }}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    PFAccountManagementGenericServiceIdWrapper<> id;
+    id.SetServiceName("TestGenericServiceName");
+    id.SetUserId("TestGenericUserId");
+
+    request.SetGenericId(id);
 }
 
 #pragma endregion
@@ -350,9 +353,8 @@ HRESULT AutoGenAccountManagementTests::ValidateClientAddUsernamePasswordResponse
 
 void AutoGenAccountManagementTests::FillClientGetAccountInfoRequest(PFAccountManagementGetAccountInfoRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"PlayFabId\": \"{{PlayFabId}}\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetPlayFabId("462A009489BDCA48");
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientGetAccountInfoResponse(PFAccountManagementGetAccountInfoResult* result)
@@ -369,9 +371,8 @@ HRESULT AutoGenAccountManagementTests::ValidateClientGetAccountInfoResponse(PFAc
 
 void AutoGenAccountManagementTests::FillClientGetPlayerCombinedInfoRequest(PFAccountManagementGetPlayerCombinedInfoRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"PlayFabId\": \"{{PlayFabId}}\", \"InfoRequestParameters\": { \"GetUserAccountInfo\": true, \"GetUserInventory\": false, \"GetUserVirtualCurrency\": true, \"GetUserData\": true, \"UserDataKeys\": [  \"preferences\",  \"progress\" ], \"GetUserReadOnlyData\": false, \"GetCharacterInventories\": false, \"GetCharacterList\": false, \"GetTitleData\": false, \"GetPlayerStatistics\": false, \"GetPlayerProfile\": false }}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetPlayFabId("462A009489BDCA48");
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientGetPlayerCombinedInfoResponse(PFAccountManagementGetPlayerCombinedInfoResult* result)
@@ -389,9 +390,8 @@ HRESULT AutoGenAccountManagementTests::ValidateClientGetPlayerCombinedInfoRespon
 
 void AutoGenAccountManagementTests::FillClientGetPlayerProfileRequest(PFAccountManagementGetPlayerProfileRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"PlayFabId\": \"{{PlayFabId}}\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetPlayFabId("462A009489BDCA48");
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientGetPlayerProfileResponse(PFAccountManagementGetPlayerProfileResult* result)
@@ -468,9 +468,15 @@ HRESULT AutoGenAccountManagementTests::ValidateClientGetPlayFabIDsFromGameCenter
 
 void AutoGenAccountManagementTests::FillClientGetPlayFabIDsFromGenericIDsRequest(PFAccountManagementGetPlayFabIDsFromGenericIDsRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"GenericIDs\": [ {  \"ServiceName\": \"BigBizSocial\",  \"UserId\": \"1234567890\" }, {  \"ServiceName\": \"VeeCeeMe\",  \"UserId\": \"og5igh85gf43gf\" } ]}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    PFAccountManagementGenericServiceIdWrapper<> id;
+    id.SetServiceName("TestGenericServiceName");
+    id.SetUserId("TestGenericUserId");
+
+    ModelVector<PFAccountManagementGenericServiceIdWrapper<>> ids;
+    ids.push_back(id);
+
+    request.SetGenericIDs(ids);
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientGetPlayFabIDsFromGenericIDsResponse(PFAccountManagementGetPlayFabIDsFromGenericIDsResult* result)
@@ -652,7 +658,8 @@ void AutoGenAccountManagementTests::FillClientLinkCustomIDRequest(PFAccountManag
 {
     // TODO: debug Failing test
     // Example Request: "{ \"CustomId\": \"67AB-5397-CC54-EA31\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetCustomId("TestCustomUniqueId");
+    request.SetForceLink(true);
 }
 
 #pragma endregion
@@ -815,9 +822,12 @@ void AutoGenAccountManagementTests::FillClientRemoveContactEmailRequest(PFAccoun
 
 void AutoGenAccountManagementTests::FillClientRemoveGenericIDRequest(PFAccountManagementClientRemoveGenericIDRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"GenericId\": { \"ServiceName\": \"BigBizSocial\", \"UserId\": \"1234567890\" }}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    PFAccountManagementGenericServiceIdWrapper<> id;
+    id.SetServiceName("TestGenericServiceName");
+    id.SetUserId("TestGenericUserId");
+
+    request.SetGenericId(id);
 }
 
 #pragma endregion
@@ -880,7 +890,7 @@ void AutoGenAccountManagementTests::FillClientUnlinkCustomIDRequest(PFAccountMan
 {
     // TODO: debug Failing test
     // Example Request: "{ \"CustomId\": \"67AB-5397-CC54-EA31\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetCustomId("TestCustomUniqueId");
 }
 
 #pragma endregion
