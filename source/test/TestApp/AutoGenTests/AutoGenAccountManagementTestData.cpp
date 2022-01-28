@@ -325,7 +325,7 @@ void AutoGenAccountManagementTests::FillClientAddOrUpdateContactEmailRequest(PFA
 {
     // TODO: debug Failing test
     // Example Request: "{ \"EmailAddress\": \"theuser@domain.com\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetEmailAddress("me@here.com");
 }
 
 #pragma endregion
@@ -811,9 +811,8 @@ void AutoGenAccountManagementTests::FillClientLinkXboxAccountRequest(PFAccountMa
 
 void AutoGenAccountManagementTests::FillClientRemoveContactEmailRequest(PFAccountManagementRemoveContactEmailRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    UNREFERENCED_PARAMETER(request);
 }
 
 #pragma endregion
@@ -1044,7 +1043,7 @@ void AutoGenAccountManagementTests::FillClientUpdateAvatarUrlRequest(PFAccountMa
 {
     // TODO: debug Failing test
     // Example Request: "{ \"ImageUrl\": \"https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetImageUrl("https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50");
 }
 
 #pragma endregion
@@ -1055,7 +1054,7 @@ void AutoGenAccountManagementTests::FillClientUpdateUserTitleDisplayNameRequest(
 {
     // TODO: debug Failing test
     // Example Request: "{ \"DisplayName\": \"User Title Name\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetDisplayName("TestDisplayName");
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientUpdateUserTitleDisplayNameResponse(PFAccountManagementUpdateUserTitleDisplayNameResult* result)
