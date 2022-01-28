@@ -84,6 +84,10 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
         makeFeatureGroupFiles(SDKFeatureGroups[featureGroupName], sourceDir, apiOutputDir);
     }
 
+    // API list
+    var testCsvTemplate = getCompiledTemplate(path.resolve(sourceDir, "templates/API-List.csv.ejs"));
+    writeFile(path.resolve(apiOutputDir, "test/", "API-List.csv"), testCsvTemplate(locals));
+
     var testXMLRefDocsJsonTemplate = getCompiledTemplate(path.resolve(sourceDir, "templates/XMLRefDocs.json.ejs"));
     writeFile(path.resolve(apiOutputDir, "test/", "XMLRefDocs.json.autogen"), testXMLRefDocsJsonTemplate(locals));
 
