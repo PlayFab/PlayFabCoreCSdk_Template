@@ -323,7 +323,6 @@ void AutoGenAccountManagementTests::FillClientAddGenericIDRequest(PFAccountManag
 
 void AutoGenAccountManagementTests::FillClientAddOrUpdateContactEmailRequest(PFAccountManagementAddOrUpdateContactEmailRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"EmailAddress\": \"theuser@domain.com\"}"
     request.SetEmailAddress("me@here.com");
 }
@@ -334,9 +333,10 @@ void AutoGenAccountManagementTests::FillClientAddOrUpdateContactEmailRequest(PFA
 
 void AutoGenAccountManagementTests::FillClientAddUsernamePasswordRequest(PFAccountManagementAddUsernamePasswordRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"Username\": \"theuser\", \"Email\": \"me@here.com\", \"Password\": \"ExampleSecret\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetEmail("testemail@here.com");
+    request.SetPassword("testpassword");
+    request.SetUsername("testusername");
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientAddUsernamePasswordResponse(PFAccountManagementAddUsernamePasswordResult* result)
@@ -656,7 +656,6 @@ void AutoGenAccountManagementTests::FillClientLinkAppleRequest(PFAccountManageme
 
 void AutoGenAccountManagementTests::FillClientLinkCustomIDRequest(PFAccountManagementLinkCustomIDRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"CustomId\": \"67AB-5397-CC54-EA31\"}"
     request.SetCustomId("TestCustomUniqueId");
     request.SetForceLink(true);
@@ -835,9 +834,9 @@ void AutoGenAccountManagementTests::FillClientRemoveGenericIDRequest(PFAccountMa
 
 void AutoGenAccountManagementTests::FillClientReportPlayerRequest(PFAccountManagementReportPlayerClientRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"ReporteeId\": \"1a46086aed40f142\", \"Comment\": \"cheating\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetReporteeId("86F2C0D9890AB609");
+    request.SetComment("Testing reporting");
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientReportPlayerResponse(PFAccountManagementReportPlayerClientResult* result)
@@ -887,7 +886,6 @@ void AutoGenAccountManagementTests::FillClientUnlinkAppleRequest(PFAccountManage
 
 void AutoGenAccountManagementTests::FillClientUnlinkCustomIDRequest(PFAccountManagementUnlinkCustomIDRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"CustomId\": \"67AB-5397-CC54-EA31\"}"
     request.SetCustomId("TestCustomUniqueId");
 }
@@ -1041,7 +1039,6 @@ void AutoGenAccountManagementTests::FillClientUnlinkXboxAccountRequest(PFAccount
 
 void AutoGenAccountManagementTests::FillClientUpdateAvatarUrlRequest(PFAccountManagementClientUpdateAvatarUrlRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"ImageUrl\": \"https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50\"}"
     request.SetImageUrl("https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50");
 }
@@ -1052,9 +1049,8 @@ void AutoGenAccountManagementTests::FillClientUpdateAvatarUrlRequest(PFAccountMa
 
 void AutoGenAccountManagementTests::FillClientUpdateUserTitleDisplayNameRequest(PFAccountManagementClientUpdateUserTitleDisplayNameRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"DisplayName\": \"User Title Name\"}"
-    request.SetDisplayName("TestDisplayName");
+    request.SetDisplayName("Permanent Group Owner");
 }
 
 HRESULT AutoGenAccountManagementTests::ValidateClientUpdateUserTitleDisplayNameResponse(PFAccountManagementUpdateUserTitleDisplayNameResult* result)
