@@ -1,18 +1,15 @@
+SDKFeatureGroups:
 <%
-
-
-%>SDKFeatureGroups:
-for (var featureGroupName in SDKFeatureGroups) {
-    %><%- featureGroupName + "," %> 
-    <%
-}
-
-Area,Call,Example API, Classic Client, Classic Server, Classic Admin, Entity Group, SubGroup
+for (var featureGroupName in SDKFeatureGroups) 
+{
+%><%- featureGroupName %>
 <%
-
-for (var featureGroupName in SDKFeatureGroups) {
-    %><%- featureGroupName + "," %> 
-    <%
+    var featureGroup = SDKFeatureGroups[featureGroupName]
+    for (var i = 0; i < featureGroup.calls.length; i++) 
+    {
+        var call = featureGroup.calls[i];
+%>     <%- call.name %>
+<%
+    }
 }
-
 %>
