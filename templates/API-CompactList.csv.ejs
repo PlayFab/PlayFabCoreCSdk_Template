@@ -1,0 +1,47 @@
+SDKFeatureGroup,Call Name,Subgroup,Example API,Classic Client, Classic Server, Classic Admin, Entity API<%
+function doesApiGroupHaveCall(inputApiName, inputCallName) 
+{
+    for (var featureGroupName in SDKFeatureGroups) 
+    {
+        var featureGroup = SDKFeatureGroups[featureGroupName]
+        for (var i = 0; i < featureGroup.calls.length; i++) 
+        {
+            var call = featureGroup.calls[i];
+            if( call.name == inputApiName + inputCallName )
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+
+seenCallRootName = [];
+for (var apiIndex = 0; apiIndex < apis.length; apiIndex++) 
+{
+    var api = apis[apiIndex];
+    var apiDatatypes = api["datatypes"];
+
+    for (var callIndex = 0; callIndex < api.calls.length; ++callIndex) 
+    {
+        var call = api.calls[callIndex];
+        if( !seenCallRootName.includes(call.originalName) )
+        {
+            seenCallRootName.push(call.originalName);
+            var exampleAsyncName = "Pf" + call.featureGroupName + call.originalName + "Async"; 
+            let clientYN = doesApiGroupHaveCall("Client", call.originalName);
+            if( clientYN )
+            {
+                exampleAsyncName = "PfClient" + call.originalName + "Async"; // Prefer Client example
+            }
+            let serverYN = doesApiGroupHaveCall("Server", call.originalName);
+            let adminYN = doesApiGroupHaveCall("Admin", call.originalName);
+            let entityYN = !(clientYN || serverYN || adminYN);
+%>
+<%- api.name + "," + call.originalName + "," + call.subgroup + "," + exampleAsyncName + "," + (clientYN?"Y":"N") + "," + (serverYN?"Y":"N") + "," + (adminYN?"Y":"N") + "," + (entityYN?"Y":"N") %><%
+        }
+    } 
+}
+%>

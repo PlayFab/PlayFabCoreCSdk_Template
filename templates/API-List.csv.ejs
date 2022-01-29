@@ -1,14 +1,13 @@
-SDKFeatureGroups:
+SDKFeatureGroup,Original Subgroup,API Name
 <%
 for (var featureGroupName in SDKFeatureGroups) 
 {
-%><%- featureGroupName %>
-<%
     var featureGroup = SDKFeatureGroups[featureGroupName]
     for (var i = 0; i < featureGroup.calls.length; i++) 
     {
         var call = featureGroup.calls[i];
-%>     <%- call.name %>
+        let finalCallName = "Pf" + call.name + "Async";
+%><%- featureGroupName + "," + call.subgroup + "," + finalCallName %>
 <%
     }
 }

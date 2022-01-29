@@ -87,6 +87,8 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     // API list
     var testCsvTemplate = getCompiledTemplate(path.resolve(sourceDir, "templates/API-List.csv.ejs"));
     writeFile(path.resolve(apiOutputDir, "test/", "API-List.csv"), testCsvTemplate(locals));
+    var testCsvTemplate = getCompiledTemplate(path.resolve(sourceDir, "templates/API-CompactList.csv.ejs"));
+    writeFile(path.resolve(apiOutputDir, "test/", "API-CompactList.csv"), testCsvTemplate(locals));
 
     var testXMLRefDocsJsonTemplate = getCompiledTemplate(path.resolve(sourceDir, "templates/XMLRefDocs.json.ejs"));
     writeFile(path.resolve(apiOutputDir, "test/", "XMLRefDocs.json.autogen"), testXMLRefDocsJsonTemplate(locals));
@@ -493,6 +495,7 @@ function populateSDKFeatureGroups(apis) {
         for (var callIndex = 0; callIndex < api.calls.length; ++callIndex) {
 
             var call = api.calls[callIndex];
+            call.originalName = call.name;
 
             // Modify name of "Classic" API calls to avoid conflicts & clarify that they are classic APIs.
             // Note that this is in addition to the global & featureGroup prefixes that will be added to the public SDK APIs.
@@ -510,6 +513,7 @@ function populateSDKFeatureGroups(apis) {
             } else if (featureGroupOverrides.subgroups.hasOwnProperty(call.subgroup)) {
                 featureGroupName = featureGroupOverrides.subgroups[call.subgroup];
             }
+            call.featureGroupName = featureGroupName;
 
             let featureGroup = getOrCreateFeatureGroup(featureGroupName);
             featureGroup.calls.push(call);
