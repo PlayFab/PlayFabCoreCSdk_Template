@@ -1,5 +1,21 @@
-SDKFeatureGroup,Original Subgroup,API Name
+SDKFeatureGroup,Original Subgroup,API Name,Excluded from GDK 
 <%
+function isExcluded(call, customizations)
+{
+    if (customizations.platformExclusions.calls.hasOwnProperty(call.name)) {
+        return true;
+    }
+    let apiName = call.url.split("/")[1];
+    if (customizations.platformExclusions.apis.hasOwnProperty(apiName)) {
+        return true;
+    }
+    if (customizations.platformExclusions.subgroups.hasOwnProperty(call.subgroup)) {
+        return true;
+    }
+
+    return false;
+}
+
 for (var featureGroupName in SDKFeatureGroups) 
 {
     var featureGroup = SDKFeatureGroups[featureGroupName]
@@ -7,7 +23,8 @@ for (var featureGroupName in SDKFeatureGroups)
     {
         var call = featureGroup.calls[i];
         let finalCallName = "Pf" + call.name + "Async";
-%><%- featureGroupName + "," + call.subgroup + "," + finalCallName %>
+        let isExcludedAPi = isExcluded(call, customizations);
+%><%- featureGroupName + "," + call.subgroup + "," + finalCallName + "," + (isExcludedAPi?"Y":"N") %>
 <%
     }
 }

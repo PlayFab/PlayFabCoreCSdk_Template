@@ -64,6 +64,7 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     var locals = {
         apis: apis,
         prefix: globalPrefix,
+        customizations: customizations,
         SDKFeatureGroups: SDKFeatureGroups,
         projectFiles: parseProjectFiles("project_files.json"),
         buildIdentifier: sdkGlobals.buildIdentifier,

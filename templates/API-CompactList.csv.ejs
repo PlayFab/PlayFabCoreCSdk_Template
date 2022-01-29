@@ -1,4 +1,4 @@
-SDKFeatureGroup,Call Name,Subgroup,Example API,Classic Client, Classic Server, Classic Admin, Entity API<%
+SDKFeatureGroup,Call Name,Subgroup,Example API,Classic Client, Classic Server, Classic Admin, Entity API, Excluded from GDK<%
 function doesApiGroupHaveCall(inputApiName, inputCallName) 
 {
     for (var featureGroupName in SDKFeatureGroups) 
@@ -17,6 +17,21 @@ function doesApiGroupHaveCall(inputApiName, inputCallName)
     return false;
 }
 
+function isExcluded(call, customizations)
+{
+    if (customizations.platformExclusions.calls.hasOwnProperty(call.name)) {
+        return true;
+    }
+    let apiName = call.url.split("/")[1];
+    if (customizations.platformExclusions.apis.hasOwnProperty(apiName)) {
+        return true;
+    }
+    if (customizations.platformExclusions.subgroups.hasOwnProperty(call.subgroup)) {
+        return true;
+    }
+
+    return false;
+}
 
 seenCallRootName = [];
 for (var apiIndex = 0; apiIndex < apis.length; apiIndex++) 
@@ -39,8 +54,9 @@ for (var apiIndex = 0; apiIndex < apis.length; apiIndex++)
             let serverYN = doesApiGroupHaveCall("Server", call.originalName);
             let adminYN = doesApiGroupHaveCall("Admin", call.originalName);
             let entityYN = !(clientYN || serverYN || adminYN);
+            let isExcludedAPi = isExcluded(call, customizations);
 %>
-<%- api.name + "," + call.originalName + "," + call.subgroup + "," + exampleAsyncName + "," + (clientYN?"Y":"N") + "," + (serverYN?"Y":"N") + "," + (adminYN?"Y":"N") + "," + (entityYN?"Y":"N") %><%
+<%- api.name + "," + call.originalName + "," + call.subgroup + "," + exampleAsyncName + "," + (clientYN?"Y":"N") + "," + (serverYN?"Y":"N") + "," + (adminYN?"Y":"N") + "," + (entityYN?"Y":"N") + "," + (isExcludedAPi?"Y":"N") %><%
         }
     } 
 }
