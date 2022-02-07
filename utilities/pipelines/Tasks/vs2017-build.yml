@@ -37,9 +37,9 @@ steps:
       versionSpec: 5.8
 
   - task: BatchScript@1
-    displayName: vsvars.cmd
+    displayName: vsvars2017.cmd
     inputs:
-      filename: Utilities/Pipelines/Scripts/vsvars.cmd
+      filename: Utilities/Pipelines/Scripts/vsvars2017.cmd
       modifyEnvironment: true
       
   - task: NuGetAuthenticate@0
@@ -120,7 +120,6 @@ steps:
             enable: true
           - toolName: CredScan
             enable: true
-      binVersion: 'PreProduction'
 
   - task: BatchScript@1
     displayName: collectLogs.cmd
