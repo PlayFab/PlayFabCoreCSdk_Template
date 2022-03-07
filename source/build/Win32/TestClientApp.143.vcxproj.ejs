@@ -83,6 +83,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
+    <ItemDefinitionGroup>
+        <ClCompile>
+            <PreprocessorDefinitions>PF_TEST_TITLE_DATA_JSON=R"($(SolutionDir)..\..\testTitleData.json)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+        </ClCompile>
+    </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
