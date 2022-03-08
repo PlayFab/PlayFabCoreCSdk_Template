@@ -69,7 +69,7 @@ for (var i = 0; i < featureGroup.calls.length; i++)
         var prereqCall = prerequisiteCalls[call.name][j];
         
         if (prereqCall.requestDatatype) {%>
-    static void Fill<%- call.name %>Prerequisite<%- prereqCall.name %>Request(PlayFab::Wrappers::<%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<>& request);<%
+    void Fill<%- call.name %>Prerequisite<%- prereqCall.name %>Request(PlayFab::Wrappers::<%- prereqCall.requestDatatype.prefix + prereqCall.requestDatatype.name %>Wrapper<>& request);<%
         } // end if 
         if (prereqCall.resultDatatype) {
             if (!(storedResponseTypes.some(elem => elem.name === prereqCall.resultDatatype.name)))
@@ -81,7 +81,7 @@ for (var i = 0; i < featureGroup.calls.length; i++)
     } // end for
 
     if (call.requestDatatype) {%>
-    static void Fill<%- call.name %>Request(PlayFab::Wrappers::<%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<>& request);<%
+    void Fill<%- call.name %>Request(PlayFab::Wrappers::<%- call.requestDatatype.prefix + call.requestDatatype.name %>Wrapper<>& request);<%
     } // end if
     if (call.resultDatatype) {%>
     static HRESULT Validate<%- call.name %>Response(<%- call.resultDatatype.prefix + call.resultDatatype.name %>* result);<%
@@ -92,7 +92,7 @@ for (var i = 0; i < featureGroup.calls.length; i++)
         var cleanupCall = cleanupCalls[call.name][j];
         
         if (cleanupCall.requestDatatype) {%>
-    static void Fill<%- call.name %>Cleanup<%- cleanupCall.name %>Request(PlayFab::Wrappers::<%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<>& request);<%
+    void Fill<%- call.name %>Cleanup<%- cleanupCall.name %>Request(PlayFab::Wrappers::<%- cleanupCall.requestDatatype.prefix + cleanupCall.requestDatatype.name %>Wrapper<>& request);<%
         } // end if 
         if (cleanupCall.resultDatatype) { 
             if (!(storedResponseTypes.some(elem => elem.name === cleanupCall.resultDatatype.name)))

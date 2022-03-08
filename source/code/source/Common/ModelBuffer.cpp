@@ -30,7 +30,10 @@ Result<const char*> ModelBuffer::CopyTo(const char* input)
         // Copy
         auto outputPtr = allocResult.ExtractPayload();
 #if HC_PLATFORM_IS_MICROSOFT
-        return strcpy_s(outputPtr, bytesNeeded, input);
+        auto error = strcpy_s(outputPtr, bytesNeeded, input);
+        RETURN_HR_IF(E_FAIL, error);
+
+        return outputPtr;
 #else
         return std::strcpy(outputPtr, input);
 #endif

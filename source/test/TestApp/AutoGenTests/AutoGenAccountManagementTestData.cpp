@@ -853,9 +853,9 @@ HRESULT AutoGenAccountManagementTests::ValidateClientReportPlayerResponse(PFAcco
 
 void AutoGenAccountManagementTests::FillClientSendAccountRecoveryEmailRequest(PFAccountManagementClientSendAccountRecoveryEmailRequestWrapper<>& request)
 {
-    // TODO: debug Failing test
     // Example Request: "{ \"Email\": \"Me@here.com\", \"TitleId\": \"{{TitleId}}\", \"EmailTemplateId\": \"D53AB15D8F12E330\"}"
-    UNREFERENCED_PARAMETER(request); // TODO
+    request.SetEmail("testemail@here.com");
+    request.SetTitleId(testTitleData.titleId);
 }
 
 #pragma endregion
