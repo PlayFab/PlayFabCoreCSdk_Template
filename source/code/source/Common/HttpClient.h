@@ -7,14 +7,8 @@
 namespace PlayFab
 {
 class Entity;
-class TitlePlayer;
 
 struct ServiceResponse;
-
-// PlayFab auth header names
-constexpr char kEntityTokenHeaderName[]{ "X-EntityToken" };
-constexpr char kSessionTicketHeaderName[]{ "X-Authorization" };
-constexpr char kSecretKeyHeaderName[]{ "X-SecretKey" };
 
 // An Http client for make PlayFab service requests
 class HttpClient
@@ -32,18 +26,8 @@ public:
         const TaskQueue& queue
     ) const;
 
-    // Make an Entity API service request, refreshing EntityToken and retrying on auth failure
     AsyncOp<ServiceResponse> MakeEntityRequest(
         SharedPtr<Entity> entity,
-        const char* path,
-        UnorderedMap<String, String>&& headers,
-        JsonValue&& requestBody,
-        const TaskQueue& queue
-    ) const;
-
-    // Make an Classic API service request, refreshing SessionTicket and retrying on auth failure
-    AsyncOp<ServiceResponse> MakeClassicRequest(
-        SharedPtr<TitlePlayer> titlePlayer,
         const char* path,
         UnorderedMap<String, String>&& headers,
         JsonValue&& requestBody,

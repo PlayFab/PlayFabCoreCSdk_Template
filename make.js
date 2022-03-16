@@ -33,7 +33,6 @@ var xmlRefDocs = {};
 var prerequisiteCalls = {};
 var cleanupCalls = {};
 var propertyReplacements = {};
-var testStatusMap = {};
 
 exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     console.log("Generating Combined api from: " + sourceDir + " to: " + apiOutputDir);
@@ -47,7 +46,6 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     customizations = parseDataFile("customizations.json");
     testCustomizations = parseDataFile("testCustomizations.json");
     xmlRefDocs = parseDataFile("XMLRefDocs.json");
-    testStatusMap = parseDataFile("TestStatus.json");
 
     prereqsAndCleanupMap = testCustomizations.prerequisitesAndCleanup;
     callingEntityOverrides = testCustomizations.callingEntityOverrides;
@@ -129,8 +127,7 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
         getFormattedCallRemarks: getFormattedCallRemarks,
         getRequestExample: getRequestExample,
         getPublicPropertyType: getPublicPropertyType,
-        getDictionaryEntryType: getDictionaryEntryType,
-        testStatusMap: testStatusMap,
+        getDictionaryEntryType: getDictionaryEntryType
     };
 
     // DataModels
@@ -162,22 +159,6 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
 
         var publicApis = getCompiledTemplate(path.resolve(sourceDir, "templates/PFCalls.cpp.ejs"));
         writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, globalPrefix + featureGroup.name + ".cpp"), publicApis(locals));
-
-        // Test files
-        var testHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/Test.h.ejs"));
-        writeFile(path.resolve(apiOutputDir, "test/TestApp/AutoGenTests/", "AutoGen" + featureGroup.name + "Tests.h"), testHeader(locals));
-
-        var testResultHolders = getCompiledTemplate(path.resolve(sourceDir, "templates/ResultHolders.h.ejs"));
-        writeFile(path.resolve(apiOutputDir, "test/TestApp/AutoGenTests/", "AutoGen" + featureGroup.name + "ResultHolders.h"), testResultHolders(locals));
-
-        var testMain = getCompiledTemplate(path.resolve(sourceDir, "templates/Test.cpp.ejs"));
-        writeFile(path.resolve(apiOutputDir, "test/TestApp/AutoGenTests/", "AutoGen" + featureGroup.name + "Tests.cpp"), testMain(locals));
-
-        var testLogging = getCompiledTemplate(path.resolve(sourceDir, "templates/TestLog.cpp.ejs"));
-        writeFile(path.resolve(apiOutputDir, "test/TestApp/AutoGenTests/", "AutoGen" + featureGroup.name + "TestLog.cpp"), testLogging(locals));
-
-        var testData = getCompiledTemplate(path.resolve(sourceDir, "templates/TestData.cpp.ejs"));
-        writeFile(path.resolve(apiOutputDir, "test/TestApp/AutoGenTests/", "AutoGen" + featureGroup.name + "TestData.cpp.autogen"), testData(locals));
     }
 }
 
@@ -259,6 +240,13 @@ function curateServiceApis(apis) {
         for (var callIndex = 0; callIndex < api.calls.length; callIndex++) {
             var call = calls[callIndex];
 
+            // Don't expose 'LoginPlayer' as we will always do that by default
+            if (call.name === "LoginPlayer") {
+                calls.splice(callIndex, 1);
+                callIndex--;
+                continue;
+            }
+
             if (call.request in datatypes) {
                 call.requestDatatype = datatypes[call.request];
             } else {
@@ -272,31 +260,24 @@ function curateServiceApis(apis) {
             }
 
             // Note which PlayFab Entity object is required to make the call.
-            if (call.auth === "SessionTicket") {
-                call.entityRequired = "TitlePlayer"
-            } else if (call.auth === "EntityToken") {
-                call.entityRequired = "Entity";
+            if (call.auth === "EntityToken") {
+                call.entityRequired = "TitlePlayer";
             }
 
-            // Note whether a PlayFab::Entity object is created (client side only) as a result of the call. These are mostly Login* methods.
+            // Note whether a PlayFab::Entity object is created (client side only) as a result of the call. These are mostly AuthenticateWith* methods.
             // Annotate result types for these calls as internal only. The public result of a login call will always be an Entity handle; the service response
             // model will not be directly returned to clients.
-            if (call.url === "/Authentication/GetEntityToken") {
-                // Special case for GetEntityToken call. Service API spec marks it as Auth type "None", but in reality authentication is required 
-                // and any of the three auth tokens can be used. In the SDK, we will split this call into two APIs, one that can be called by an 
-                // authenticated Entity, and one that can be called via a PFStateHandle w/ a SecretKey. The latter will be auto generated,
-                // and the former will be implemented manually as a one off.
-                // Note that when getting an EntityToken using an EntityHandle, the requesting Entity must "own" the entity for which it
-                // is requesting a token.
-
-                call.auth = "SecretKey"; // Set auth to "SecretKey" so that the GetEntityToken login call is autogenerated correctly
-                call.entityReturned = "Entity";
-                call.resultDatatype.isInternalOnly = true;
-
-            } else if (call.result && (call.resultDatatype.name.endsWith("LoginResult") || call.resultDatatype.name === "RegisterPlayFabUserResult")) {
+            if (call.result && call.resultDatatype.name === "AuthenticateIdentityResult") {
                 call.entityReturned = "TitlePlayer";
                 call.resultDatatype.isInternalOnly = true;
 
+                // Make subtypes internal only too
+                for (var propertyIndex = 0; propertyIndex < call.resultDatatype.properties.length; propertyIndex++) {
+                    var property = call.resultDatatype.properties[propertyIndex];
+                    if (property.isclass || property.isenum) {
+                        property.datatype.isInternalOnly = true;
+                    }
+                }
                 customizeLoginRequest(call.requestDatatype);
             }
         }
@@ -920,16 +901,18 @@ function getPropertyDefinition(datatype, property, isInternal) {
         var type = isInternal ? getInternalPropertyType(property) : getPublicPropertyType(property, true);
         var propName = getPropertyName(property, datatype.isInternalOnly ? false : isInternal);
         var salAnnotations = "";
-        if (property.actualtype !== "object") {
-            if (property.optional) {
-                salAnnotations += "_Maybenull_ ";
+        if (!isInternal) {
+            if (property.actualtype !== "object") {
+                if (property.optional) {
+                    salAnnotations += "_Maybenull_ ";
+                }
+                if (property.collection) {
+                    salAnnotations += ("_Field_size_(" + propName + "Count) ");
+                }
             }
-            if (property.collection) {
-                salAnnotations += ("_Field_size_(" + propName + "Count) ");
+            if (property.actualtype === "String" && !property.collection) {
+                salAnnotations += "_Null_terminated_ ";
             }
-        }
-        if (property.actualtype === "String" && !property.collection) {
-            salAnnotations += "_Null_terminated_ ";
         }
 
         output += ("\n" + tab + salAnnotations + type + " " + propName + ";");

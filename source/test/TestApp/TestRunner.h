@@ -7,32 +7,36 @@
 #include "TestDataTypes.h"
 #include "TestReport.h"
 
-namespace PlayFabUnit
+namespace PlayFab
 {
-    struct TestContext;
-    class TestCase;
+namespace Test
+{
+struct TestContext;
+class TestCase;
 
-    class TestRunner
-    {
-    private:
-        TestActiveState suiteState;
-        TestCase* suiteTestCase;
-        std::list<std::shared_ptr<TestContext>> suiteTests;
+class TestRunner
+{
+private:
+    TestActiveState suiteState;
+    TestCase* suiteTestCase;
+    std::list<std::shared_ptr<TestContext>> suiteTests;
 
-        void ManageTestCase(TestCase* newTestCase, TestCase* oldTestCase);
+    void ManageTestCase(TestCase* newTestCase, TestCase* oldTestCase);
 
-        std::string GenerateTestSummary();
+    std::string GenerateTestSummary();
 
-    public:
-        std::string suiteTestSummary;
-        TestReport suiteTestReport;
+public:
+    std::string suiteTestSummary;
+    TestReport suiteTestReport;
 
-        TestRunner();
+    TestRunner();
 
-        void Add(TestCase& testCase);
+    void Add(TestCase& testCase);
 
-        void Run();
+    void Run();
 
-        bool AllTestsPassed();
-    };
-}
+    bool AllTestsPassed();
+};
+
+} // namespace Test
+} // namespace PlayFab

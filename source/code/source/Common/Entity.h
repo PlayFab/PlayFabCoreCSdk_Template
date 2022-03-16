@@ -8,16 +8,12 @@
 namespace PlayFab
 {
 
-namespace QoS
-{
-class QoSAPI;
-}
-
-class EntityToken : public PFEntityToken
+// Is there an argument for not even exposing the expiration time? If we want to contain refresh logic entirely within the SDK
+// it may be cleaner to not expose the expiration.
+class EntityToken : public PFEntityToken, public ClientOutputModel<PFEntityToken>
 {
 public:
     EntityToken(const Authentication::EntityTokenResponse& tokenResponse);
-    EntityToken(const Authentication::GetEntityTokenResponse& tokenResponse);
     EntityToken(const EntityToken& src);
     EntityToken(EntityToken&& src);
     ~EntityToken() = default;
@@ -35,48 +31,23 @@ private:
 class Entity : public std::enable_shared_from_this<Entity>
 {
 public:
-    Entity(SharedPtr<PlayFab::HttpClient const> httpClient, SharedPtr<QoS::QoSAPI const> qosAPI, Authentication::EntityTokenResponse&& entityTokenResponse);
-    Entity(SharedPtr<PlayFab::HttpClient const> httpClient, SharedPtr<QoS::QoSAPI const> qosAPI, Authentication::GetEntityTokenResponse&& entityTokenResponse);
+    Entity(SharedPtr<PlayFab::HttpClient const> httpClient, Authentication::EntityTokenResponse&& entityTokenResponse);
 
     Entity(const Entity&) = delete;
     Entity& operator=(const Entity&) = delete;
     ~Entity() = default;
 
 public:
-    EntityKey const& EntityKey() const;
-    SharedPtr<PlayFab::EntityToken const> EntityToken() const;
-
     // Shared HttpClient
     SharedPtr<HttpClient const> HttpClient() const;
 
-    // Shared QoS API
-    SharedPtr<QoS::QoSAPI const> QoSAPI() const;
-
-    // Refreshes the cached Entity token.
-    virtual AsyncOp<void> RefreshToken(const TaskQueue& queue);
-
-    // Non-generated implementation for /Authentication/GetEntityToken API call. When GetEntityToken is called by an existing Entity, the service
-    // call will be authenticated with the EntityToken. If the Entity Token requested if for the calling Entity (aka just refreshing our token),
-    // our cached token will be updated and a SharedPtr to 'this' will be returned. If the token requested is for another entity, a new Entity
-    // object will be created and returned.
-    AsyncOp<SharedPtr<Entity>> GetEntityToken(const Authentication::GetEntityTokenRequest& request, const TaskQueue& queue);
-
-    // TokenRefreshedCallbacks exist to support PlayFab Party & PlayFab Lobby interfaces which require titles to provide and manually update a raw 
-    // entity token. Whenever the Entity token is silently refreshed these callbacks will be invoked.
-    using TokenRefreshedCallback = std::function<void(SharedPtr<PlayFab::EntityToken const>)>;
-
-    CallbackManager<TokenRefreshedCallback> TokenRefreshedCallbacks;
-
-private:
-    SharedPtr<PlayFab::HttpClient const> m_httpClient;
-    SharedPtr<QoS::QoSAPI const> m_qosAPI;
+    EntityKey const& EntityKey() const;
+    AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, const TaskQueue& queue);
 
 protected:
-    SharedPtr<PlayFab::EntityToken> m_entityToken;
-
-private:
-    // Entity attributes
+    SharedPtr<PlayFab::HttpClient const> m_httpClient;
     PlayFab::EntityKey const m_key;
+    PlayFab::EntityToken m_entityToken;
 };
 
 }

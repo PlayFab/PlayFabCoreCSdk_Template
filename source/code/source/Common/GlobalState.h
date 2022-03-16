@@ -6,11 +6,6 @@
 namespace PlayFab
 {
 
-namespace QoS
-{
-class QoSAPI;
-}
-
 class GlobalState
 {
 public:
@@ -22,14 +17,10 @@ public:
     SharedPtr<HttpClient const> HttpClient() const;
     SharedPtr<String const> SecretKey() const;
 
-    // Shared QoSAPI instance. Using a shared instance because QoSAPI caches title-wide state
-    SharedPtr<QoS::QoSAPI const> QoSAPI() const;
-
 private:
     String const m_titleId;
     SharedPtr<PlayFab::HttpClient> m_httpClient;
     SharedPtr<String> m_secretKey;
-    SharedPtr<QoS::QoSAPI> m_qosAPI;
     TaskQueue m_backgroundQueue;
 };
 
