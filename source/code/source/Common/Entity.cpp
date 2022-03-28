@@ -23,7 +23,7 @@ PlayFab::EntityKey const& Entity::EntityKey() const
     return m_key;
 }
 
-AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, const TaskQueue& queue)
+AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runContext)
 {
     if (forceRefresh)
     {
@@ -32,7 +32,7 @@ AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, const TaskQueue& 
     }
 
     // No async logic needed currently
-    UNREFERENCED_PARAMETER(queue);
+    UNREFERENCED_PARAMETER(runContext);
 
     if (m_entityToken.expiration && *m_entityToken.expiration < GetTimeTNow())
     {

@@ -12,20 +12,23 @@ constexpr char kEntityTokenHeaderName[]{ "X-EntityToken" };
 constexpr char kProductionEnvironmentURL[]{ ".playfabapi.com" };
 
 // RAII wrapper around HCCallHandle.
-class HCHttpCall
+class HCHttpCall : public ICancellationListener
 {
 public:
     static AsyncOp<ServiceResponse> Perform(
         const char* url,
         const UnorderedMap<String, String>& headers,
         const JsonValue& requestBody,
-        const TaskQueue& queue
+        RunContext&& runContext
     );
 
     virtual ~HCHttpCall() noexcept;
 
+    // ICancellationListener
+    void OnCancellation() noexcept override;
+
 private:
-    HCHttpCall(const TaskQueue& queue);
+    HCHttpCall(RunContext&& runContext);
     HCHttpCall(const HCHttpCall& other) = delete;
     HCHttpCall& operator=(HCHttpCall other) = delete;
 
@@ -49,19 +52,13 @@ private:
 
     String m_requestBody;
     Vector<char> m_responseBody;
-    TaskQueue const m_queue;
+    RunContext const m_runContext;
     HCCallHandle m_callHandle{ nullptr };
     XAsyncBlock m_asyncBlock{};
     SharedPtr<AsyncOpContext<ServiceResponse>> m_asyncContext;
 };
 
-HttpClient::HttpClient(String titleId) :
-    m_titleId{ std::move(titleId) }
-{
-}
-
-HttpClient::HttpClient(String titleId, String connectionString) :
-    m_titleId{ std::move(titleId) },
+HttpClient::HttpClient(String&& connectionString) :
     m_connectionString{ std::move(connectionString) }
 {
 }
@@ -69,16 +66,7 @@ HttpClient::HttpClient(String titleId, String connectionString) :
 String HttpClient::GetUrl(const char* path) const
 {
     Stringstream fullUrl;
-    if (m_connectionString.empty())
-    {
-        // Construct default url using titleId 
-        fullUrl << "https://" << m_titleId << kProductionEnvironmentURL;
-    }
-    else
-    {
-        // Construct url from connection string
-        fullUrl << m_connectionString;
-    }
+    fullUrl << m_connectionString;
 
     // Append path
     fullUrl << path;
@@ -93,10 +81,10 @@ AsyncOp<ServiceResponse> HttpClient::MakePostRequest(
     const char* path,
     const UnorderedMap<String, String>& headers,
     const JsonValue& requestBody,
-    const TaskQueue& queue
+    RunContext&& runContext
 ) const
 {
-    return HCHttpCall::Perform(GetUrl(path).data(), headers, requestBody, queue);
+    return HCHttpCall::Perform(GetUrl(path).data(), headers, requestBody, std::move(runContext));
 }
 
 AsyncOp<ServiceResponse> HttpClient::MakeEntityRequest(
@@ -104,27 +92,32 @@ AsyncOp<ServiceResponse> HttpClient::MakeEntityRequest(
     const char* path,
     UnorderedMap<String, String>&& headers,
     JsonValue&& requestBody,
-    const TaskQueue& queue
+    RunContext&& runContext
 ) const
 {
-    return entity->GetEntityToken(false, queue).Then(
+    return entity->GetEntityToken(false, runContext.Derive()).Then(
         [
             url = GetUrl(path),
             headers = std::move(headers),
             body = std::move(requestBody),
-            queue = TaskQueue{queue}
+            runContext{ runContext.Derive() }
         ]
     (Result<EntityToken> result) mutable -> AsyncOp<ServiceResponse>
     {
         RETURN_IF_FAILED(result.hr);
         headers[kEntityTokenHeaderName] = result.ExtractPayload().token;
 
-        return HCHttpCall::Perform(url.data(), headers, body, queue);
+        return HCHttpCall::Perform(url.data(), headers, body, std::move(runContext));
     });
 }
 
-HCHttpCall::HCHttpCall(const TaskQueue& queue) :
-    m_queue{ queue },
+String const& HttpClient::ConnectionString() const noexcept
+{
+    return m_connectionString;
+}
+
+HCHttpCall::HCHttpCall(RunContext&& runContext) :
+    m_runContext{ std::move(runContext) },
     m_asyncContext{ MakeShared<AsyncOpContext<ServiceResponse>>() }
 {
 }
@@ -141,13 +134,19 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
     const char* url,
     const UnorderedMap<String, String>& headers,
     const JsonValue& requestBody,
-    const TaskQueue& queue
+    RunContext&& context
 )
 {
-    UniquePtr<HCHttpCall> call{ new (Allocator<HCHttpCall>{}.allocate(1)) HCHttpCall(queue) };
+    UniquePtr<HCHttpCall> call{ new (Allocator<HCHttpCall>{}.allocate(1)) HCHttpCall(std::move(context)) };
 
     // Consider adding a helper to schedule the completion to correct queue port. Currently if failures happen 
     // synchronously, the continuation will be invoked synchronously as well.
+
+    bool alreadyCancelled = call->m_runContext.CancellationToken().RegisterForNotificationAndCheck(*call);
+    if (alreadyCancelled)
+    {
+        return E_ABORT;
+    }
 
     // Set up HCHttpCallHandle
     RETURN_IF_FAILED(HCHttpCallCreate(&call->m_callHandle));
@@ -176,7 +175,7 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
 
     call->m_asyncBlock.callback = HCPerformComplete;
     call->m_asyncBlock.context = call.get();
-    call->m_asyncBlock.queue = call->m_queue.GetHandle();
+    call->m_asyncBlock.queue = call->m_runContext.TaskQueue().GetHandle();
 
     RETURN_IF_FAILED(HCHttpCallPerformAsync(call->m_callHandle, &call->m_asyncBlock));
 
@@ -187,6 +186,12 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
     call.release();
 
     return asyncOp;
+}
+
+void HCHttpCall::OnCancellation() noexcept
+{
+    // TODO synchronization
+    XAsyncCancel(&m_asyncBlock);
 }
 
 HRESULT HCHttpCall::HCRequestBodyRead(

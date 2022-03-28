@@ -5,15 +5,13 @@
 namespace PlayFab
 {
 
-using TokenExpiredCallback = std::function<void(SharedPtr<class TitlePlayer>)>;
-
 // TitlePlayer Entity returned from an Authentication API
 class TitlePlayer : public Entity
 {
 public:
     static Result<SharedPtr<TitlePlayer>> Make(
         SharedPtr<PlayFab::HttpClient const> httpClient,
-        TaskQueue backgroundQueue,
+        RunContext&& tokenRefreshContext,
         Authentication::AuthenticateIdentityResult&& authResult
     ); 
 
@@ -25,19 +23,10 @@ public:
     SharedPtr<Entity> LinkedMasterPlayer() const;
 
 private:
-    TitlePlayer(SharedPtr<PlayFab::HttpClient const> httpClient, TaskQueue backgroundQueue, Authentication::AuthenticateIdentityResult&& authResult);
+    TitlePlayer(SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& tokenRefreshContext, Authentication::AuthenticateIdentityResult&& authResult);
 
-    TaskQueue m_backgroundQueue;
+    RunContext m_tokenRefreshContext;
     SharedPtr<Entity> m_linkedMasterPlayer;
 };
 
 }
-
-struct PFTitlePlayer
-{
-    PFTitlePlayer(PlayFab::SharedPtr<PlayFab::TitlePlayer> titlePlayer_) : titlePlayer{ titlePlayer_ } {}
-    PFTitlePlayer(const PFTitlePlayer&) = default;
-    ~PFTitlePlayer() = default;
-
-    PlayFab::SharedPtr<PlayFab::TitlePlayer> titlePlayer;
-};

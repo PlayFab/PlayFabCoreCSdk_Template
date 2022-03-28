@@ -3,6 +3,7 @@
 #include <httpClient/httpClient.h>
 #include "TaskQueue.h"
 #include "AsyncOp.h"
+#include "RunContext.h"
 
 namespace PlayFab
 {
@@ -14,8 +15,7 @@ struct ServiceResponse;
 class HttpClient
 {
 public:
-    HttpClient(String titleId);
-    HttpClient(String titleId, String connectionString);
+    HttpClient(String&& connectionString);
     HttpClient(const HttpClient&) = default;
     ~HttpClient() = default;
 
@@ -23,7 +23,7 @@ public:
         const char* path,
         const UnorderedMap<String, String>& headers,
         const JsonValue& requestBody,
-        const TaskQueue& queue
+        RunContext&& runContext
     ) const;
 
     AsyncOp<ServiceResponse> MakeEntityRequest(
@@ -31,8 +31,10 @@ public:
         const char* path,
         UnorderedMap<String, String>&& headers,
         JsonValue&& requestBody,
-        const TaskQueue& queue
+        RunContext&& runContext
     ) const;
+
+    String const& ConnectionString() const noexcept;
 
 private:
     String GetUrl(const char* path) const;

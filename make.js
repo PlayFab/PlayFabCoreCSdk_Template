@@ -56,6 +56,15 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     // populate SDKFeatureGroups structure
     populateSDKFeatureGroups(apis);
 
+    // temporarily only including auth and shared
+    var tempFeatureGroups = {};
+    for (var featureGroupName in SDKFeatureGroups) {
+        if (featureGroupName === "Shared" || featureGroupName === "Authentication") {
+            tempFeatureGroups[featureGroupName] = SDKFeatureGroups[featureGroupName];
+        }
+    }
+    SDKFeatureGroups = tempFeatureGroups;
+
     // Configure test prerequisites
     setPrerequisiteAndCleanupCalls(apis);
 
@@ -92,7 +101,7 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     rootFilesToCopy.push("SECURITY.md");
 
     rootFilesToCopy.forEach(file => {
-        copyFile(path.resolve(sourceDir, file), path.resolve(apiOutputDir, file));        
+        copyFile(path.resolve(sourceDir, file), path.resolve(apiOutputDir, file));
     });
 };
 
@@ -291,11 +300,13 @@ function curateServiceApis(apis) {
 function customizeLoginRequest(requestDatatype) {
     assert(requestDatatype.properties);
 
-    for (var i = requestDatatype.properties.length - 1; i >= 0 ; i--) {
+    for (var i = requestDatatype.properties.length - 1; i >= 0; i--) {
         let property = requestDatatype.properties[i];
         if (property.name === "TitleId") {
             requestDatatype.properties.splice(i, 1);
         } else if (property.name === "EncryptedRequest") {
+            requestDatatype.properties.splice(i, 1);
+        } else if (property.name === "PlayerAccountPoolId") {
             requestDatatype.properties.splice(i, 1);
         }
 

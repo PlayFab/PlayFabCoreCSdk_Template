@@ -25,7 +25,7 @@ public:
     void Tick(TestContext&) override {}
 
 private:
-    PFStateHandle stateHandle{ nullptr };
+    PFServiceConfigHandle serviceConfig{ nullptr };
 };
 
 }

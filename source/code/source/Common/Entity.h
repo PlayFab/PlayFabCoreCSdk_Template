@@ -42,7 +42,7 @@ public:
     SharedPtr<HttpClient const> HttpClient() const;
 
     EntityKey const& EntityKey() const;
-    AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, const TaskQueue& queue);
+    AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, RunContext&& runContext);
 
 protected:
     SharedPtr<PlayFab::HttpClient const> m_httpClient;
@@ -51,12 +51,3 @@ protected:
 };
 
 }
-
-struct PFEntity
-{
-    PFEntity(PlayFab::SharedPtr<PlayFab::Entity> entity_) : entity{ entity_ } {}
-    PFEntity(const PFEntity&) = default;
-    ~PFEntity() = default;
-
-    PlayFab::SharedPtr<PlayFab::Entity> entity;
-};

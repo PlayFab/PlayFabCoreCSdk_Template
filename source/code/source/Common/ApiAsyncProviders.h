@@ -3,6 +3,8 @@
 #include "AsyncProvider.h"
 #include "TitlePlayer.h"
 #include "AsyncOp.h"
+#include "GlobalState.h"
+#include <playfab/PFTitlePlayer.h>
 
 namespace PlayFab
 {
@@ -109,13 +111,14 @@ template<typename CallT>
 class AuthCallProvider : public Provider
 {
 private:
-    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(const TaskQueue&)>>;
+    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(SharedPtr<GlobalState const>, RunContext const&)>>;
 public:
     static_assert(std::is_assignable_v<SharedPtr<Entity>, ResultT>, "CallT must return a SharedPt<Entity>");
 
     template<size_t n>
-    AuthCallProvider(XAsyncBlock* async, const char(&identityName)[n], CallT authCall)
-        : Provider{ async, identityName },
+    AuthCallProvider(SharedPtr<GlobalState> state, XAsyncBlock* async, const char(&identityName)[n], CallT authCall)
+        : Provider{ state->RunContext().DeriveOnQueue(async->queue), async, identityName },
+        m_state{ std::move(state) },
         m_call{ authCall }
     {
     }
@@ -123,15 +126,15 @@ public:
 protected:
     // Always kick of the API call during XAsyncOp::Begin so we don't have to worry about lifetime of request
     // and API objects (even though they are hidden as part of a std::bind)
-    HRESULT Begin(TaskQueue&& queue) override
+    HRESULT Begin(RunContext const& runContext) override
     {
-        m_call(queue).Finally([this](Result<ResultT> result)
+        m_call(m_state, runContext).Finally([this](Result<SharedPtr<TitlePlayer>> result)
         {
             if (Succeeded(result))
             {
                 TRACE_VERBOSE("AuthCallProvider[ID=%s] Call suceeded (hr=0x%08x)", identityName, result.hr);
-                this->m_entity = result.ExtractPayload();
-                this->Complete(sizeof(void*));
+                this->m_titlePlayerHandle = this->m_state->TitlePlayers().MakeHandle(result.ExtractPayload());
+                this->Complete(sizeof(PFTitlePlayerHandle));
             }
             else
             {
@@ -145,38 +148,23 @@ protected:
 
     HRESULT GetResult(void* buffer, size_t bufferSize) override
     {
-        return GetResultHelper(buffer, bufferSize, m_entity);
-    }
-
-    template<typename T>
-    HRESULT GetResultHelper(void* buffer, size_t bufferSize, const T& result)
-    {
         UNREFERENCED_PARAMETER(bufferSize);
-        assert(bufferSize == sizeof(PFEntity*));
-        auto entityHandlePtr = static_cast<PFEntity**>(buffer);
-        *entityHandlePtr = MakeUnique<PFEntity>(result).release();
-        return S_OK;
-    }
-
-    template<>
-    HRESULT GetResultHelper(void* buffer, size_t bufferSize, const SharedPtr<TitlePlayer>& result)
-    {
-        UNREFERENCED_PARAMETER(bufferSize);
-        assert(bufferSize == sizeof(PFTitlePlayer*));
-        auto titlePlayerHandlePtr = static_cast<PFTitlePlayer**>(buffer);
-        *titlePlayerHandlePtr = MakeUnique<PFTitlePlayer>(result).release();
+        assert(bufferSize == sizeof(PFTitlePlayerHandle));
+        auto titlePlayerHandlePtr = static_cast<PFTitlePlayerHandle*>(buffer);
+        *titlePlayerHandlePtr = m_titlePlayerHandle;
         return S_OK;
     }
 
 private:
+    SharedPtr<GlobalState> m_state;
     CallT m_call;
-    ResultT m_entity;
+    PFTitlePlayerHandle m_titlePlayerHandle{ nullptr };
 };
 
 template<typename CallT, size_t n>
-UniquePtr<AuthCallProvider<CallT>> MakeAuthProvider(XAsyncBlock* async, const char(&identityName)[n], CallT authCall)
+UniquePtr<AuthCallProvider<CallT>> MakeAuthProvider(SharedPtr<GlobalState> state, XAsyncBlock* async, const char(&identityName)[n], CallT authCall)
 {
-    return MakeUnique<AuthCallProvider<CallT>>(async, identityName, std::move(authCall));
+    return MakeUnique<AuthCallProvider<CallT>>(std::move(state), async, identityName, std::move(authCall));
 }
 
 }

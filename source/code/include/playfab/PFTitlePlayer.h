@@ -21,7 +21,7 @@ static const char* PFTitlePlayerEntityType = "title_player_account";
 /// Handle to an authenticated TitlePlayer Entity. Returned from one of the PFAuthenticationClientLogin* APIs.
 /// When no longer needed, the Entity handle must be closed with PFTitlePlayerCloseHandle.
 /// </summary>
-typedef struct PFTitlePlayer* PFTitlePlayerHandle;
+typedef PFHandle PFTitlePlayerHandle;
 
 /// <summary>
 /// Duplicates a PFTitlePlayerHandle.
@@ -45,21 +45,6 @@ HRESULT PFTitlePlayerDuplicateHandle(
 /// <returns>Result code for this API operation.</returns>
 void PFTitlePlayerCloseHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle
-) noexcept;
-
-/// <summary>
-/// Gets a generic PFEntityHandle for a TitlePlayer Entity. The PFEntityHandle can be used to
-/// make API calls which only require a generic Entity rather than specifically a TitlePlayer Entity.
-/// </summary>
-/// <param name="titlePlayerHandle">PFTitlePlayerHandle returned from a login call.</param>
-/// <param name="entityHandle">Generic PFEntityHandle to the TitlePlayer Entity.</param>
-/// <returns>Result code for this API operation.</returns>
-/// <remarks>
-/// The output entityHandle and the titlePlayerHandle are separate and both need to be closed when they are no longer needed.
-/// </remarks>
-HRESULT PFTitlePlayerGetEntityHandle(
-    _In_ PFTitlePlayerHandle titlePlayerHandle,
-    _Out_ PFEntityHandle* entityHandle
 ) noexcept;
 
 /// <summary>

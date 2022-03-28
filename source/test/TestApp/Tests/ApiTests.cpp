@@ -26,6 +26,7 @@ void CALLBACK AuthenticateWithCustomIdComplete(XAsyncBlock* async)
         testContext.Pass();
     }
 
+    PFTitlePlayerCloseHandle(playerHandle);
 }
 
 void ApiTests::TestAuth(TestContext& testContext)
@@ -36,9 +37,8 @@ void ApiTests::TestAuth(TestContext& testContext)
 
     PFAuthenticationAuthenticateCustomIdIdentityRequest request{};
     request.customId = "CustomId";
-    request.playerAccountPoolId = "F60133285C706B33";
 
-    HRESULT hr = PFAuthenticationAuthenticateWithCustomIdAsync(stateHandle, &request, asyncBlock.get());
+    HRESULT hr = PFAuthenticationAuthenticateWithCustomIdAsync(serviceConfig, &request, asyncBlock.get());
 
     if (FAILED(hr))
     {
@@ -52,20 +52,25 @@ void ApiTests::TestAuth(TestContext& testContext)
 
 void ApiTests::AddTests()
 {
-    AddTest("TestGetQoSMeasurements", &ApiTests::TestAuth);
+    AddTest("TestAuth", &ApiTests::TestAuth);
 }
 
 void ApiTests::ClassSetUp()
 {
-    HRESULT hr = PFInitialize(testTitleData.titleId.data(), testTitleData.connectionString.data(), nullptr, &stateHandle);
+    HRESULT hr = PFInitialize(nullptr);
     assert(SUCCEEDED(hr));
+    hr = PFServiceConfigCreateHandle(testTitleData.connectionString.data(), testTitleData.titleId.data(), testTitleData.playerAccountPoolId.data(), &serviceConfig);
+    assert(SUCCEEDED(hr));
+
     UNREFERENCED_PARAMETER(hr);
 }
 
 void ApiTests::ClassTearDown()
 {
+    PFServiceConfigCloseHandle(serviceConfig);
+
     XAsyncBlock async{};
-    HRESULT hr = PFUninitializeAsync(stateHandle, &async);
+    HRESULT hr = PFUninitializeAsync(&async);
     assert(SUCCEEDED(hr));
 
     hr = XAsyncGetStatus(&async, true);

@@ -63,9 +63,9 @@ int TestApp::Main()
     if (!loadSuccessful)
     {
         // TODO: POPULATE THIS SECTION WITH REAL INFORMATION (or set up a testTitleData file, and set your PF_TEST_TITLE_DATA_JSON to the path for that file)
-        testTitleData.titleId = "65F818DB"; // The titleId for your title, found in the "Settings" section of PlayFab Game Manager
-        testTitleData.playerAccountPoolId = "F60133285C706B33";
-        testTitleData.connectionString = "https://pfint.api.pfint.azureplayfabdev.com";
+        testTitleData.titleId = "65F07A27"; // The titleId for your title, found in the "Settings" section of PlayFab Game Manager
+        testTitleData.playerAccountPoolId = "FEE7D6334C7F0D6";
+        testTitleData.connectionString = "https://65f07a27.api.pfint.azureplayfabdev.com";
     }
 
     // Initialize the test runner/test data.
