@@ -3,7 +3,9 @@
 #include "TestContext.h"
 #include <playfab/PFAuthentication.h>
 
-namespace PlayFabUnit
+namespace PlayFab
+{
+namespace Test
 {
 
 // Helper class to hold, retrieve, and validate the result of a completed XAsync operation. Intentionally
@@ -88,4 +90,5 @@ private:
     std::shared_ptr<ResultT> asyncResult;
 };
 
-}
+} // namespace Test
+} // namespace PlayFab

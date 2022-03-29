@@ -7,7 +7,9 @@
 #include <string>
 #include <TestContext.h>
 
-namespace PlayFabUnit
+namespace PlayFab
+{
+namespace Test
 {
 
 struct TestContext;
@@ -109,4 +111,5 @@ public:
     }
 };
 
+}
 }

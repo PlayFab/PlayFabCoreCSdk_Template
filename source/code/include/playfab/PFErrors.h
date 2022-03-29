@@ -14,11 +14,15 @@ extern "C"
 
 // PlayFab HRESULT error codes (FACILITY_XBOX + 0x5400 + offset)
 
+// Client errors
+#define E_PF_NOT_INITIALIZED                       MAKE_E_HC(0x5400L) // 0x89235400
+#define E_PF_ALREADY_INITIALIZED                   MAKE_E_HC(0x5401L) // 0x89235401
+
 // Errors returned from any PlayFab service wrapper API.
 // It is safe to retry calls that fail with the following errors (with an exponential delay back-off).
-#define E_PF_RATELIMITEXCEEDED                     MAKE_E_HC(0x5400L) // 0x89235400
-#define E_PF_OVERGAMEMANAGERLIMIT                  MAKE_E_HC(0x5401L) // 0x89235401
-#define E_PF_SERVICEUNAVAILABLE                    MAKE_E_HC(0x5402L) // 0x89235402
+#define E_PF_RATELIMITEXCEEDED                     MAKE_E_HC(0x5402L) // 0x89235402
+#define E_PF_OVERGAMEMANAGERLIMIT                  MAKE_E_HC(0x5403L) // 0x89235403
+#define E_PF_SERVICEUNAVAILABLE                    MAKE_E_HC(0x5404L) // 0x89235404
 
 // If the following errors are returned, the call shouldn't be retried. Without changes, the call will never succeed.
 #define E_PF_ACCOUNTBANNED                         MAKE_E_HC(0x5410L) // 0x89235410

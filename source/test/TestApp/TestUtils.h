@@ -4,10 +4,15 @@
 
 #include "TestDataTypes.h"
 
-namespace PlayFabUnit
+namespace PlayFab
 {
-    const char* ToString(TestActiveState state);
-    const char* ToString(TestFinishState state);
+namespace Test
+{
+const char* ToString(TestActiveState state);
+const char* ToString(TestFinishState state);
 
-    extern PlayFab::JsonAllocator s_jsonAllocator;
+// TODO don't rely on SDK InternalMemory here
+extern PlayFab::JsonAllocator s_jsonAllocator;
+
+}
 }

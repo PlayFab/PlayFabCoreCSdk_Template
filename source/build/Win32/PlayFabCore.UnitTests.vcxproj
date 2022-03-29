@@ -24,14 +24,16 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\test\UnitTests\TestContext.cpp" />
-    <ClCompile Include="..\..\test\UnitTests\Tests\JsonParsingTests.cpp" />
-    <ClCompile Include="..\..\test\UnitTests\Tests\ModelTests.cpp" />
+    <ClCompile Include="..\..\test\UnitTests\Tests\CancellationTokenTests.cpp" />
+    <ClCompile Include="..\..\test\UnitTests\Tests\GlobalStateTests.cpp" />
+    <ClCompile Include="..\..\test\UnitTests\Tests\RunContextTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\test\UnitTests\Event.h" />
     <ClInclude Include="..\..\test\UnitTests\pch.h" />
     <ClInclude Include="..\..\test\UnitTests\TestContext.h" />
     <ClCompile Include="..\..\test\UnitTests\Tests\AsyncOpTests.cpp" />
+    <ClInclude Include="..\..\test\UnitTests\TestMacros.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

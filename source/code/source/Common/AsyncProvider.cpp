@@ -10,8 +10,9 @@ namespace PlayFab
 
 constexpr char defaultProviderIdentity[]{ "UnnamedProvider" };
 
-Provider::Provider(_In_ XAsyncBlock* async) noexcept
+Provider::Provider(_In_ RunContext&& runContext, _In_ XAsyncBlock* async) noexcept
     : identityName{ defaultProviderIdentity },
+    m_runContext{ std::move(runContext) },
     m_async{ async }
 {
 }
@@ -24,12 +25,12 @@ HRESULT Provider::Run(_In_ UniquePtr<Provider>&& provider) noexcept
     return S_OK;
 }
 
-HRESULT Provider::Begin(TaskQueue&&)
+HRESULT Provider::Begin(RunContext const&)
 {
     return Schedule(0);
 }
 
-HRESULT Provider::DoWork(TaskQueue&&)
+HRESULT Provider::DoWork(RunContext const&)
 {
     return E_FAIL;
 }
@@ -38,12 +39,6 @@ HRESULT Provider::GetResult(void*, size_t)
 {
     assert(false);
     return E_UNEXPECTED;
-}
-
-HRESULT Provider::Cancel(TaskQueue&&)
-{
-    // Cancellation not supported by default, let async operation complete
-    return S_OK;
 }
 
 HRESULT Provider::Schedule(uint32_t delay) const
@@ -72,7 +67,7 @@ HRESULT CALLBACK Provider::XAsyncProvider(_In_ XAsyncOp op, _Inout_ const XAsync
     case XAsyncOp::Begin:
         try
         {
-            return provider->Begin(data->async->queue);
+            return provider->Begin(provider->m_runContext);
         }
         catch (...)
         {
@@ -81,7 +76,7 @@ HRESULT CALLBACK Provider::XAsyncProvider(_In_ XAsyncOp op, _Inout_ const XAsync
     case XAsyncOp::DoWork:
         try
         {
-            return provider->DoWork(data->async->queue);
+            return provider->DoWork(provider->m_runContext);
         }
         catch (...)
         {
@@ -100,7 +95,8 @@ HRESULT CALLBACK Provider::XAsyncProvider(_In_ XAsyncOp op, _Inout_ const XAsync
     {
         try
         {
-            return provider->Cancel(data->async->queue);
+            provider->m_runContext.CancellationToken().Cancel();
+            return S_OK;
         }
         catch (...)
         {

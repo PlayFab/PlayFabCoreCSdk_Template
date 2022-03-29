@@ -1,6 +1,8 @@
 #pragma once
 
-namespace PlayFabUnit
+namespace PlayFab
+{
+namespace Test
 {
 
 class XAsyncDispatcher
@@ -22,4 +24,5 @@ private:
     XTaskQueueRegistrationToken m_monitorToken{};
 };
 
+}
 }

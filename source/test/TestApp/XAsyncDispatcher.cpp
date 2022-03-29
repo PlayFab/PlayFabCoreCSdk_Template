@@ -1,7 +1,9 @@
 #include "TestAppPch.h"
 #include "XAsyncDispatcher.h"
 
-namespace PlayFabUnit
+namespace PlayFab
+{
+namespace Test
 {
 
 XAsyncDispatcher::XAsyncDispatcher()
@@ -69,4 +71,5 @@ void CALLBACK XAsyncDispatcher::OnWorkSubmitted(void* context, XTaskQueueHandle 
     assert(!pThis->m_shutdown);
 }
 
+}
 }

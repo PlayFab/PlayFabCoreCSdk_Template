@@ -26,9 +26,12 @@ for (var typeIndex = 0; typeIndex < featureGroup.sortedClasses.length; typeIndex
             baseClasses += (", public InputModel");
         }
         if (datatype.isOutput) {
-            baseClasses += (", public OutputModel<" + CModelName + ">");
+            baseClasses += (", public ServiceOutputModel, public ClientOutputModel<" + CModelName + ">");
         }
+    } else if (datatype.isOutput) {
+        baseClasses += (" : public ServiceOutputModel");
     }
+
 %>
 class <%- datatype.name %><%- baseClasses %>
 {

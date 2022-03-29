@@ -29,11 +29,12 @@ for (var i = 0; i < featureGroup.calls.length; i++) {
     } else if (call.resultDatatype) {
         resultType = call.resultDatatype.name;
     }
-    var contextParam = call.entityRequired ? "SharedPtr<" + call.entityRequired + "> entity, " : "SharedPtr<GlobalState const> state, ";
+    var contextParam = call.entityRequired ? "SharedPtr<" + call.entityRequired + "> entity, " : "SharedPtr<GlobalState const> state, SharedPtr<ServiceConfig const> config, ";
     var requestParam = call.requestDatatype ? "const " + call.requestDatatype.name + "& request, " : ""; 
 %>
-    static AsyncOp<<%- resultType %>> <%- call.name %>(<%- contextParam %><%- requestParam %>const TaskQueue& queue);<%
+    static AsyncOp<<%- resultType %>> <%- call.name %>(<%- contextParam %><%- requestParam %>RunContext const& rc);<%
 
+    // TODO update path/remove if not needed anymore
     // Eplicitly add LoginWithXUser API alongside Client/LoginWithXbox
     if (call.url === "/Client/LoginWithXbox") { %>
 #if HC_PLATFORM == HC_PLATFORM_GDK

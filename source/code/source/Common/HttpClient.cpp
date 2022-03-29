@@ -7,23 +7,28 @@
 
 namespace PlayFab
 {
-constexpr char productionEnvironmentURL[]{ ".playfabapi.com" };
+
+constexpr char kEntityTokenHeaderName[]{ "X-EntityToken" };
+constexpr char kProductionEnvironmentURL[]{ ".playfabapi.com" };
 
 // RAII wrapper around HCCallHandle.
-class HCHttpCall
+class HCHttpCall : public ICancellationListener
 {
 public:
     static AsyncOp<ServiceResponse> Perform(
         const char* url,
         const UnorderedMap<String, String>& headers,
         const JsonValue& requestBody,
-        const TaskQueue& queue
+        RunContext&& runContext
     );
 
     virtual ~HCHttpCall() noexcept;
 
+    // ICancellationListener
+    void OnCancellation() noexcept override;
+
 private:
-    HCHttpCall(const TaskQueue& queue);
+    HCHttpCall(RunContext&& runContext);
     HCHttpCall(const HCHttpCall& other) = delete;
     HCHttpCall& operator=(HCHttpCall other) = delete;
 
@@ -47,45 +52,13 @@ private:
 
     String m_requestBody;
     Vector<char> m_responseBody;
-    TaskQueue const m_queue;
+    RunContext const m_runContext;
     HCCallHandle m_callHandle{ nullptr };
     XAsyncBlock m_asyncBlock{};
     SharedPtr<AsyncOpContext<ServiceResponse>> m_asyncContext;
 };
 
-// Base class for EntityApiRequestOperation and ClassicApiRequestOperation
-class RequestWithRetryOperation
-{
-public:
-    virtual ~RequestWithRetryOperation() = default;
-
-protected:
-    RequestWithRetryOperation(SharedPtr<Entity> entity, String&& url, UnorderedMap<String, String>&& headers, JsonValue&& body, const TaskQueue& queue);
-
-    static AsyncOp<ServiceResponse> Run(UniquePtr<RequestWithRetryOperation> operation);
-
-    virtual void UpdateAuthHeader() = 0;
-
-    SharedPtr<Entity> m_entity;
-    UnorderedMap<String, String> m_headers;
-
-private:
-    void MakeRequest(bool retry);
-    void Complete(Result<ServiceResponse>&& result);
-
-    String m_url;
-    JsonValue m_body;
-    TaskQueue m_queue;
-    SharedPtr<AsyncOpContext<ServiceResponse>> m_asyncContext;
-};
-
-HttpClient::HttpClient(String titleId) :
-    m_titleId{ std::move(titleId) }
-{
-}
-
-HttpClient::HttpClient(String titleId, String connectionString) :
-    m_titleId{ std::move(titleId) },
+HttpClient::HttpClient(String&& connectionString) :
     m_connectionString{ std::move(connectionString) }
 {
 }
@@ -93,16 +66,7 @@ HttpClient::HttpClient(String titleId, String connectionString) :
 String HttpClient::GetUrl(const char* path) const
 {
     Stringstream fullUrl;
-    if (m_connectionString.empty())
-    {
-        // Construct default url using titleId 
-        fullUrl << "https://" << m_titleId << productionEnvironmentURL;
-    }
-    else
-    {
-        // Construct url from connection string
-        fullUrl << m_connectionString;
-    }
+    fullUrl << m_connectionString;
 
     // Append path
     fullUrl << path;
@@ -117,10 +81,10 @@ AsyncOp<ServiceResponse> HttpClient::MakePostRequest(
     const char* path,
     const UnorderedMap<String, String>& headers,
     const JsonValue& requestBody,
-    const TaskQueue& queue
+    RunContext&& runContext
 ) const
 {
-    return HCHttpCall::Perform(GetUrl(path).data(), headers, requestBody, queue);
+    return HCHttpCall::Perform(GetUrl(path).data(), headers, requestBody, std::move(runContext));
 }
 
 AsyncOp<ServiceResponse> HttpClient::MakeEntityRequest(
@@ -128,90 +92,32 @@ AsyncOp<ServiceResponse> HttpClient::MakeEntityRequest(
     const char* path,
     UnorderedMap<String, String>&& headers,
     JsonValue&& requestBody,
-    const TaskQueue& queue
+    RunContext&& runContext
 ) const
 {
-    class EntityRequestOperation : public RequestWithRetryOperation
+    return entity->GetEntityToken(false, runContext.Derive()).Then(
+        [
+            url = GetUrl(path),
+            headers = std::move(headers),
+            body = std::move(requestBody),
+            runContext{ runContext.Derive() }
+        ]
+    (Result<EntityToken> result) mutable -> AsyncOp<ServiceResponse>
     {
-    public:
-        static AsyncOp<ServiceResponse> Begin(SharedPtr<Entity> entity, String&& url, UnorderedMap<String, String>&& headers, JsonValue&& body, const TaskQueue& queue)
-        {
-            auto ptr{ Allocator<EntityRequestOperation>{}.allocate(1) };
-            new (ptr) EntityRequestOperation{ std::move(entity), std::move(url), std::move(headers), std::move(body), queue };
+        RETURN_IF_FAILED(result.hr);
+        headers[kEntityTokenHeaderName] = result.ExtractPayload().token;
 
-            return RequestWithRetryOperation::Run(UniquePtr<RequestWithRetryOperation>{ ptr });
-        }
-
-    private:
-        EntityRequestOperation(SharedPtr<Entity> entity, String&& url, UnorderedMap<String, String>&& headers, JsonValue&& body, const TaskQueue& queue)
-            : RequestWithRetryOperation{ entity, std::move(url), std::move(headers), std::move(body), std::move(queue) }
-        {
-        }
-
-        void UpdateAuthHeader() override
-        {
-            if (m_headers.find(kEntityTokenHeaderName) != m_headers.end())
-            {
-                m_headers[kEntityTokenHeaderName] = m_entity->EntityToken()->token;
-            }
-            else
-            {
-                assert(false);
-                TRACE_ERROR("EntityToken header missing from PlayFab Entity API request");
-            }
-        }
-    };
-
-    return EntityRequestOperation::Begin(std::move(entity), GetUrl(path), std::move(headers), std::move(requestBody), queue);
+        return HCHttpCall::Perform(url.data(), headers, body, std::move(runContext));
+    });
 }
 
-AsyncOp<ServiceResponse> HttpClient::MakeClassicRequest(
-    SharedPtr<TitlePlayer> titlePlayer,
-    const char* path,
-    UnorderedMap<String, String>&& headers,
-    JsonValue&& requestBody,
-    const TaskQueue& queue
-) const
+String const& HttpClient::ConnectionString() const noexcept
 {
-    class ClassicRequestOperation : public RequestWithRetryOperation
-    {
-    public:
-        static AsyncOp<ServiceResponse> Begin(SharedPtr<TitlePlayer> titlePlayer, String&& url, UnorderedMap<String, String>&& headers, JsonValue&& body, const TaskQueue& queue)
-        {
-            auto ptr{ Allocator<ClassicRequestOperation>{}.allocate(1) };
-            new (ptr) ClassicRequestOperation{ std::move(titlePlayer), std::move(url), std::move(headers), std::move(body), queue };
-
-            return RequestWithRetryOperation::Run(UniquePtr<RequestWithRetryOperation>{ ptr });
-        }
-
-    private:
-        ClassicRequestOperation(SharedPtr<TitlePlayer> titlePlayer, String&& url, UnorderedMap<String, String>&& headers, JsonValue&& body, const TaskQueue& queue)
-            : RequestWithRetryOperation{ titlePlayer, std::move(url), std::move(headers), std::move(body), std::move(queue) },
-            m_titlePlayer{ std::move(titlePlayer) }
-        {
-        }
-
-        void UpdateAuthHeader() override
-        {
-            if (m_headers.find(kSessionTicketHeaderName) != m_headers.end())
-            {
-                m_headers[kSessionTicketHeaderName] = *m_titlePlayer->SessionTicket();
-            }
-            else
-            {
-                assert(false);
-                TRACE_ERROR("ClientSessionTicket header missing from PlayFab Classic API request");
-            }
-        }
-
-        SharedPtr<TitlePlayer> m_titlePlayer;
-    };
-
-    return ClassicRequestOperation::Begin(std::move(titlePlayer), GetUrl(path), std::move(headers), std::move(requestBody), queue);
+    return m_connectionString;
 }
 
-HCHttpCall::HCHttpCall(const TaskQueue& queue) :
-    m_queue{ queue },
+HCHttpCall::HCHttpCall(RunContext&& runContext) :
+    m_runContext{ std::move(runContext) },
     m_asyncContext{ MakeShared<AsyncOpContext<ServiceResponse>>() }
 {
 }
@@ -228,13 +134,19 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
     const char* url,
     const UnorderedMap<String, String>& headers,
     const JsonValue& requestBody,
-    const TaskQueue& queue
+    RunContext&& context
 )
 {
-    UniquePtr<HCHttpCall> call{ new (Allocator<HCHttpCall>{}.allocate(1)) HCHttpCall(queue) };
+    UniquePtr<HCHttpCall> call{ new (Allocator<HCHttpCall>{}.allocate(1)) HCHttpCall(std::move(context)) };
 
     // Consider adding a helper to schedule the completion to correct queue port. Currently if failures happen 
     // synchronously, the continuation will be invoked synchronously as well.
+
+    bool alreadyCancelled = call->m_runContext.CancellationToken().RegisterForNotificationAndCheck(*call);
+    if (alreadyCancelled)
+    {
+        return E_ABORT;
+    }
 
     // Set up HCHttpCallHandle
     RETURN_IF_FAILED(HCHttpCallCreate(&call->m_callHandle));
@@ -263,7 +175,7 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
 
     call->m_asyncBlock.callback = HCPerformComplete;
     call->m_asyncBlock.context = call.get();
-    call->m_asyncBlock.queue = call->m_queue.GetHandle();
+    call->m_asyncBlock.queue = call->m_runContext.TaskQueue().GetHandle();
 
     RETURN_IF_FAILED(HCHttpCallPerformAsync(call->m_callHandle, &call->m_asyncBlock));
 
@@ -274,6 +186,11 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
     call.release();
 
     return asyncOp;
+}
+
+void HCHttpCall::OnCancellation() noexcept
+{
+    XAsyncCancel(&m_asyncBlock);
 }
 
 HRESULT HCHttpCall::HCRequestBodyRead(
@@ -385,68 +302,6 @@ void HCHttpCall::HCPerformComplete(XAsyncBlock* async)
     {
         asyncOpContext->Complete(std::current_exception());
     }
-}
-
-RequestWithRetryOperation::RequestWithRetryOperation(SharedPtr<Entity> entity, String&& url, UnorderedMap<String, String>&& headers, JsonValue&& body, const TaskQueue& queue) :
-    m_entity{ std::move(entity) },
-    m_headers{ std::move(headers) },
-    m_url{ url },
-    m_body{ std::move(body) },
-    m_queue{ queue.DeriveWorkerQueue() },
-    m_asyncContext{ MakeShared<AsyncOpContext<ServiceResponse>>() }
-{
-}
-
-AsyncOp<ServiceResponse> RequestWithRetryOperation::Run(UniquePtr<RequestWithRetryOperation> operation)
-{
-    operation->MakeRequest(true);
-    auto asyncContext{ operation->m_asyncContext };
-
-    // Release the operation. Will be cleaned up in RequestWithRetryOperation::Complete.
-    operation.release();
-
-    return asyncContext;
-}
-
-void RequestWithRetryOperation::MakeRequest(bool retry)
-{
-    HCHttpCall::Perform(m_url.data(), m_headers, m_body, m_queue).Finally([this, retry](Result<ServiceResponse> result)
-    {
-        // Check if the result meets conditions for auth retry
-        auto hr = Succeeded(result) ? ServiceErrorToHR(result.Payload().ErrorCode) : result.hr;
-
-        if (retry && (hr == HTTP_E_STATUS_DENIED || /* REST error code (401) */
-            hr == E_PF_INTERNAL_EXPIREDAUTHTOKEN || /* PlayFab error code for EntityToken expired */
-            hr == E_PF_NOTAUTHENTICATED) /* PlayFab error code for SessionTicket expired */)
-        {
-            m_entity->RefreshToken(m_queue).Finally([this](Result<void> refreshResult)
-            {
-                if (Failed(refreshResult))
-                {
-                    TRACE_INFORMATION("Unable to refresh expired auth token. Passing along error to caller");
-                    this->Complete(Result<ServiceResponse>{ refreshResult.hr, refreshResult.errorMessage });
-                }
-                else
-                {
-                    // Update our auth headers and retry
-                    this->UpdateAuthHeader();
-                    this->MakeRequest(false);
-                }
-            });
-        }
-        else
-        {
-            // Conditions for retry not met, pass along result
-            this->Complete(std::move(result));
-        }
-    });
-}
-
-void RequestWithRetryOperation::Complete(Result<ServiceResponse>&& result)
-{
-    // Reclaim operation, it will be released after completing AsyncOpContext
-    UniquePtr<RequestWithRetryOperation> reclaim{ this };
-    m_asyncContext->Complete(std::move(result));
 }
 
 ServiceResponse::ServiceResponse(const ServiceResponse& src) :
