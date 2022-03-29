@@ -19,9 +19,8 @@ Result<SharedPtr<TitlePlayer>> TitlePlayer::Make(
     return titlePlayer;
 }
 
-TitlePlayer::TitlePlayer(SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& tokenRefreshContext, Authentication::AuthenticateIdentityResult&& authResult)
+TitlePlayer::TitlePlayer(SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& /*tokenRefreshContext*/, Authentication::AuthenticateIdentityResult&& authResult)
     : Entity{ httpClient, std::move(*authResult.titlePlayerAccount) },
-    m_tokenRefreshContext{ std::move(tokenRefreshContext) },
     m_linkedMasterPlayer{ MakeShared<Entity>(httpClient, std::move(*authResult.masterPlayerAccount)) }
 {
 }

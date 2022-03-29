@@ -25,7 +25,6 @@ public:
 private:
     TitlePlayer(SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& tokenRefreshContext, Authentication::AuthenticateIdentityResult&& authResult);
 
-    RunContext m_tokenRefreshContext;
     SharedPtr<Entity> m_linkedMasterPlayer;
 };
 

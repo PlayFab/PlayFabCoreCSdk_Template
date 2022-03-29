@@ -10,3 +10,4 @@
 #include "CppUnitTest.h"
 
 #include "TestContext.h"
+#include "TestMacros.h"

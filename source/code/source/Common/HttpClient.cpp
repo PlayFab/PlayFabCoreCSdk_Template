@@ -190,7 +190,6 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
 
 void HCHttpCall::OnCancellation() noexcept
 {
-    // TODO synchronization
     XAsyncCancel(&m_asyncBlock);
 }
 

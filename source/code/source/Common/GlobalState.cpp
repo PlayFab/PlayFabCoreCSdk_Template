@@ -166,14 +166,11 @@ HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* create
         // and exactly one call to cleanup
         if (s_stateHolder)
         {
-            return E_UNEXPECTED; // Should define PF_E_ALREADY_INITIALIZED
+            return E_PF_ALREADY_INITIALIZED;
         }
 
-        // TODO Lock memory hooks here
-
         assert(createArgs);
-        //state = SharedPtr<GlobalState>{ new (Allocator<GlobalState>{}.allocate(1)) GlobalState{ createArgs->backgroundQueue }, Deleter<GlobalState>() };
-        state = SharedPtr<GlobalState>{ new (Allocator<GlobalState>{}.allocate(1)) GlobalState{ createArgs->backgroundQueue } };
+        state = SharedPtr<GlobalState>{ new (Allocator<GlobalState>{}.allocate(1)) GlobalState{ createArgs->backgroundQueue }, Deleter<GlobalState>() };
         s_stateHolder = MakeUnique<StateHolder>().release(); // will be reclaimed in cleanup
         s_stateHolder->state = std::move(state);
 
@@ -183,7 +180,7 @@ HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* create
     {
         if (!s_stateHolder)
         {
-            return E_UNEXPECTED; // Should define PF_E_NOT_INITIALIZED
+            return E_PF_NOT_INITIALIZED;
         }
         assert(s_stateHolder->state);
         state = s_stateHolder->state;
@@ -194,7 +191,7 @@ HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* create
     {
         if (!s_stateHolder)
         {
-            return E_UNEXPECTED; // Should define PF_E_NOT_INITIALIZED
+            return E_PF_NOT_INITIALIZED;
         }
 
         UniquePtr<StateHolder> stateHolder{ s_stateHolder };

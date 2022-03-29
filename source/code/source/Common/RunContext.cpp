@@ -49,15 +49,16 @@ void RunContextTracker::Terminate(TerminationCallback* callback, void* context) 
     std::unique_lock<std::mutex> lock{ m_mutex };
 
     assert(!m_terminationCallback);
-    m_terminationCallback = callback;
-    m_terminationCallbackContext = context;
 
-    if (m_trackedContexts.empty())
+    if (!m_trackedContexts.empty())
     {
-        TerminationCallback* callback{ nullptr };
-        std::swap(m_terminationCallback, callback);
+        m_terminationCallback = callback;
+        m_terminationCallbackContext = context;
+    }
+    else
+    {
         lock.unlock();
-        callback(m_terminationCallbackContext);
+        callback(context);
     }
 }
 
@@ -109,6 +110,10 @@ RootRunContext::RootRunContext(XTaskQueueHandle queueHandle) noexcept :
 
 void RootRunContext::Terminate(TerminationCallback* callback, void* context) noexcept
 {
+    // Cancel all operations if they haven't been cancelled already
+    CancellationToken().Cancel();
+
+    // Unregister root then wait for all derived RunContexts to be cleaned up
     m_tracker->Unregister(*this);
     m_tracker->Terminate(callback, context);
 }

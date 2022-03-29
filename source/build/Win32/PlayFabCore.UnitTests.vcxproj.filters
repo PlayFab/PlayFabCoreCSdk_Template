@@ -18,17 +18,20 @@
     <ClCompile Include="..\..\test\UnitTests\Tests\AsyncOpTests.cpp">
       <Filter>Source\Tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\JsonParsingTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\ModelTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\test\UnitTests\TestContext.cpp">
       <Filter>Source\Support</Filter>
     </ClCompile>
     <ClCompile Include="..\..\test\UnitTests\Event.cpp">
       <Filter>Source\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\CancellationTokenTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\GlobalStateTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\RunContextTests.cpp">
+      <Filter>Source\Tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -39,6 +42,9 @@
       <Filter>Source\Support</Filter>
     </ClInclude>
     <ClInclude Include="..\..\test\UnitTests\Event.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\UnitTests\TestMacros.h">
       <Filter>Source\Support</Filter>
     </ClInclude>
   </ItemGroup>
