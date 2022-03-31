@@ -8,21 +8,24 @@ namespace PlayFab
 using namespace Authentication;
 
 Result<SharedPtr<TitlePlayer>> TitlePlayer::Make(
+    Authentication::AuthenticateIdentityResult&& authResult,
     SharedPtr<PlayFab::HttpClient const> httpClient,
-    RunContext&& tokenRefreshContext,
-    Authentication::AuthenticateIdentityResult&& authResult
-)
+    RunContext&& tokenRefreshContext
+) noexcept
 {
     Allocator<TitlePlayer> a{};
-    SharedPtr<TitlePlayer> titlePlayer{ new (a.allocate(1)) TitlePlayer{ std::move(httpClient), std::move(tokenRefreshContext), std::move(authResult) }, Deleter<TitlePlayer>() };
+    SharedPtr<TitlePlayer> titlePlayer{ new (a.allocate(1)) TitlePlayer{ std::move(authResult), std::move(httpClient), std::move(tokenRefreshContext)  }, Deleter<TitlePlayer>() };
+
+    RETURN_IF_FAILED(Entity::StartTokenRefreshPulseForEntity(titlePlayer));
 
     return titlePlayer;
 }
 
-TitlePlayer::TitlePlayer(SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& /*tokenRefreshContext*/, Authentication::AuthenticateIdentityResult&& authResult)
-    : Entity{ httpClient, std::move(*authResult.titlePlayerAccount) },
-    m_linkedMasterPlayer{ MakeShared<Entity>(httpClient, std::move(*authResult.masterPlayerAccount)) }
+TitlePlayer::TitlePlayer(Authentication::AuthenticateIdentityResult&& authResult, SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& tokenRefreshContext)
+    : Entity{ std::move(*authResult.titlePlayerAccount), httpClient, tokenRefreshContext.Derive() } 
 {
+    // TODO
+    //m_linkedMasterPlayer = SharedPtr<Entity>{ new (Allocator<Entity>{}.allocate(1)) Entity{ std::move(*authResult.masterPlayerAccount), httpClient, tokenRefreshContext.Derive() } };
 }
 
 SharedPtr<Entity> TitlePlayer::LinkedMasterPlayer() const

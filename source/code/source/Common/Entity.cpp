@@ -4,13 +4,22 @@
 namespace PlayFab
 {
 
+uint32_t Entity::s_tokenPulseIntervalMs{ 1000 * 60 * 30 }; // 30 Minuntes
+
 using Wrappers::SafeString;
 
-Entity::Entity(SharedPtr<PlayFab::HttpClient const> httpClient, Authentication::EntityTokenResponse&& result) :
+Entity::Entity(Authentication::EntityTokenResponse&& response, SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& tokenRefreshContext) noexcept :
+    m_key{ *response.entity },
+    m_entityToken{ response },
     m_httpClient{ std::move(httpClient) },
-    m_key{ *result.entity },
-    m_entityToken{ result }
+    m_runContext{ std::move(tokenRefreshContext) }
 {
+}
+
+Entity::~Entity() noexcept
+{
+    // Cancel TokenPulse
+    m_runContext.CancellationToken().Cancel();
 }
 
 SharedPtr<PlayFab::HttpClient const> Entity::HttpClient() const
@@ -28,11 +37,9 @@ AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runC
     if (forceRefresh)
     {
         // API to refresh EntityToken doesn't exist yet
+        UNREFERENCED_PARAMETER(runContext);
         return E_FAIL;
     }
-
-    // No async logic needed currently
-    UNREFERENCED_PARAMETER(runContext);
 
     if (m_entityToken.expiration && *m_entityToken.expiration < GetTimeTNow())
     {
@@ -40,6 +47,90 @@ AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runC
     }
 
     return Result<EntityToken>{ EntityToken{ m_entityToken } };
+}
+
+class TokenPulseContext : public ICancellationListener
+{
+public:
+    TokenPulseContext(SharedPtr<Entity> entity, RunContext&& rc) : weakEntity{ entity }, runContext{ std::move(rc) }
+    {
+        bool cancelled = runContext.CancellationToken().RegisterForNotificationAndCheck(*this);
+        if (cancelled)
+        {
+            OnCancellation();
+        }
+    }
+
+    ~TokenPulseContext()
+    {
+        runContext.CancellationToken().UnregisterForNotificationAndCheck(*this);
+    }
+
+    WeakPtr<Entity> const weakEntity;
+    RunContext runContext;
+
+private:
+    void OnCancellation() noexcept override
+    {
+        // TODO is there a race between cancellation and rescheduling work to the queue in TokenPulseCallback?
+        // I think we should be ok since the TaskQueue::ScheduleWork call would fail or the callback will be invoked
+
+        // The only way to Cancel work scheduled to a task queue is to terminate that queue
+        HRESULT hr = runContext.TaskQueue().Terminate(false, nullptr, nullptr);
+        if (FAILED(hr))
+        {
+            assert(false); 
+            TRACE_VERBOSE("Failed to terminated TokenPulse queue");
+        }
+    }
+};
+
+HRESULT Entity::StartTokenRefreshPulseForEntity(SharedPtr<Entity> entity)
+{
+    auto context = MakeUnique<TokenPulseContext>(entity, entity->m_runContext.Derive());
+    RETURN_IF_FAILED(context->runContext.TaskQueue().ScheduleWork(TokenPulseCallback, context.get(), s_tokenPulseIntervalMs));
+    context.release();
+    return S_OK;
+}
+
+void CALLBACK Entity::TokenPulseCallback(void* c, bool cancelled) noexcept
+{
+    UniquePtr<TokenPulseContext> context{ static_cast<TokenPulseContext*>(c) };
+    SharedPtr<Entity> entity{ context->weakEntity.lock() };
+
+    if (cancelled || !entity)
+    {
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock{ entity->m_mutex };
+
+    // Refresh if < 1 hour left until expiration. Possible we could improve this logic to better insulate against suspend scenarios
+    time_t const* expiration{ entity->m_entityToken.expiration };
+    if (expiration && (uint64_t)(expiration - time(nullptr)) < 60 * 60)
+    {
+        // Should we use Entity::m_runContext or TokenPulseContext::runContext? Probably either one is fine
+        entity->RefreshToken(entity->m_runContext.Derive()).Finally([](Result<void>) {}); // TODO handle errors here
+    }
+
+    // Regardless of whether a token refresh was needed, schedule the next callback
+    HRESULT hr = context->runContext.TaskQueue().ScheduleWork(TokenPulseCallback, context.get(), s_tokenPulseIntervalMs);
+    if (FAILED(hr))
+    {
+        // This should only fail if the queue has been terminated
+        //TRACE_VERBOSE("")
+    }
+    else
+    {
+        context.release();
+    }
+}
+
+AsyncOp<void> Entity::RefreshToken(RunContext&& /*rc*/)
+{
+    // TODO Service API to refresh token doesn't yet exist
+    // TODO It might make sense to have this as an auto generated API outside this class
+    return S_OK;
 }
 
 EntityToken::EntityToken(const Authentication::EntityTokenResponse& tokenResponse) :
