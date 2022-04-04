@@ -3,8 +3,8 @@
 #include <playfab/PFGlobal.h>
 #include "ServiceConfig.h"
 #include "TitlePlayer.h"
-#include "RunContext.h"
 #include "HandleTable.h"
+#include "TokenExpiredHandler.h"
 
 namespace PlayFab
 {
@@ -24,6 +24,8 @@ public:
     HandleTable<ServiceConfig>& ServiceConfigs() noexcept;
     HandleTable<TitlePlayer>& TitlePlayers() noexcept;
 
+    TokenExpiredHandler TokenExpiredHandler() const noexcept;
+
 private:
     GlobalState(XTaskQueueHandle backgroundQueue) noexcept;
 
@@ -32,6 +34,7 @@ private:
     RootRunContext m_runContext;
     HandleTable<ServiceConfig> m_serviceConfigs;
     HandleTable<TitlePlayer> m_titlePlayers;
+    PlayFab::TokenExpiredHandler m_tokenExpiredHandler;
 
     friend struct GlobalStateBootstrapper;
 };

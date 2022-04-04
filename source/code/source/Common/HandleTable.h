@@ -55,7 +55,7 @@ void HandleTable<T>::CloseHandle(HANDLE handle)
     if (it == m_handles.end())
     {
         assert(false);
-        TRACE_WARNING("Attempted to close invalid handle %llu", handle);
+        TRACE_WARNING("%s: Attempted to close invalid handle %llu", __FUNCTION__, handle);
     }
 
     m_handles.erase(it);
@@ -69,7 +69,7 @@ SharedPtr<T> HandleTable<T>::FromHandle(HANDLE handle) const
     if (it == m_handles.end())
     {
         assert(false);
-        TRACE_WARNING("Attempted to close invalid handle %llu", handle);
+        TRACE_WARNING("%s: Attempted to access invalid handle %llu", __FUNCTION__, handle);
     }
 
     assert(it->second);

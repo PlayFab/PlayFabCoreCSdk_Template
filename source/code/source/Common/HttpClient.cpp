@@ -128,6 +128,8 @@ HCHttpCall::~HCHttpCall() noexcept
     {
         HCHttpCallCloseHandle(m_callHandle);
     }
+
+    m_runContext.CancellationToken().UnregisterForNotificationAndCheck(*this);
 }
 
 AsyncOp<ServiceResponse> HCHttpCall::Perform(

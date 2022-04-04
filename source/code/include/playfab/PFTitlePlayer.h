@@ -8,6 +8,7 @@
 #pragma once
 
 #include <playfab/PFEntity.h>
+#include <playfab/PFSharedDataModels.h>
 
 extern "C"
 {
@@ -96,24 +97,6 @@ HRESULT PFTitlePlayerGetEntityTokenGetResult(
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
     _Outptr_ const PFEntityToken** entityToken,
     _Out_opt_ size_t* bufferUsed
-) noexcept;
-
-typedef void CALLBACK PFEntityTokenExpiredCallback(
-    void* context,
-    PFTitlePlayerHandle player
-);
-
-HRESULT PFTitlePlayerRegisterForTokenExpiredEvent(
-    PFTitlePlayerHandle player,
-    XTaskQueueHandle queue,
-    void* context,
-    PFEntityTokenExpiredCallback* callback,
-    XTaskQueueRegistrationToken* token
-) noexcept;
-
-void PFTitlePlayerUnregisterForTokenExpiredEvent(
-    PFTitlePlayerHandle player,
-    XTaskQueueRegistrationToken token
 ) noexcept;
 
 }

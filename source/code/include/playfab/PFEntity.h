@@ -9,20 +9,12 @@
 
 #include <httpClient/pal.h>
 #include <httpClient/async.h>
-#include <playfab/PFSharedDataModels.h>
-#include <playfab/PFAuthenticationDataModels.h>
 
 extern "C"
 {
 
 /// <summary>
-/// Handle to an authenticated Entity (TitlePlayer, Title, etc.). Contains the auth tokens needed to make PlayFab service
-/// calls. When no longer needed, the Entity handle must be closed with PFEntityCloseHandle.
-/// </summary>
-typedef struct PFEntity* PFEntityHandle;
-
-/// <summary>
-/// PlayFab EntityToken and its expiration time. Used internally to authenticate PlayFab service calls.
+/// PlayFab EntityToken and its expiration time. Used to authenticate PlayFab service calls.
 /// </summary>
 typedef struct PFEntityToken
 {
@@ -38,79 +30,40 @@ typedef struct PFEntityToken
 
 } PFEntityToken;
 
-///// <summary>
-///// Duplicates a PFEntityHandle.
-///// </summary>
-///// <param name="entityHandle">Entity handle to duplicate.</param>
-///// <param name="duplicatedEntityHandle">The duplicated handle.</param>
-///// <returns>Result code for this API operation.</returns>
-///// <remarks>
-///// Both the duplicated handle and the original handle need to be closed with PFEntityCloseHandle when they
-///// are no longer needed.
-///// </remarks>
-//HRESULT PFEntityDuplicateHandle(
-//    _In_ PFEntityHandle entityHandle,
-//    _Out_ PFEntityHandle* duplicatedEntityHandle
-//) noexcept;
-//
-///// <summary>
-///// Closes a PFEntityHandle.
-///// </summary>
-///// <param name="entityHandle">Entity handle to close.</param>
-///// <returns>Result code for this API operation.</returns>
-//void PFEntityCloseHandle(
-//    _In_ PFEntityHandle entityHandle
-//) noexcept;
-//
-///// <summary>
-///// Get the size in bytes needed to store the PFEntityKey for an Entity.
-///// </summary>
-///// <param name="entityHandle">PFEntityHandle returned from a auth call.</param>
-///// <param name="bufferSize">The buffer size in bytes required for the EntityKey.</param>
-///// <returns>Result code for this API operation.</returns>
-//HRESULT PFEntityGetEntityKeySize(
-//    _In_ PFEntityHandle entityHandle,
-//    _Out_ size_t* bufferSize
-//) noexcept;
-//
-///// <summary>
-///// Get the PFEntityKey for an entity.
-///// </summary>
-///// <param name="entityHandle">PFEntityHandle returned from a auth call.</param>
-///// <param name="bufferSize">The size of the buffer for the PFEntityKey. The required size can be obtained from PFEntityGetEntityKeySize.</param>
-///// <param name="buffer">Byte buffer used for the PFEntityKey and its fields.</param>
-///// <param name="result">Pointer to the PFEntityKey object.</param>
-///// <param name="bufferUsed">The number of bytes in the provided buffer that were used.</param>
-///// <returns>Result code for this API operation.</returns>
-///// <remarks>
-///// entityKey is a pointer within buffer and does not need to be freed separately.
-///// </remarks>
-//HRESULT PFEntityGetEntityKey(
-//    _In_ PFEntityHandle entityHandle,
-//    _In_ size_t bufferSize,
-//    _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
-//    _Outptr_ const PFEntityKey** entityKey,
-//    _Out_opt_ size_t* bufferUsed
-//) noexcept;
-//
-//HRESULT PFEntityGetEntityTokenAsync(
-//    _In_ PFEntityHandle entityHandle,
-//    _In_ bool forceRefresh,
-//    _Inout_ XAsyncBlock* async
-//) noexcept;
-//
-//HRESULT PFEntityGetEntityTokenGetResultSize(
-//    _Inout_ XAsyncBlock* async,
-//    _Out_ size_t* bufferSize
-//) noexcept;
-//
-//
-//HRESULT PFEntityGetEntityTokenGetResult(
-//    _Inout_ XAsyncBlock* async,
-//    _In_ size_t bufferSize,
-//    _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
-//    _Outptr_ const PFEntityToken** entityToken,
-//    _Out_opt_ size_t* bufferUsed
-//) noexcept;
+/// <summary>
+/// EntityToken expired event handler. Needed to reauthenticate players in scenarios where the SDK is unable to automatically
+/// refresh the cached EntityToken.
+/// </summary>
+/// <param name="context">Optional context pointer to data used by the event handler.</param>
+/// <param name="userId">The Id of the Entity whose EntityToken expired. TODO should this be EntityKey rather than just EntityId?</param>
+/// <returns></returns>
+typedef void CALLBACK PFEntityTokenExpiredEventHandler(
+    _In_ void* context,
+    _In_ const char* entityId
+);
+
+/// <summary>
+/// Register a handler for EntityToken expired events.
+/// </summary>
+/// <param name="queue">The async queue the callback should be invoked on.</param>
+/// <param name="context">Optional pointer to data used by the event handler.</param>
+/// <param name="handler">The event handler, <see cref="XalUserChangeEventHandler"/>.</param>
+/// <param name="token">The token for unregistering this callback</param>
+/// <returns>Result code for this API operation.  Possible values are S_OK, E_PF_NOT_INITIALIZED, or E_FAIL.</returns>
+HRESULT PFEntityRegisterTokenExpiredEventHandler(
+    _In_opt_ XTaskQueueHandle queue,
+    _In_opt_ void* context,
+    _In_ PFEntityTokenExpiredEventHandler* handler,
+    _Out_ PFRegistrationToken* token
+) noexcept;
+
+/// <summary>
+/// Unregisters a previously registered callback.
+/// </summary>
+/// <param name="token">The token returned from PFEntityRegisterTokenExpiredEventHandler.</param>
+/// <returns></returns>
+void PFEntityUnregisterTokenExpiredEventHandler(
+    _In_ PFRegistrationToken token
+) noexcept;
 
 }

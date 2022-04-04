@@ -9,7 +9,12 @@ namespace PlayFab
 class TitlePlayer : public Entity
 {
 public:
-    static Result<SharedPtr<TitlePlayer>> Make(Authentication::AuthenticateIdentityResult&& authResult, SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& tokenRefreshContext) noexcept; 
+    static Result<SharedPtr<TitlePlayer>> Make(
+        Authentication::AuthenticateIdentityResult&& authResult,
+        SharedPtr<PlayFab::HttpClient const> httpClient,
+        RunContext&& tokenRefreshContext,
+        TokenExpiredHandler&& tokenExpiredHandler
+    ) noexcept; 
 
     TitlePlayer(const TitlePlayer&) = delete;
     TitlePlayer& operator=(const TitlePlayer&) = delete;
@@ -19,7 +24,12 @@ public:
     SharedPtr<Entity> LinkedMasterPlayer() const;
 
 private:
-    TitlePlayer(Authentication::AuthenticateIdentityResult&& authResult, SharedPtr<PlayFab::HttpClient const> httpClient, RunContext&& tokenRefreshContext);
+    TitlePlayer(
+        Authentication::AuthenticateIdentityResult&& authResult,
+        SharedPtr<PlayFab::HttpClient const> httpClient,
+        RunContext&& tokenRefreshContext,
+        TokenExpiredHandler&& tokenExpiredHandler
+    ) noexcept;
 
     SharedPtr<Entity> m_linkedMasterPlayer;
 };
