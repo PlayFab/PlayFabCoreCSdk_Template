@@ -23,10 +23,9 @@ void CALLBACK AuthenticateWithCustomIdComplete(XAsyncBlock* async)
     }
     else
     {
+        PFTitlePlayerCloseHandle(playerHandle);
         testContext.Pass();
     }
-
-    PFTitlePlayerCloseHandle(playerHandle);
 }
 
 void ApiTests::TestAuth(TestContext& testContext)

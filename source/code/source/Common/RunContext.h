@@ -25,6 +25,9 @@ public:
     PlayFab::TaskQueue const& TaskQueue() const noexcept;
     PlayFab::CancellationToken CancellationToken() const noexcept;
 
+    // Terminate Queue
+    HRESULT TerminateTaskQueue() noexcept;
+
 protected:
     RunContext(PlayFab::TaskQueue&& q, PlayFab::CancellationToken&& ct, SharedPtr<RunContextTracker> tracker) noexcept;
 

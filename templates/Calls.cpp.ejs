@@ -88,7 +88,7 @@ AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
             <%- call.resultDatatype.name %> resultModel;
             resultModel.FromJson(serviceResponse.Data);<%
         if (call.entityReturned) { %>
-            return <%- call.entityReturned %>::Make(serviceConfig->HttpClient(), state->RunContext().Derive(), std::move(resultModel));<%
+            return <%- call.entityReturned %>::Make(std::move(resultModel), serviceConfig->HttpClient(), state->RunContext().Derive());<%
         } else { %>
             return resultModel;<%
         }

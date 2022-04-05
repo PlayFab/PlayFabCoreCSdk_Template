@@ -103,6 +103,16 @@ PlayFab::CancellationToken RunContext::CancellationToken() const noexcept
     return m_cancellationToken;
 }
 
+HRESULT RunContext::TerminateTaskQueue() noexcept
+{
+    // TODO handle failure here? 'this' lifetime not guaranteed
+    return m_queue.Terminate(false, [](void* context)
+    {
+        RunContext& rc{ *static_cast<RunContext*>(context) };
+        rc.m_tracker->Unregister(rc);
+    }, this);
+}
+
 RootRunContext::RootRunContext(XTaskQueueHandle queueHandle) noexcept :
     RunContext{ TaskQueue::DeriveWorkerQueue(queueHandle), PlayFab::CancellationToken{}, MakeShared<RunContextTracker>() }
 {

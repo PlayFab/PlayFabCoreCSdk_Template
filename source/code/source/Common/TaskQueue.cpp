@@ -65,64 +65,29 @@ XTaskQueueHandle TaskQueue::GetHandle() const noexcept
 
 HRESULT TaskQueue::Terminate(
     _In_ bool wait,
-    _In_opt_ std::function<void()> queueTerminatedCallback
+    _In_opt_ XTaskQueueTerminatedCallback* callback,
+    _In_opt_ void* callbackContext
 ) const noexcept
 {
-    auto context = queueTerminatedCallback ? MakeUnique<std::function<void()>>(std::move(queueTerminatedCallback)) : nullptr;
-
-    RETURN_IF_FAILED(XTaskQueueTerminate(m_handle, wait, context.get(),
-        [](void* context)
-    {
-        if (context)
-        {
-            // Be sure to retake ownership of the callback here
-            UniquePtr<std::function<void()>> callback{ reinterpret_cast<std::function<void()>*>(context) };
-            (*callback)();
-        }
-    }));
-
-    context.release();
-    return S_OK;
+    return XTaskQueueTerminate(m_handle, wait, callbackContext, callback);
 }
 
-HRESULT TaskQueue::RunWork(
-    _In_ AsyncWork&& work,
+HRESULT TaskQueue::ScheduleWork(
+    _In_ XTaskQueueCallback callback,
+    _In_opt_ void* callbackContext,
     _In_ uint64_t delayInMs
 ) const noexcept
 {
-    return RunOnPort(XTaskQueuePort::Work, std::move(work), delayInMs);
+    return XTaskQueueSubmitDelayedCallback(m_handle, XTaskQueuePort::Work, static_cast<uint32_t>(delayInMs), callbackContext, callback);
 }
 
-HRESULT TaskQueue::RunCompletion(
-    _In_ AsyncWork&& work,
+HRESULT TaskQueue::ScheduleCompeletion(
+    _In_ XTaskQueueCallback callback,
+    _In_opt_ void* callbackContext,
     _In_ uint64_t delayInMs
 ) const noexcept
 {
-    return RunOnPort(XTaskQueuePort::Completion, std::move(work), delayInMs);
-}
-
-HRESULT TaskQueue::RunOnPort(
-    _In_ XTaskQueuePort port,
-    _In_ AsyncWork&& work,
-    _In_ uint64_t delayInMs
-) const noexcept
-{
-    RETURN_HR_INVALIDARG_IF_NULL(work);
-
-    auto context{ MakeUnique<AsyncWork>(std::move(work)) };
-
-    RETURN_IF_FAILED(XTaskQueueSubmitDelayedCallback(m_handle, port, static_cast<uint32_t>(delayInMs), context.get(),
-        [](void* context, bool canceled)
-    {
-        UniquePtr<AsyncWork> work{ static_cast<AsyncWork*>(context) };
-        if (!canceled)
-        {
-            (*work)();
-        }
-    }));
-
-    context.release();
-    return S_OK;
+    return XTaskQueueSubmitDelayedCallback(m_handle, XTaskQueuePort::Completion, static_cast<uint32_t>(delayInMs), callbackContext, callback);
 }
 
 TaskQueue TaskQueue::DeriveWorkerQueue(XTaskQueueHandle handle) noexcept

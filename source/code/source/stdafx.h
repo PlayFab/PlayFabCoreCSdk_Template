@@ -40,5 +40,6 @@
 #include "Error.h"
 #include "PlatformUtils.h"
 #include "Trace.h"
+#include "RunContext.h"
 
 #define UNREFERENCED_PARAMETER(P) (P)

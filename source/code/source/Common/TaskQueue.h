@@ -8,8 +8,6 @@
 namespace PlayFab
 {
 
-using AsyncWork = std::function<void()>;
-
 // RAII wrapper around XTaskQueueHandle
 class TaskQueue
 {
@@ -26,33 +24,25 @@ public:
 
     XTaskQueueHandle GetHandle() const noexcept;
 
-    // Terminates a task queue by canceling all pending items and preventing new items from being queued.
     HRESULT Terminate(
         _In_ bool wait,
-        _In_opt_ std::function<void()> queueTerminatedCallback = nullptr
+        _In_opt_ XTaskQueueTerminatedCallback* callback,
+        _In_opt_ void* callbackContext
     ) const noexcept;
 
-    // Submits a callback to the queue for the work port.  The callback will be added to the queue after 
-    // delayMs milliseconds.
-    HRESULT RunWork(
-        _In_ AsyncWork&& work,
-        _In_ uint64_t delayInMs = 0
+    HRESULT ScheduleWork(
+        _In_ XTaskQueueCallback callback,
+        _In_opt_ void* callbackContext,
+        _In_ uint64_t delayInMs
     ) const noexcept;
 
-    // Submits a callback to the queue for the completion port.  The callback will be added to the queue after 
-    // delayMs milliseconds.
-    HRESULT RunCompletion(
-        _In_ AsyncWork&& work,
-        _In_ uint64_t delayInMs = 0
+    HRESULT ScheduleCompeletion(
+        _In_ XTaskQueueCallback callback,
+        _In_opt_ void* callbackContext,
+        _In_ uint64_t delayInMs
     ) const noexcept;
 
 private:
-    HRESULT RunOnPort(
-        _In_ XTaskQueuePort port,
-        _In_ AsyncWork&& work,
-        _In_ uint64_t delayInMs = 0
-    ) const noexcept;
-
     XTaskQueueHandle m_handle{ nullptr };
 };
 

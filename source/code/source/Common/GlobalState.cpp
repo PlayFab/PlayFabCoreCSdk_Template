@@ -145,6 +145,11 @@ HandleTable<TitlePlayer>& GlobalState::TitlePlayers() noexcept
     return m_titlePlayers;
 }
 
+TokenExpiredHandler GlobalState::TokenExpiredHandler() const noexcept
+{
+    return m_tokenExpiredHandler;
+}
+
 HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state)
 {
     struct StateHolder

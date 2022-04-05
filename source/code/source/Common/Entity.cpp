@@ -4,13 +4,35 @@
 namespace PlayFab
 {
 
+uint32_t Entity::s_tokenPulseIntervalMs{ 1000 * 60 * 30 }; // 30 Minuntes
+
 using Wrappers::SafeString;
 
-Entity::Entity(SharedPtr<PlayFab::HttpClient const> httpClient, Authentication::EntityTokenResponse&& result) :
+Entity::Entity(
+    Authentication::EntityTokenResponse&& response,
+    SharedPtr<PlayFab::HttpClient const> httpClient,
+    RunContext&& tokenRefreshContext,
+    TokenExpiredHandler&& tokenExpiredHandler
+) noexcept :
+    m_key{ *response.entity },
+    m_entityToken{ response },
     m_httpClient{ std::move(httpClient) },
-    m_key{ *result.entity },
-    m_entityToken{ result }
+    m_runContext{ std::move(tokenRefreshContext) },
+    m_tokenExpiredHandler{ std::move(tokenExpiredHandler) }
 {
+    if (m_runContext.CancellationToken().RegisterForNotificationAndCheck(*this))
+    {
+        OnCancellation();
+    }
+}
+
+Entity::~Entity() noexcept
+{
+    if (!m_runContext.CancellationToken().UnregisterForNotificationAndCheck(*this))
+    {
+        // If it wasn't terminated already, terminate the background queue
+        OnCancellation();
+    }
 }
 
 SharedPtr<PlayFab::HttpClient const> Entity::HttpClient() const
@@ -28,11 +50,9 @@ AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runC
     if (forceRefresh)
     {
         // API to refresh EntityToken doesn't exist yet
+        UNREFERENCED_PARAMETER(runContext);
         return E_FAIL;
     }
-
-    // No async logic needed currently
-    UNREFERENCED_PARAMETER(runContext);
 
     if (m_entityToken.expiration && *m_entityToken.expiration < GetTimeTNow())
     {
@@ -40,6 +60,81 @@ AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runC
     }
 
     return Result<EntityToken>{ EntityToken{ m_entityToken } };
+}
+
+void Entity::OnCancellation() noexcept
+{
+    HRESULT hr = m_runContext.TerminateTaskQueue();
+    if (FAILED(hr))
+    {
+        assert(false);
+        TRACE_VERBOSE("Failed to terminate Entity background TaskQueue");
+    }
+}
+
+struct TokenPulseContext
+{
+    TokenPulseContext(SharedPtr<Entity> entity) : weakEntity{ entity } {}
+    ~TokenPulseContext() = default;
+
+    WeakPtr<Entity> const weakEntity;
+};
+
+HRESULT Entity::StartTokenRefreshPulseForEntity(SharedPtr<Entity> entity)
+{
+    auto context = MakeUnique<TokenPulseContext>(entity);
+    RETURN_IF_FAILED(entity->m_runContext.TaskQueue().ScheduleWork(TokenPulseCallback, context.get(), s_tokenPulseIntervalMs));
+    context.release();
+    return S_OK;
+}
+
+void CALLBACK Entity::TokenPulseCallback(void* c, bool cancelled) noexcept
+{
+    UniquePtr<TokenPulseContext> context{ static_cast<TokenPulseContext*>(c) };
+    SharedPtr<Entity> entity{ context->weakEntity.lock() };
+
+    if (cancelled || !entity)
+    {
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock{ entity->m_mutex };
+
+    // Refresh if < 1 hour left until expiration. Possible we could improve this logic to better insulate against suspend scenarios
+    time_t const* expiration{ entity->m_entityToken.expiration };
+    if (expiration && (uint64_t)(expiration - time(nullptr)) < 60 * 60)
+    {
+        entity->RefreshToken(entity->m_runContext.Derive()).Finally([entity](Result<void> result)
+        {
+            if (FAILED(result.hr))
+            {
+                // Do we need special handling for E_ABORT? maybe don't invoke callback in that case?
+                entity->m_tokenExpiredHandler.Invoke(entity->m_key.Model().id);
+            }
+            else
+            {
+                // Make sure entity->m_entityToken is updated
+            }
+        });
+    }
+
+    // Regardless of whether a token refresh was needed, schedule the next callback
+    HRESULT hr = entity->m_runContext.TaskQueue().ScheduleWork(TokenPulseCallback, context.get(), s_tokenPulseIntervalMs);
+    if (FAILED(hr))
+    {
+        // This should only fail if the queue has been terminated
+        assert(hr == E_ABORT);
+        //TRACE_VERBOSE("")
+    }
+    else
+    {
+        context.release();
+    }
+}
+
+AsyncOp<void> Entity::RefreshToken(RunContext&& /*rc*/)
+{
+    return E_NOTIMPL;
 }
 
 EntityToken::EntityToken(const Authentication::EntityTokenResponse& tokenResponse) :

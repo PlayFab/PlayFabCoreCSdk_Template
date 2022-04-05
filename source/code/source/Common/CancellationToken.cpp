@@ -21,10 +21,10 @@ public:
     bool RegisterForNotificationAndCheck(ICancellationListener& listener);
     bool UnregisterForNotificationAndCheck(ICancellationListener& listener) noexcept;
 
-    // ICancellationListener
-    virtual void OnCancellation() noexcept override;
-
 private:
+    // ICancellationListener
+    void OnCancellation() noexcept override;
+
     std::recursive_mutex m_mutex; // intentionally recursive
     std::atomic<bool> m_cancelled{ false };
     Vector<ICancellationListener*> m_listeners; // non-owning

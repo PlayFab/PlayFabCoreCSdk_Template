@@ -1,9 +1,9 @@
 #pragma once
 
 #include <playfab/PFEntity.h>
-#include "CallbackManager.h"
 #include "HttpClient.h"
 #include "Authentication/AuthenticationDataModels.h"
+#include "TokenExpiredHandler.h"
 
 namespace PlayFab
 {
@@ -28,14 +28,14 @@ private:
 
 // An entity authenticated with PlayFab. An entity has a type, an ID, and an EntityToken. For more detail on PlayFab entities see the service
 // documentation here: https://docs.microsoft.com/en-us/gaming/playfab/features/data/entities/quickstart.
-class Entity : public std::enable_shared_from_this<Entity>
+class Entity : public ICancellationListener
 {
 public:
-    Entity(SharedPtr<PlayFab::HttpClient const> httpClient, Authentication::EntityTokenResponse&& entityTokenResponse);
-
     Entity(const Entity&) = delete;
+    Entity(Entity&&) = delete;
     Entity& operator=(const Entity&) = delete;
-    ~Entity() = default;
+    Entity& operator=(Entity&&) = delete;
+    ~Entity() noexcept;
 
 public:
     // Shared HttpClient
@@ -45,9 +45,35 @@ public:
     AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, RunContext&& runContext);
 
 protected:
-    SharedPtr<PlayFab::HttpClient const> m_httpClient;
+    Entity(
+        Authentication::EntityTokenResponse&& entityTokenResponse,
+        SharedPtr<PlayFab::HttpClient const> httpClient,
+        RunContext&& tokenRefreshContext,
+        TokenExpiredHandler&& tokenExpiredHandler
+    ) noexcept;
+
+    // Token refresh pulse must be started outside of constructor so we can use a weak_ptr in the callback context.
+    // Static to avoid need for enable_shared_from_this inheritance
+    static HRESULT StartTokenRefreshPulseForEntity(SharedPtr<Entity> entity);
+
+private:
+    // ICancellationListener
+    void OnCancellation() noexcept override;
+
+    // Callback that is scheduled periodically to check EntityToken and refresh as needed.
+    static void CALLBACK TokenPulseCallback(void* context, bool cancelled) noexcept;
+
+    // Temporary Stub. This will eventually be replaced with auto generated service wrapper when that API is available.
+    AsyncOp<void> RefreshToken(RunContext&& runContext);
+
+    std::mutex m_mutex;
     PlayFab::EntityKey const m_key;
     PlayFab::EntityToken m_entityToken;
+    SharedPtr<PlayFab::HttpClient const> m_httpClient;
+    RunContext m_runContext;
+    TokenExpiredHandler m_tokenExpiredHandler;
+
+    static uint32_t s_tokenPulseIntervalMs;
 };
 
 }
