@@ -34,6 +34,12 @@ for (var i = 0; i < featureGroup.calls.length; i++) {
 %>
     static AsyncOp<<%- resultType %>> <%- call.name %>(<%- contextParam %><%- requestParam %>RunContext const& rc);<%
 
+    // Add reauthenticate call alongside auth calls
+    // TODO what is the right condition to check for auth call
+    if (call.entityReturned === "TitlePlayer") { %>
+    static AsyncOp<void> Re<%- call.name %>(SharedPtr<TitlePlayer> player, <%- requestParam %>RunContext const& rc);<%
+    } // end if
+
     // TODO update path/remove if not needed anymore
     // Eplicitly add LoginWithXUser API alongside Client/LoginWithXbox
     if (call.url === "/Client/LoginWithXbox") { %>

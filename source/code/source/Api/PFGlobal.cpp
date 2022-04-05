@@ -76,10 +76,7 @@ HRESULT PFServiceConfigCreateHandle(
     RETURN_IF_FAILED(GlobalState::Get(state));
 
     auto serviceConfig = MakeShared<PlayFab::ServiceConfig>(connectionString, titleId, playerAccountPoolId);
-
-    *serviceConfigHandle = state->ServiceConfigs().MakeHandle(std::move(serviceConfig));
-
-    return S_OK;
+    return state->ServiceConfigs().MakeHandle(std::move(serviceConfig), *serviceConfigHandle);
 }
 
 HRESULT PFServiceConfigDuplicateHandle(
@@ -92,10 +89,9 @@ HRESULT PFServiceConfigDuplicateHandle(
     SharedPtr<GlobalState> state;
     RETURN_IF_FAILED(GlobalState::Get(state));
 
-    auto serviceConfig = state->ServiceConfigs().FromHandle(handle);
-    *duplicatedHandle = state->ServiceConfigs().MakeHandle(std::move(serviceConfig));
-
-    return S_OK;
+    SharedPtr<ServiceConfig> serviceConfig;
+    RETURN_IF_FAILED(state->ServiceConfigs().FromHandle(handle, serviceConfig));
+    return state->ServiceConfigs().MakeHandle(std::move(serviceConfig), *duplicatedHandle);
 }
 
 void PFServiceConfigCloseHandle(

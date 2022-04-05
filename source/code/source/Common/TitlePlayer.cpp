@@ -9,7 +9,7 @@ using namespace Authentication;
 
 Result<SharedPtr<TitlePlayer>> TitlePlayer::Make(
     Authentication::AuthenticateIdentityResult&& authResult,
-    SharedPtr<PlayFab::HttpClient const> httpClient,
+    SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
     RunContext&& tokenRefreshContext,
     TokenExpiredHandler&& tokenExpiredHandler
 ) noexcept
@@ -18,7 +18,7 @@ Result<SharedPtr<TitlePlayer>> TitlePlayer::Make(
     SharedPtr<TitlePlayer> titlePlayer{ 
         new (a.allocate(1)) TitlePlayer{ 
             std::move(authResult),
-            std::move(httpClient),
+            std::move(serviceConfig),
             std::move(tokenRefreshContext),
             std::move(tokenExpiredHandler)  
         }, Deleter<TitlePlayer>() 
@@ -31,11 +31,11 @@ Result<SharedPtr<TitlePlayer>> TitlePlayer::Make(
 
 TitlePlayer::TitlePlayer(
     Authentication::AuthenticateIdentityResult&& authResult,
-    SharedPtr<PlayFab::HttpClient const> httpClient,
+    SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
     RunContext&& tokenRefreshContext,
     TokenExpiredHandler&& tokenExpiredHandler
 ) noexcept :
-    Entity{ std::move(*authResult.titlePlayerAccount), httpClient, std::move(tokenRefreshContext), std::move(tokenExpiredHandler) } 
+    Entity{ std::move(*authResult.titlePlayerAccount), serviceConfig, std::move(tokenRefreshContext), std::move(tokenExpiredHandler) }
 {
     // TODO
     //m_linkedMasterPlayer = SharedPtr<Entity>{ new (Allocator<Entity>{}.allocate(1)) Entity{ std::move(*authResult.masterPlayerAccount), httpClient, tokenRefreshContext.Derive() } };

@@ -12,7 +12,7 @@ using namespace PlayFab::<%- featureGroup.name %>;
 for (var i = 0; i < featureGroup.calls.length; i++) {
     var call = featureGroup.calls[i]; 
     var contextHandleParam = globalPrefix + "ServiceConfigHandle contextHandle";
-    var contextBinder = "serviceConfig";
+    var contextBinder = "std::move(serviceConfig)";
     if (call.entityRequired) {
         continue; // only defining auth calls for now
         if (call.entityRequired === "TitlePlayer") {
@@ -39,7 +39,8 @@ HRESULT <%- prefix %><%- call.name %>Async(
     SharedPtr<GlobalState> state{ nullptr };
     RETURN_IF_FAILED(GlobalState::Get(state));
 
-    auto serviceConfig = state->ServiceConfigs().FromHandle(contextHandle);
+    SharedPtr<ServiceConfig> serviceConfig;
+    RETURN_IF_FAILED(state->ServiceConfigs().FromHandle(contextHandle, serviceConfig));
 
     auto provider = <%- makeProvider %>(std::move(state), async, __FUNCTION__, std::bind(&<%- featureGroup.name %>API::<%- call.name %>, std::placeholders::_1, <%- contextBinder %>, <%- requestBinder%>std::placeholders::_2));
     return Provider::Run(UniquePtr<Provider>(provider.release()));
@@ -89,4 +90,24 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
     return S_OK;
 }
 <%  } // end if
+
+    if (call.entityReturned === "TitlePlayer") { %>
+HRESULT <%- prefix %>Re<%- call.name %>Async(
+    _In_ PFTitlePlayerHandle titlePlayerHandle,
+    <%- requestParam %>_Inout_ XAsyncBlock* async
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(titlePlayerHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(request);
+
+    SharedPtr<GlobalState> state{ nullptr };
+    RETURN_IF_FAILED(GlobalState::Get(state));
+
+    SharedPtr<TitlePlayer> titlePlayer;
+    RETURN_IF_FAILED(state->TitlePlayers().FromHandle(titlePlayerHandle, titlePlayer));
+
+    auto provider = MakeProvider(state->RunContext().DeriveOnQueue(async->queue), async, __FUNCTION__, std::bind(&<%- featureGroup.name %>API::Re<%- call.name %>, std::move(titlePlayer), *request, std::placeholders::_1));
+    return Provider::Run(UniquePtr<Provider>(provider.release()));
+}
+<% } // end if
 } // end for %>

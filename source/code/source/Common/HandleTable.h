@@ -14,10 +14,9 @@ public:
     HandleTable& operator=(HandleTable const&) = delete;
     HandleTable& operator=(HandleTable&&) = delete;
 
-    HANDLE MakeHandle(SharedPtr<T>&& object);
+    HRESULT MakeHandle(SharedPtr<T>&& object, HANDLE& handle);
+    HRESULT FromHandle(HANDLE handle, SharedPtr<T>& object) const;
     void CloseHandle(HANDLE handle);
-
-    SharedPtr<T> FromHandle(HANDLE handle) const;
 
 private:
     mutable std::mutex m_mutex;
@@ -36,14 +35,32 @@ HandleTable<T>::HandleTable(HANDLE firstHandleValue) :
 }
 
 template<typename T>
-HANDLE HandleTable<T>::MakeHandle(SharedPtr<T>&& object)
+HRESULT HandleTable<T>::MakeHandle(SharedPtr<T>&& object, HANDLE& handle)
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
+    RETURN_HR_IF(E_INVALIDARG, !object);
 
-    HANDLE h = m_nextHandle++;
-    m_handles.emplace(h, std::move(object));
+    handle = m_nextHandle++;
+    m_handles.emplace(handle, std::move(object));
 
-    return h;
+    return S_OK;
+}
+
+template<typename T>
+HRESULT HandleTable<T>::FromHandle(HANDLE handle, SharedPtr<T>& object) const
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    auto it = m_handles.find(handle);
+    if (it == m_handles.end())
+    {
+        TRACE_ERROR("%s: Attempted to access invalid handle %llu", __FUNCTION__, handle);
+        return E_INVALIDARG; // Could define E_PF_INVALIDHANDLE
+    }
+
+    assert(it->second);
+    object = it->second;
+
+    return S_OK;
 }
 
 template<typename T>
@@ -54,26 +71,11 @@ void HandleTable<T>::CloseHandle(HANDLE handle)
     auto it = m_handles.find(handle);
     if (it == m_handles.end())
     {
-        assert(false);
         TRACE_WARNING("%s: Attempted to close invalid handle %llu", __FUNCTION__, handle);
+        return;
     }
 
     m_handles.erase(it);
-}
-
-template<typename T>
-SharedPtr<T> HandleTable<T>::FromHandle(HANDLE handle) const
-{
-    std::unique_lock<std::mutex> lock{ m_mutex };
-    auto it = m_handles.find(handle);
-    if (it == m_handles.end())
-    {
-        assert(false);
-        TRACE_WARNING("%s: Attempted to access invalid handle %llu", __FUNCTION__, handle);
-    }
-
-    assert(it->second);
-    return it->second;
 }
 
 }

@@ -47,7 +47,7 @@ for (var i = 0; i < featureGroup.calls.length; i++) {
     if (call.entityRequired) {
         contextParam = "SharedPtr<" + call.entityRequired + "> entity,\n    ";
         if (call.entityRequired) {
-            httpRequestMethod = "entity->HttpClient()->MakeEntityRequest";
+            httpRequestMethod = "entity->ServiceConfig()->HttpClient()->MakeEntityRequest";
         }
     }
     var requestParam = call.requestDatatype ? "const " + call.requestDatatype.name + "& request,\n    " : ""; 
@@ -88,7 +88,7 @@ AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
             <%- call.resultDatatype.name %> resultModel;
             resultModel.FromJson(serviceResponse.Data);<%
         if (call.entityReturned) { %>
-            return <%- call.entityReturned %>::Make(std::move(resultModel), serviceConfig->HttpClient(), state->RunContext().Derive());<%
+            return <%- call.entityReturned %>::Make(std::move(resultModel), serviceConfig, state->RunContext().Derive(), state->TokenExpiredHandler());<%
         } else { %>
             return resultModel;<%
         }
@@ -107,6 +107,47 @@ AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
     });
 }
 <%
+    // Add reauthenticate call alongside auth calls
+    if (call.entityReturned === "TitlePlayer") { %>
+AsyncOp<void> <%- featureGroup.name %>API::Re<%- call.name %>(
+    SharedPtr<TitlePlayer> player,
+    <%- requestParam %>RunContext const& rc)
+{
+    const char* path{ "<%- call.url %>" };
+    JsonValue requestBody{ request.ToJson() };
+    JsonUtils::ObjectAddMember(requestBody, "TitleId", player->ServiceConfig()->TitleId());
+    JsonUtils::ObjectAddMember(requestBody, "PlayerAccountPoolId", player->ServiceConfig()->PlayerAccountPoolId());
+
+    auto requestOp = player->ServiceConfig()->HttpClient()->MakePostRequest(
+        path,
+        UnorderedMap<String, String>{},
+        std::move(requestBody),
+        rc.Derive()
+    );
+
+    return requestOp.Then([ player ](Result<ServiceResponse> result) -> Result<void>
+    {
+        RETURN_IF_FAILED(result.hr);
+
+        auto serviceResponse = result.ExtractPayload();
+        if (serviceResponse.HttpCode == 200)
+        {
+            <%- call.resultDatatype.name %> resultModel;
+            resultModel.FromJson(serviceResponse.Data);
+
+            assert(resultModel.titlePlayerAccount.has_value());
+            RETURN_HR_IF(E_FAIL, !resultModel.titlePlayerAccount.has_value());
+            return player->SetEntityToken(*resultModel.titlePlayerAccount);
+            // TODO update MasterPlayer EntityToken as well
+        }
+        else
+        {
+            return Result<void>{ ServiceErrorToHR(serviceResponse.ErrorCode), std::move(serviceResponse.ErrorMessage) };
+        }
+    });
+}
+<%  } // end if
+
 // Explicitly add LoginWithXUser implementation alongside Client/LoginWithXbox
 if (call.url === "/Client/LoginWithXbox") { %>
 #if HC_PLATFORM == HC_PLATFORM_GDK
