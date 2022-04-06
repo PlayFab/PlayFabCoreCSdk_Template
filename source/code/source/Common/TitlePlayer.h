@@ -11,7 +11,7 @@ class TitlePlayer : public Entity
 public:
     static Result<SharedPtr<TitlePlayer>> Make(
         Authentication::AuthenticateIdentityResult&& authResult,
-        SharedPtr<PlayFab::HttpClient const> httpClient,
+        SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
         RunContext&& tokenRefreshContext,
         TokenExpiredHandler&& tokenExpiredHandler
     ) noexcept; 
@@ -26,7 +26,7 @@ public:
 private:
     TitlePlayer(
         Authentication::AuthenticateIdentityResult&& authResult,
-        SharedPtr<PlayFab::HttpClient const> httpClient,
+        SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
         RunContext&& tokenRefreshContext,
         TokenExpiredHandler&& tokenExpiredHandler
     ) noexcept;

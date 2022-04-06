@@ -1,7 +1,7 @@
 #pragma once
 
 #include <playfab/PFEntity.h>
-#include "HttpClient.h"
+#include "ServiceConfig.h"
 #include "Authentication/AuthenticationDataModels.h"
 #include "TokenExpiredHandler.h"
 
@@ -16,6 +16,8 @@ public:
     EntityToken(const Authentication::EntityTokenResponse& tokenResponse);
     EntityToken(const EntityToken& src);
     EntityToken(EntityToken&& src);
+    EntityToken& operator=(const EntityToken& src);
+    EntityToken& operator=(EntityToken&& src);
     ~EntityToken() = default;
 
     size_t RequiredBufferSize() const;
@@ -38,16 +40,16 @@ public:
     ~Entity() noexcept;
 
 public:
-    // Shared HttpClient
-    SharedPtr<HttpClient const> HttpClient() const;
-
+    SharedPtr<ServiceConfig const> ServiceConfig() const;
     EntityKey const& EntityKey() const;
     AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, RunContext&& runContext);
+
+    HRESULT SetEntityToken(Authentication::EntityTokenResponse const& entityTokenResponse);
 
 protected:
     Entity(
         Authentication::EntityTokenResponse&& entityTokenResponse,
-        SharedPtr<PlayFab::HttpClient const> httpClient,
+        SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
         RunContext&& tokenRefreshContext,
         TokenExpiredHandler&& tokenExpiredHandler
     ) noexcept;
@@ -69,7 +71,7 @@ private:
     std::mutex m_mutex;
     PlayFab::EntityKey const m_key;
     PlayFab::EntityToken m_entityToken;
-    SharedPtr<PlayFab::HttpClient const> m_httpClient;
+    SharedPtr<PlayFab::ServiceConfig const> m_serviceConfig;
     RunContext m_runContext;
     TokenExpiredHandler m_tokenExpiredHandler;
 

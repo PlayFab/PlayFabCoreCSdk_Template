@@ -15,10 +15,9 @@ HRESULT PFTitlePlayerDuplicateHandle(
     SharedPtr<GlobalState> state;
     RETURN_IF_FAILED(GlobalState::Get(state));
 
-    auto titlePlayer = state->TitlePlayers().FromHandle(titlePlayerHandle);
-    *duplicatedHandle = state->TitlePlayers().MakeHandle(std::move(titlePlayer));
-
-    return S_OK;
+    SharedPtr<TitlePlayer> titlePlayer;
+    RETURN_IF_FAILED(state->TitlePlayers().FromHandle(titlePlayerHandle, titlePlayer));
+    return state->TitlePlayers().MakeHandle(std::move(titlePlayer), *duplicatedHandle);
 }
 
 void PFTitlePlayerCloseHandle(

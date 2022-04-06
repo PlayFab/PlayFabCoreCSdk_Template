@@ -15,20 +15,20 @@ class ApiProvider : public Provider
 {
 public:
     template<size_t n>
-    ApiProvider(XAsyncBlock* async, const char(&identityName)[n], CallT call) :
-        Provider{ async, identityName },
+    ApiProvider(RunContext&& rc, XAsyncBlock* async, const char(&identityName)[n], CallT call) :
+        Provider{ std::move(rc), async, identityName },
         m_call{ call }
     {
     }
 
 protected:
-    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(const TaskQueue&)>>;
+    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(const RunContext&)>>;
 
     // Always kick of the API call during XAsyncOp::Begin so we don't have to worry about lifetime of request
     // and API objects (even though they are hidden as part of a std::bind)
-    HRESULT Begin(TaskQueue&& queue) override
+    HRESULT Begin(RunContext const& runContext) override
     {
-        m_call(queue).Finally([this](Result<ResultT> result)
+        m_call(runContext).Finally([this](Result<ResultT> result)
         {
             if (Succeeded(result))
             {
@@ -101,9 +101,9 @@ protected:
 };
 
 template<typename CallT, size_t n>
-UniquePtr<ApiProvider<CallT>> MakeProvider(XAsyncBlock* async, const char(&identityName)[n], CallT call)
+UniquePtr<ApiProvider<CallT>> MakeProvider(RunContext&& rc, XAsyncBlock* async, const char(&identityName)[n], CallT call)
 {
-    return MakeUnique<ApiProvider<CallT>>(async, identityName, std::move(call));
+    return MakeUnique<ApiProvider<CallT>>(std::move(rc), async, identityName, std::move(call));
 }
 
 // XAsync Provider for PlayFab auth API calls
@@ -133,8 +133,15 @@ protected:
             if (Succeeded(result))
             {
                 TRACE_VERBOSE("AuthCallProvider[ID=%s] Call suceeded (hr=0x%08x)", identityName, result.hr);
-                this->m_titlePlayerHandle = this->m_state->TitlePlayers().MakeHandle(result.ExtractPayload());
-                this->Complete(sizeof(PFTitlePlayerHandle));
+                HRESULT hr = this->m_state->TitlePlayers().MakeHandle(result.ExtractPayload(), m_titlePlayerHandle);
+                if (FAILED(hr))
+                {
+                    this->Fail(hr);
+                }
+                else
+                {
+                    this->Complete(sizeof(PFTitlePlayerHandle));
+                }
             }
             else
             {

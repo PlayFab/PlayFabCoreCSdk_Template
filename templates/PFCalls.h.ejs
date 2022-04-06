@@ -108,8 +108,26 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
     _Outptr_ <%- call.resultDatatype.prefix %><%- call.resultDatatype.name %>** result,
     _Out_opt_ size_t* bufferUsed
 ) noexcept;
-<% } // end if
-%><%- callExclusionMacroEnd(call) %><%
-} // end for %>
+<%  } // end if
 
+    // Add reauthenticate method alongside each AuthenticateWith* call
+    if (call.entityReturned === "TitlePlayer") { %>
+/// <summary>
+<%- getFormattedCallDescription(featureGroup.name, call) %>
+/// </summary>
+/// <param name="titlePlayerHandle">PFTitlePlayerHandle to reauthenticate.</param>
+/// <param name="request">Populated request object.</param>
+/// <param name="async">XAsyncBlock for the async operation.</param>
+/// <returns>Result code for this API operation.</returns>
+/// <remarks>
+/// Call XAsyncGetStatus to get the result of the operation.
+/// If successful, the cached EntityToken for the TitlePlayer will be updated in place.
+/// </remarks>
+HRESULT <%- prefix %>Re<%- call.name %>Async(
+    _In_ PFTitlePlayerHandle titlePlayerHandle,
+    <%- requestParam %>_Inout_ XAsyncBlock* async
+) noexcept;
+<% } // end if %>
+<%- callExclusionMacroEnd(call) %><%
+} // end for %>
 }

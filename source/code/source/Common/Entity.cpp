@@ -10,13 +10,13 @@ using Wrappers::SafeString;
 
 Entity::Entity(
     Authentication::EntityTokenResponse&& response,
-    SharedPtr<PlayFab::HttpClient const> httpClient,
+    SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
     RunContext&& tokenRefreshContext,
     TokenExpiredHandler&& tokenExpiredHandler
 ) noexcept :
     m_key{ *response.entity },
     m_entityToken{ response },
-    m_httpClient{ std::move(httpClient) },
+    m_serviceConfig{ std::move(serviceConfig) },
     m_runContext{ std::move(tokenRefreshContext) },
     m_tokenExpiredHandler{ std::move(tokenExpiredHandler) }
 {
@@ -35,9 +35,9 @@ Entity::~Entity() noexcept
     }
 }
 
-SharedPtr<PlayFab::HttpClient const> Entity::HttpClient() const
+SharedPtr<PlayFab::ServiceConfig const> Entity::ServiceConfig() const
 {
-    return m_httpClient;
+    return m_serviceConfig;
 }
 
 PlayFab::EntityKey const& Entity::EntityKey() const
@@ -47,6 +47,8 @@ PlayFab::EntityKey const& Entity::EntityKey() const
 
 AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runContext)
 {
+    std::unique_lock<std::mutex> lock{ m_mutex };
+
     if (forceRefresh)
     {
         // API to refresh EntityToken doesn't exist yet
@@ -60,6 +62,23 @@ AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runC
     }
 
     return Result<EntityToken>{ EntityToken{ m_entityToken } };
+}
+
+HRESULT Entity::SetEntityToken(Authentication::EntityTokenResponse const& entityTokenResponse)
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+
+    RETURN_HR_IF(E_FAIL, !entityTokenResponse.entity.has_value());
+
+    if (std::strcmp(entityTokenResponse.entity->Model().id, m_key.Model().id))
+    {
+        TRACE_ERROR("%s: attempting to set EntityToken with mismatched entityKey", __FUNCTION__);
+        return E_FAIL;
+    }
+
+    m_entityToken = EntityToken{ entityTokenResponse };
+
+    return S_OK;
 }
 
 void Entity::OnCancellation() noexcept
@@ -160,6 +179,28 @@ EntityToken::EntityToken(EntityToken&& src) :
     m_expiration{ src.m_expiration }
 {
     expiration = m_expiration ? m_expiration.operator->() : nullptr;
+}
+
+EntityToken& EntityToken::operator=(const EntityToken& src)
+{
+    m_token = src.m_token;
+    token = m_token.empty() ? nullptr : m_token.data();
+
+    m_expiration = src.m_expiration;
+    expiration = m_expiration ? m_expiration.operator->() : nullptr;
+
+    return *this;
+}
+
+EntityToken& EntityToken::operator=(EntityToken&& src)
+{
+    m_token = std::move(src.m_token);
+    token = m_token.empty() ? nullptr : m_token.data();
+
+    m_expiration = src.m_expiration;
+    expiration = m_expiration ? m_expiration.operator->() : nullptr;
+
+    return *this;
 }
 
 size_t EntityToken::RequiredBufferSize() const
