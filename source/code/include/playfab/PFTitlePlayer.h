@@ -22,7 +22,7 @@ static const char* PFTitlePlayerEntityType = "title_player_account";
 /// Handle to an authenticated TitlePlayer Entity. Returned from one of the PFAuthenticationClientLogin* APIs.
 /// When no longer needed, the Entity handle must be closed with PFTitlePlayerCloseHandle.
 /// </summary>
-typedef PFHandle PFTitlePlayerHandle;
+typedef struct PFTitlePlayer* PFTitlePlayerHandle;
 
 /// <summary>
 /// Duplicates a PFTitlePlayerHandle.

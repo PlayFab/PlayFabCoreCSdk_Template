@@ -24,7 +24,7 @@ Result<SharedPtr<TitlePlayer>> TitlePlayer::Make(
         }, Deleter<TitlePlayer>() 
     };
 
-    RETURN_IF_FAILED(Entity::StartTokenRefreshPulseForEntity(titlePlayer));
+    titlePlayer->StartTokenRefreshWorker();
 
     return titlePlayer;
 }

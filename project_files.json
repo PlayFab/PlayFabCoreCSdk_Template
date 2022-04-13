@@ -13,6 +13,7 @@
     "include\\playfab\\PFErrors.h": "C Public Includes\\playfab",
     "include\\playfab\\PFGlobal.h": "C Public Includes\\playfab",
     "include\\playfab\\PFPal.h": "C Public Includes\\playfab",
+    "include\\playfab\\PFServiceConfig.h": "C Public Includes\\playfab",
     "include\\playfab\\PFTitlePlayer.h": "C Public Includes\\playfab",
     "include\\playfab\\cpp\\PFModelWrapperHelpers.h": "C Public Includes\\playfab\\cpp",
     "include\\playfab\\cpp\\StdOptional.h": "C Public Includes\\playfab\\cpp"
@@ -53,8 +54,6 @@
     "source\\Common\\ServiceConfig.h": "Source\\Common",
     "source\\Common\\Socket.cpp": "Source\\Common",
     "source\\Common\\Socket.h": "Source\\Common",
-    "source\\Common\\TaskQueue.cpp": "Source\\Common",
-    "source\\Common\\TaskQueue.h": "Source\\Common",
     "source\\Common\\TitlePlayer.cpp": "Source\\Common",
     "source\\Common\\TitlePlayer.h": "Source\\Common",
     "source\\Common\\TokenExpiredHandler.cpp": "Source\\Common",
@@ -64,6 +63,7 @@
     "source\\Common\\Types.h": "Source\\Common",
     "source\\Api\\PFEntity.cpp": "Source\\Api",
     "source\\Api\\PFGlobal.cpp": "Source\\Api",
+    "source\\Api\\PFServiceConfig.cpp": "Source\\Api",
     "source\\Api\\PFTitlePlayer.cpp": "Source\\Api"
   },
   "TestClientAppFiles": {

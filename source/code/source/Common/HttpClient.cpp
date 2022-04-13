@@ -177,7 +177,7 @@ AsyncOp<ServiceResponse> HCHttpCall::Perform(
 
     call->m_asyncBlock.callback = HCPerformComplete;
     call->m_asyncBlock.context = call.get();
-    call->m_asyncBlock.queue = call->m_runContext.TaskQueue().GetHandle();
+    call->m_asyncBlock.queue = call->m_runContext.TaskQueue().Handle();
 
     RETURN_IF_FAILED(HCHttpCallPerformAsync(call->m_callHandle, &call->m_asyncBlock));
 

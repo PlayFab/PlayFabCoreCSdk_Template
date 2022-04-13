@@ -4,128 +4,450 @@
 namespace PlayFab
 {
 
-class RunContextTracker
+static uint32_t g_nextId{ 0 };
+
+//------------------------------------------------------------------------------
+// TaskQueue
+//------------------------------------------------------------------------------
+
+class TaskQueue::State : public ITerminable
 {
 public:
-    RunContextTracker() = default;
+    // The only queues we should use internally should be derived from another Queue. We don't want to directly
+    // submit work to a client owned queue because we want to be able to terminate queues during cleanup.
+    SharedPtr<State> DeriveWorkQueue() const noexcept;
+    static SharedPtr<State> DeriveWorkQueue(XTaskQueueHandle handle) noexcept;
 
-    void Register(RunContext const& rc) noexcept;
-    void Unregister(RunContext const& rc) noexcept;
+    State(XTaskQueueHandle handle) noexcept;
+    State(State const&) = delete;
+    State(State&&) = delete;
+    State& operator=(State const&) = delete;
+    State& operator=(State&&) = delete;
+    ~State();
 
-    void Terminate(TerminationCallback* callback, void* context) noexcept;
+    XTaskQueueHandle Handle() const noexcept;
+    void SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept;
+    void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
 
 private:
-    mutable std::mutex m_mutex;
+    static void CALLBACK TaskQueueCallback(void* context, bool cancelled) noexcept;
+    static void CALLBACK TaskQueueTerminated(void* context) noexcept;
 
-    Set<RunContext const*> m_trackedContexts; // may not even need to track but could be used for sanity checks/debugging
-    TerminationCallback* m_terminationCallback{ nullptr };
-    void* m_terminationCallbackContext{ nullptr };
+    XTaskQueueHandle const m_handle{ nullptr };
 };
 
-void RunContextTracker::Register(RunContext const& rc) noexcept
+TaskQueue::State::State(XTaskQueueHandle handle) noexcept :
+    m_handle{ handle }
 {
-    // TODO do we need to check for termination here?
-    std::unique_lock<std::mutex> lock{ m_mutex };
-    m_trackedContexts.insert(&rc);
+    assert(handle);
 }
 
-void RunContextTracker::Unregister(RunContext const& rc) noexcept
+TaskQueue::State::~State()
 {
-    std::unique_lock<std::mutex> lock{ m_mutex };
-    m_trackedContexts.erase(&rc);
+    XTaskQueueCloseHandle(m_handle);
+}
 
-    // If this was the last RunContext and we've terminated, complete the termination AsyncOp
-    if (m_terminationCallback && m_trackedContexts.empty())
+SharedPtr<TaskQueue::State> TaskQueue::State::DeriveWorkQueue() const noexcept
+{
+    return DeriveWorkQueue(m_handle);
+}
+
+SharedPtr<TaskQueue::State> TaskQueue::State::DeriveWorkQueue(XTaskQueueHandle handle) noexcept
+{
+    SharedPtr<State> processQueue{ nullptr };
+    if (!handle)
     {
-        TerminationCallback* callback{ nullptr };
-        std::swap(m_terminationCallback, callback);
-        lock.unlock();
-        callback(m_terminationCallbackContext);
+        bool haveProcessQueue = XTaskQueueGetCurrentProcessTaskQueue(&handle);
+        if (haveProcessQueue)
+        {
+            // Wrap process queue handle so that it gets closed
+            processQueue = MakeShared<State>(handle);
+        }
+        else
+        {
+            TRACE_ERROR("Client provided null XTaskQueueHandle and no default process queue is available");
+            assert(false); // handle this
+        }
     }
+
+    XTaskQueuePortHandle workPort{ nullptr };
+    HRESULT hr = XTaskQueueGetPort(handle, XTaskQueuePort::Work, &workPort);
+    if (FAILED(hr))
+    {
+        TRACE_ERROR_HR(hr, "Failed to get work port from queue");
+        assert(false); // handle this
+    }
+
+    XTaskQueueHandle derivedHandle{ nullptr };
+    hr = XTaskQueueCreateComposite(workPort, workPort, &derivedHandle);
+    if (FAILED(hr))
+    {
+        TRACE_ERROR_HR(hr, "Failed to create composite queue");
+        assert(false);
+    }
+
+    return MakeShared<State>(derivedHandle);
 }
 
-void RunContextTracker::Terminate(TerminationCallback* callback, void* context) noexcept
+XTaskQueueHandle TaskQueue::State::Handle() const noexcept
 {
-    std::unique_lock<std::mutex> lock{ m_mutex };
+    return m_handle;
+}
 
-    assert(!m_terminationCallback);
+using TaskQueueCallbackContext = SharedPtr<ITaskQueueWork>;
 
-    if (!m_trackedContexts.empty())
+void CALLBACK TaskQueue::State::TaskQueueCallback(void* context, bool cancelled) noexcept
+{
+    assert(context);
+
+    UniquePtr<TaskQueueCallbackContext> callbackContext{ static_cast<TaskQueueCallbackContext*>(context) };
+    if (cancelled)
     {
-        m_terminationCallback = callback;
-        m_terminationCallbackContext = context;
+        (*callbackContext)->WorkCancelled();
     }
     else
     {
-        lock.unlock();
-        callback(context);
+        (*callbackContext)->Run();
     }
 }
 
-RunContext::RunContext(PlayFab::TaskQueue&& q, PlayFab::CancellationToken&& ct, SharedPtr<RunContextTracker> tracker) noexcept :
+void TaskQueue::State::SubmitWork(
+    SharedPtr<ITaskQueueWork> work,
+    uint32_t delayInMs
+) const noexcept
+{
+    assert(work);
+    assert(m_handle);
+
+    UniquePtr<TaskQueueCallbackContext> context = MakeUnique<TaskQueueCallbackContext>(std::move(work));
+
+    HRESULT hr = XTaskQueueSubmitDelayedCallback(m_handle, XTaskQueuePort::Work, delayInMs, context.get(), TaskQueueCallback);
+    if (SUCCEEDED(hr))
+    {
+        // Will be reclaimed in TaskQueueCallback
+        context.release();
+    }
+    else if (hr == E_ABORT)
+    {
+        // Queue was already terminated
+        (*context)->WorkCancelled();
+    }
+    else
+    {
+        // Other errors are likely fatal
+        TRACE_ERROR_HR(hr, "TaskQueue::SubmitWork failed unexpectedly");
+        assert(false);
+    }
+}
+
+struct XTaskQueueTerminateContext
+{
+    SharedPtr<ITerminationListener> listener;
+    void* listenerContext;
+    XTaskQueueHandle handle; // for logging purposes only, not guaranteed to be valid in terminate callback
+};
+
+void CALLBACK TaskQueue::State::TaskQueueTerminated(void* ctx) noexcept
+{
+    UniquePtr<XTaskQueueTerminateContext> context{ static_cast<XTaskQueueTerminateContext*>(ctx) };
+
+    TRACE_VERBOSE("TaskQueue[id=%p] terminated", context->handle);
+
+    if (context->listener)
+    {
+        ITerminationListener& listener{ *context->listener }; // we are about to move context->listener
+        listener.OnTerminated(std::move(context->listener), context->listenerContext);
+    }
+}
+
+void TaskQueue::State::Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* listenerContext)
+{
+    TRACE_VERBOSE("TaskQueue[id=%p] terminating", m_handle);
+
+    assert(m_handle);
+
+    Allocator<XTaskQueueTerminateContext> a;
+    UniquePtr<XTaskQueueTerminateContext> context{ new (a.allocate(1)) XTaskQueueTerminateContext{std::move(listener), listenerContext, m_handle} };
+
+    HRESULT hr = XTaskQueueTerminate(m_handle, false, context.get(), TaskQueueTerminated);
+    if (FAILED(hr))
+    {
+        // This likely indicates a bug, but consider the queue terminated to not block cleanup
+        assert(SUCCEEDED(hr));
+        TRACE_ERROR_HR(hr, "Failed to terminate queue");
+
+        if (listener)
+        {
+            ITerminationListener& listenerRef{ *listener }; // we are about to move listener
+            listenerRef.OnTerminated(std::move(listener), listenerContext);
+        }
+    }
+    else
+    {
+        context.release();
+    }
+}
+
+TaskQueue::TaskQueue(SharedPtr<State> state) noexcept :
+    m_state{ std::move(state) }
+{
+}
+
+TaskQueue TaskQueue::DeriveWorkQueue() const noexcept
+{
+    return TaskQueue{ m_state->DeriveWorkQueue() };
+}
+
+TaskQueue TaskQueue::DeriveWorkQueue(XTaskQueueHandle queueHandle) noexcept
+{
+    return TaskQueue{ State::DeriveWorkQueue(queueHandle) };
+}
+
+XTaskQueueHandle TaskQueue::Handle() const noexcept
+{
+    return m_state->Handle();
+}
+
+void TaskQueue::SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept
+{
+    return m_state->SubmitWork(std::move(work), delayInMs);
+}
+
+void TaskQueue::Terminate(SharedPtr<ITerminationListener> listener, void* context)
+{
+    return m_state->Terminate(std::move(listener), context);
+}
+
+//------------------------------------------------------------------------------
+// RunContext
+//------------------------------------------------------------------------------
+
+class RunContext::State : public ITerminable, public ITerminationListener, public std::enable_shared_from_this<State>
+{
+public:
+    static SharedPtr<State> Root(XTaskQueueHandle queueHandle) noexcept;
+
+    SharedPtr<State> Derive() noexcept;
+    SharedPtr<State> DeriveOnQueue(XTaskQueueHandle queueHandle) noexcept;
+
+    State(PlayFab::TaskQueue&& q, PlayFab::CancellationToken&& ct, SharedPtr<State> parent) noexcept;
+    State(State const&) noexcept = delete;
+    State(State&&) noexcept = delete;
+    State& operator=(State const&) noexcept = delete;
+    State& operator=(State&&) noexcept = delete;
+    ~State() noexcept;
+
+    PlayFab::TaskQueue TaskQueue() const noexcept;
+    PlayFab::CancellationToken CancellationToken() const noexcept;
+
+    void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
+
+private:
+    void OnTerminated(SharedPtr<ITerminationListener>&& self, void* context) override;
+
+    PlayFab::TaskQueue m_queue;
+    PlayFab::CancellationToken m_cancellationToken;
+
+    std::mutex m_mutex;
+
+    enum class Status
+    {
+        Active,
+        Terminating,
+        Terminated
+    };
+
+    Vector<WeakPtr<ITerminable>> m_terminables;
+    size_t m_pendingTerminations{ 0 };
+    Vector<std::pair<SharedPtr<ITerminationListener>, void*>> m_terminationListeners;
+    SharedPtr<State> m_parent;
+    Status m_status{ Status::Active };
+
+    // For debugging purposes only
+    uint32_t m_id;
+    uint32_t m_depth;
+};
+
+RunContext::State::State(PlayFab::TaskQueue&& q, PlayFab::CancellationToken&& ct, SharedPtr<State> parent) noexcept :
     m_queue{ std::move(q) },
     m_cancellationToken{ std::move(ct) },
-    m_tracker{ tracker }
+    m_parent{ std::move(parent) },
+    m_id{ g_nextId++ },
+    m_depth{ m_parent ? m_parent->m_depth + 1 : 0 }
 {
-    tracker->Register(*this);
+    TRACE_VERBOSE("%s: id[%u] depth[%u]", __FUNCTION__, m_id, m_depth);
 }
 
-RunContext::RunContext(RunContext&& other) noexcept :
-    m_queue{ std::move(other.m_queue) },
-    m_cancellationToken{ std::move(other.m_cancellationToken) },
-    m_tracker{ other.m_tracker }
+RunContext::State::~State()
 {
-    m_tracker->Register(*this);
+    TRACE_VERBOSE("%s: id[%u] depth[%u]", __FUNCTION__, m_id, m_depth);
 }
 
-RunContext::~RunContext() noexcept
+SharedPtr<RunContext::State> RunContext::State::Root(XTaskQueueHandle queueHandle) noexcept
 {
-    m_tracker->Unregister(*this);
+    return MakeShared<State>(TaskQueue::DeriveWorkQueue(queueHandle), CancellationToken::Root(), nullptr);
 }
 
-RunContext RunContext::Derive() const noexcept
+SharedPtr<RunContext::State> RunContext::State::Derive() noexcept
 {
-    return RunContext{ m_queue.DeriveWorkerQueue(), m_cancellationToken.Derive(), m_tracker };
+    SharedPtr<State> derived = MakeShared<State>(m_queue.DeriveWorkQueue(), m_cancellationToken.Derive(), shared_from_this());
+
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    m_terminables.push_back(derived);
+
+    return derived;
 }
 
-RunContext RunContext::DeriveOnQueue(XTaskQueueHandle queueHandle) const noexcept
+SharedPtr<RunContext::State> RunContext::State::DeriveOnQueue(XTaskQueueHandle queueHandle) noexcept
 {
-    return RunContext{ TaskQueue::DeriveWorkerQueue(queueHandle), m_cancellationToken.Derive(), m_tracker };
+    SharedPtr<State> derived = MakeShared<State>(TaskQueue::DeriveWorkQueue(queueHandle), m_cancellationToken.Derive(), shared_from_this());
+
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    m_terminables.push_back(derived);
+
+    return derived;
 }
 
-PlayFab::TaskQueue const& RunContext::TaskQueue() const noexcept
+PlayFab::TaskQueue RunContext::State::TaskQueue() const noexcept
 {
     return m_queue;
 }
 
-PlayFab::CancellationToken RunContext::CancellationToken() const noexcept
+PlayFab::CancellationToken RunContext::State::CancellationToken() const noexcept
 {
     return m_cancellationToken;
 }
 
-HRESULT RunContext::TerminateTaskQueue() noexcept
+void RunContext::State::Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context)
 {
-    // TODO handle failure here? 'this' lifetime not guaranteed
-    return m_queue.Terminate(false, [](void* context)
+    std::unique_lock<std::mutex> lock{ m_mutex };
+
+    // We only needed to keep m_parent for recursive termination. Once we are terminated we can release it
+    m_parent.reset();
+
+    switch (m_status)
     {
-        RunContext& rc{ *static_cast<RunContext*>(context) };
-        rc.m_tracker->Unregister(rc);
-    }, this);
+    case Status::Active:
+    {
+        m_status = Status::Terminating;
+        if (listener)
+        {
+            m_terminationListeners.emplace_back(std::move(listener), context);
+        }
+
+        Vector<SharedPtr<ITerminable>> terminables;
+        for (auto& weakTerminable : m_terminables)
+        {
+            if (auto sharedTerminable = weakTerminable.lock())
+            {
+                terminables.emplace_back(sharedTerminable);
+            }
+        }
+
+        assert(!m_pendingTerminations);
+        m_pendingTerminations = 1 + terminables.size();
+
+        TRACE_VERBOSE("RunContext[id=%u] terminating with %u child terminables", m_id, m_pendingTerminations);
+
+        lock.unlock();
+
+        m_queue.Terminate(shared_from_this(), nullptr);
+        for (auto& terminable : terminables)
+        {
+            terminable->Terminate(shared_from_this(), nullptr);
+        }
+
+        break;
+    }
+    case Status::Terminating:
+    {
+        TRACE_VERBOSE("RunContext[id=%u] terminated while termination was already in progress", m_id);
+
+        if (listener)
+        {
+            m_terminationListeners.emplace_back(std::move(listener), context);
+        }
+        break;
+    }
+    case Status::Terminated:
+    {
+        TRACE_VERBOSE("RunContext[id=%u] already terminated", m_id);
+
+        lock.unlock();
+        if (listener)
+        {
+            ITerminationListener& listenerRef{ *listener }; // we are about to move listener
+            listenerRef.OnTerminated(std::move(listener), context);
+        }
+        break;
+    }
+    default:
+    {
+        assert(false);
+    }
+    }
 }
 
-RootRunContext::RootRunContext(XTaskQueueHandle queueHandle) noexcept :
-    RunContext{ TaskQueue::DeriveWorkerQueue(queueHandle), PlayFab::CancellationToken{}, MakeShared<RunContextTracker>() }
+void RunContext::State::OnTerminated(SharedPtr<ITerminationListener>&& self, void* /*context*/)
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+
+    assert(m_pendingTerminations);
+    TRACE_VERBOSE("RunContext[id=%u] terminable terminated, %u remaining", m_id, --m_pendingTerminations);
+
+    if (!m_pendingTerminations)
+    {
+        m_status = Status::Terminated;
+
+        Vector<std::pair<SharedPtr<ITerminationListener>, void*>> terminationListeners;
+        std::swap(m_terminationListeners, terminationListeners);
+
+        lock.unlock();
+
+        // Release the reference that was held during termination
+        self.reset();
+
+        for (auto& pair : terminationListeners)
+        {
+            ITerminationListener& terminationListener{ *pair.first }; // we are about to move listener
+            terminationListener.OnTerminated(std::move(pair.first), pair.second);
+        }
+    }
+}
+
+RunContext::RunContext(SharedPtr<State> state) noexcept :
+    m_state{ std::move(state) }
 {
 }
 
-void RootRunContext::Terminate(TerminationCallback* callback, void* context) noexcept
+RunContext RunContext::Root(XTaskQueueHandle backgroundQueue) noexcept
 {
-    // Cancel all operations if they haven't been cancelled already
-    CancellationToken().Cancel();
-
-    // Unregister root then wait for all derived RunContexts to be cleaned up
-    m_tracker->Unregister(*this);
-    m_tracker->Terminate(callback, context);
+    return RunContext{ State::Root(backgroundQueue) };
 }
 
+RunContext RunContext::Derive() noexcept
+{
+    return RunContext{ m_state->Derive() };
 }
+
+RunContext RunContext::DeriveOnQueue(XTaskQueueHandle queueHandle) noexcept
+{
+    return RunContext{ m_state->DeriveOnQueue(queueHandle) };
+}
+
+TaskQueue RunContext::TaskQueue() const noexcept
+{
+    return m_state->TaskQueue();
+}
+
+CancellationToken RunContext::CancellationToken() const noexcept
+{
+    return m_state->CancellationToken();
+}
+
+void RunContext::Terminate(SharedPtr<ITerminationListener> listener, void* context) noexcept
+{
+    return m_state->Terminate(std::move(listener), context);
+}
+
+} // namespace PlayFab

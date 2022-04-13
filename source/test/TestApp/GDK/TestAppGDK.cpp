@@ -110,15 +110,15 @@ void Sample::RunTests()
         m_log->WriteLine(L"Running tests");
 
         CreateThread(nullptr, 0, [](LPVOID) -> DWORD
-            {
-                PlayFabUnit::TestApp testApp;
-                auto result = testApp.Main();
+        {
+            PlayFab::Test::TestApp testApp;
+            auto result = testApp.Main();
 
-                g_Sample->m_testsCompleted = true;
+            g_Sample->m_testsCompleted = true;
 
-                return result;
-            },
-            nullptr, 0, nullptr);
+            return result;
+        },
+        nullptr, 0, nullptr);
     }
 }
 
@@ -379,7 +379,9 @@ void Sample::OnDeviceRestored()
 }
 #pragma endregion
 
-namespace PlayFabUnit
+namespace PlayFab
+{
+namespace Test
 {
 
 void TestApp::Log(_Printf_format_string_ char const* format, ...)
@@ -458,4 +460,6 @@ void TestApp::LogPut(const char* message)
     // Write to Visual Studio's Output window.
     OutputDebugStringA(message);
 }
-}
+
+} // namespace Test
+} // namespace PlayFab

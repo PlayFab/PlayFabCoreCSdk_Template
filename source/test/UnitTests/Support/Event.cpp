@@ -24,9 +24,10 @@ void Event::Set() noexcept
     UNREFERENCED_PARAMETER(result);
 }
 
-void Event::Wait() noexcept
+bool Event::Wait(DWORD timeoutMs) noexcept
 {
-    WaitForSingleObject(m_handle, INFINITE);
+    DWORD result = WaitForSingleObject(m_handle, timeoutMs);
+    return result == WAIT_OBJECT_0;
 }
 
 }

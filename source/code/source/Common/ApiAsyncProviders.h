@@ -26,7 +26,7 @@ protected:
 
     // Always kick of the API call during XAsyncOp::Begin so we don't have to worry about lifetime of request
     // and API objects (even though they are hidden as part of a std::bind)
-    HRESULT Begin(RunContext const& runContext) override
+    HRESULT Begin(RunContext runContext) override
     {
         m_call(runContext).Finally([this](Result<ResultT> result)
         {
@@ -126,7 +126,7 @@ public:
 protected:
     // Always kick of the API call during XAsyncOp::Begin so we don't have to worry about lifetime of request
     // and API objects (even though they are hidden as part of a std::bind)
-    HRESULT Begin(RunContext const& runContext) override
+    HRESULT Begin(RunContext runContext) override
     {
         m_call(m_state, runContext).Finally([this](Result<SharedPtr<TitlePlayer>> result)
         {

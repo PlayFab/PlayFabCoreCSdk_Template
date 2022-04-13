@@ -26,10 +26,19 @@ struct GlobalStateBootstrapper
     static HRESULT StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state);
 };
 
+namespace Detail
+{
+
+// Choose arbitrary but recognizable values for handles
+uintptr_t const kFirstServiceConfigHandle = 0x10000000;
+uintptr_t const kFirstTitlePlayerHandle = 0x20000000;
+
+}
+
 GlobalState::GlobalState(XTaskQueueHandle backgroundQueue) noexcept :
-    m_runContext{ backgroundQueue },
-    m_serviceConfigs{ (HANDLE)0x10000000 }, // TODO choose sensible values here
-    m_titlePlayers{ (HANDLE)0x20000000 }
+    m_runContext{ RunContext::Root(backgroundQueue) },
+    m_serviceConfigs{ Detail::kFirstServiceConfigHandle },
+    m_titlePlayers{ Detail::kFirstTitlePlayerHandle }
 {
 }
 
@@ -55,7 +64,6 @@ HRESULT GlobalState::Get(SharedPtr<GlobalState>& state) noexcept
 
 struct CleanupContext
 {
-    SharedPtr<GlobalState> state;
     XAsyncBlock lhcCleanupAsync{};
     XAsyncBlock* cleanupAsync{};
 };
@@ -66,6 +74,28 @@ HRESULT GlobalState::CleanupAsync(XAsyncBlock* async) noexcept
     RETURN_IF_FAILED(XAsyncBegin(async, context.get(), __FUNCTION__, __FUNCTION__, CleanupAsyncProvider));
     context.release();
     return S_OK;
+}
+
+HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderData const* data)
+{
+    CleanupContext* context{ static_cast<CleanupContext*>(data->context) };
+
+    switch (op)
+    {
+    case XAsyncOp::Begin:
+    {
+        SharedPtr<GlobalState> state;
+        RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, state));
+        context->cleanupAsync = data->async;
+
+        state->m_runContext.Terminate(std::move(state), context);
+        return S_OK;
+    }
+    default:
+    {
+        return S_OK;
+    }
+    }
 }
 
 void CALLBACK HCCleanupComplete(XAsyncBlock* async)
@@ -94,11 +124,14 @@ void CALLBACK HCCleanupComplete(XAsyncBlock* async)
     XAsyncComplete(cleanupAsync, hr, 0);
 }
 
-void CALLBACK RunContextTerminated(void* c)
+void GlobalState::OnTerminated(SharedPtr<ITerminationListener>&& self, void* c) noexcept
 {
     TRACE_VERBOSE(__FUNCTION__);
 
     CleanupContext* context{ static_cast<CleanupContext*>(c) };
+
+    // Free GlobalState before calling HCCleanup - 'this' will be destroyed here
+    self.reset();
 
     context->lhcCleanupAsync.callback = HCCleanupComplete;
     context->lhcCleanupAsync.queue = context->cleanupAsync->queue; // Should use derived queue
@@ -107,40 +140,17 @@ void CALLBACK RunContextTerminated(void* c)
     HCCleanupAsync(&context->lhcCleanupAsync);
 }
 
-HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderData const* data)
-{
-    CleanupContext* context{ static_cast<CleanupContext*>(data->context) };
-
-    switch (op)
-    {
-    case XAsyncOp::Begin:
-    {
-        RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, context->state));
-        context->cleanupAsync = data->async;
-
-        // TODO cleanup all users?
-
-        context->state->m_runContext.Terminate(RunContextTerminated, context);
-        return S_OK;
-    }
-    default:
-    {
-        return S_OK;
-    }
-    }
-}
-
-RunContext const& GlobalState::RunContext() const noexcept
+RunContext GlobalState::RunContext() const noexcept
 {
     return m_runContext;
 }
 
-HandleTable<ServiceConfig>& GlobalState::ServiceConfigs() noexcept
+HandleTable<PFServiceConfigHandle, ServiceConfig>& GlobalState::ServiceConfigs() noexcept
 {
     return m_serviceConfigs;
 }
 
-HandleTable<TitlePlayer>& GlobalState::TitlePlayers() noexcept
+HandleTable<PFTitlePlayerHandle, TitlePlayer>& GlobalState::TitlePlayers() noexcept
 {
     return m_titlePlayers;
 }

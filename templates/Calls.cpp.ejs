@@ -61,7 +61,7 @@ for (var i = 0; i < featureGroup.calls.length; i++) {
 
 %>
 AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
-    <%- contextParam %><%- requestParam %>RunContext const& rc
+    <%- contextParam %><%- requestParam %>RunContext rc
 )
 {<% validateToken(call); %>
     const char* path{ "<%- call.url %>" };
@@ -111,7 +111,7 @@ AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
     if (call.entityReturned === "TitlePlayer") { %>
 AsyncOp<void> <%- featureGroup.name %>API::Re<%- call.name %>(
     SharedPtr<TitlePlayer> player,
-    <%- requestParam %>RunContext const& rc)
+    <%- requestParam %>RunContext rc)
 {
     const char* path{ "<%- call.url %>" };
     JsonValue requestBody{ request.ToJson() };

@@ -4,10 +4,10 @@
 namespace PlayFab
 {
 
-class CancellationToken::SharedState : public ICancellationListener
+class CancellationToken::SharedState : public ICancellationListener, public std::enable_shared_from_this<SharedState>
 {
 public:
-    static SharedPtr<SharedState> Derive(SharedPtr<SharedState> parent) noexcept;
+    SharedPtr<SharedState> Derive() noexcept;
 
     SharedState() = default;
     SharedState(SharedState const&) = delete;
@@ -15,6 +15,8 @@ public:
     SharedState& operator=(SharedState const&) = delete;
     SharedState& operator=(SharedState&&) = delete;
     ~SharedState() noexcept;
+
+    bool IsCanceled() const noexcept;
 
     bool Cancel() noexcept;
 
@@ -25,22 +27,21 @@ private:
     // ICancellationListener
     void OnCancellation() noexcept override;
 
-    std::recursive_mutex m_mutex; // intentionally recursive
+    mutable std::recursive_mutex m_mutex; // intentionally recursive
     std::atomic<bool> m_cancelled{ false };
     Vector<ICancellationListener*> m_listeners; // non-owning
-    Vector<SharedPtr<SharedState>> m_children;
     SharedPtr<SharedState> m_parent;
 };
 
-SharedPtr<CancellationToken::SharedState> CancellationToken::SharedState::Derive(SharedPtr<SharedState> parent) noexcept
+SharedPtr<CancellationToken::SharedState> CancellationToken::SharedState::Derive() noexcept
 {
     SharedPtr<SharedState> child = MakeShared<SharedState>();
+    child->m_cancelled = this->RegisterForNotificationAndCheck(*child);
 
-    child->m_cancelled = parent->RegisterForNotificationAndCheck(*child);
     if (!child->m_cancelled)
     {
-        parent->m_children.push_back(child);
-        child->m_parent = std::move(parent);
+        // We only need a reference to parent if we aren't already cancelled
+        child->m_parent = shared_from_this();
     }
 
     return child;
@@ -73,14 +74,19 @@ CancellationToken::SharedState::~SharedState() noexcept
     }
 }
 
+bool CancellationToken::SharedState::IsCanceled() const noexcept
+{
+    std::unique_lock<std::recursive_mutex> lock{ m_mutex };
+    return m_cancelled;
+}
+
 bool CancellationToken::SharedState::Cancel() noexcept
 {
-    // We need to hold a reference to ourselves to handle some edge cases (see
-    // below) and we need the reference to be released after the lock to ensure
-    // that we don't destroy a locked mutex (or try to unlock a destroyed mutex)
-    // so we define the variable here before doing anything else and will fill
-    // it in as appropriate later
-    
+    // Whoever is calling us has a strong reference but we still want to take a
+    // strong reference to ourselves just in case they let go of us in the
+    // callback
+    SharedPtr<SharedState> self{ shared_from_this() };
+
     std::unique_lock<std::recursive_mutex> lock{ m_mutex };
 
     // If we've already been cancelled, nothing to do
@@ -103,9 +109,6 @@ bool CancellationToken::SharedState::Cancel() noexcept
         // l could be destroyed after 'OnCancellation' returns
         l->OnCancellation();
     }
-
-    // No longer need reference to children
-    m_children.clear();
 
     return !listeners.empty();
 }
@@ -137,12 +140,6 @@ bool CancellationToken::SharedState::UnregisterForNotificationAndCheck(ICancella
         m_listeners.erase(it);
     }
 
-    auto childIt = std::find_if(m_children.begin(), m_children.end(), [&](auto& child) { return child.get() == &listener; });
-    if (childIt != m_children.end())
-    {
-        m_children.erase(childIt);
-    }
-
     return m_cancelled;
 }
 
@@ -162,19 +159,24 @@ void CancellationToken::SharedState::OnCancellation() noexcept
     Cancel();
 }
 
-CancellationToken::CancellationToken() noexcept :
-    m_state{ MakeShared<SharedState>() }
-{
-}
-
 CancellationToken::CancellationToken(SharedPtr<SharedState> state) noexcept :
     m_state{ std::move(state) }
 {
 }
 
+CancellationToken CancellationToken::Root() noexcept
+{
+    return CancellationToken{ MakeShared<SharedState>() };
+}
+
 CancellationToken CancellationToken::Derive() const noexcept
 {
-    return CancellationToken{ SharedState::Derive(m_state) };
+    return CancellationToken{ m_state->SharedState::Derive() };
+}
+
+bool CancellationToken::IsCancelled() const noexcept
+{
+    return m_state->IsCanceled();
 }
 
 bool CancellationToken::Cancel() noexcept

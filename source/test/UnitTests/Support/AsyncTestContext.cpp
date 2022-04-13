@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "TestContext.h"
+#include "AsyncTestContext.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -8,13 +8,13 @@ namespace PlayFab
 namespace UnitTests
 {
 
-TestContext::~TestContext()
+AsyncTestContext::~AsyncTestContext()
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
     Assert::IsTrue(m_result.has_value());
 }
 
-void TestContext::Assert(bool condition)
+void AsyncTestContext::Assert(bool condition)
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
     if (!condition && !m_result.has_value())
@@ -23,7 +23,7 @@ void TestContext::Assert(bool condition)
     }
 }
 
-void TestContext::AssertSucceeded(HRESULT hr)
+void AsyncTestContext::AssertSucceeded(HRESULT hr)
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
     if (FAILED(hr) && !m_result.has_value())
@@ -32,7 +32,7 @@ void TestContext::AssertSucceeded(HRESULT hr)
     }
 }
 
-void TestContext::Complete()
+void AsyncTestContext::Complete()
 {
     {
         std::unique_lock<std::mutex> lock{ m_mutex };
@@ -44,9 +44,9 @@ void TestContext::Complete()
     m_complete.Set();
 }
 
-void TestContext::AwaitResult()
+void AsyncTestContext::AwaitResult()
 {
-    m_complete.Wait();
+    Assert::IsTrue(m_complete.Wait(INFINITE));
 
     std::unique_lock<std::mutex> lock{ m_mutex };
     Assert::IsTrue(m_result.has_value());
