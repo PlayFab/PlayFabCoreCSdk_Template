@@ -82,6 +82,11 @@ TokenRefreshWorker::~TokenRefreshWorker()
     {
         UnregisterAppStateChangeNotification(m_appStateChangedToken);
     }
+
+    if (m_networkConnectivityChangedToken.token)
+    {
+        XNetworkingUnregisterConnectivityHintChanged(m_networkConnectivityChangedToken, true);
+    }
 #endif
 }
 
@@ -108,6 +113,9 @@ void TokenRefreshWorker::Run()
         // Reschedule ourselves.
         // Note that with this implementation the TokenExpiredHandler will be invoked every s_interval until the token is restored.
         // This may be fine, but we could include some additional logic to avoid that if desired.
+
+        // TODO we will also need some logic to ensure this isn't overscheduled (ex. during suspend/resume when it is explicitly scheduled
+        // without awaiting the normal interval)
         m_rc.TaskQueue().SubmitWork(shared_from_this());
     }
 }
@@ -220,11 +228,33 @@ void CALLBACK TokenRefreshWorker::AppStateChangedCallback(BOOLEAN isSuspended, v
 }
 #endif
 
+Result<SharedPtr<Entity>> Entity::Make(
+    Authentication::EntityTokenResponse&& entityTokenResponse,
+    SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
+    RunContext&& tokenRefreshContext,
+    TokenExpiredHandler tokenExpiredHandler
+) noexcept
+{
+    Allocator<Entity> a{};
+    SharedPtr<Entity> entity{
+        new (a.allocate(1)) Entity{
+            std::move(entityTokenResponse),
+            serviceConfig,
+            tokenRefreshContext.Derive(),
+            tokenExpiredHandler
+        }, Deleter<Entity>()
+    };
+
+    entity->StartTokenRefreshWorker();
+
+    return entity;
+}
+
 Entity::Entity(
     Authentication::EntityTokenResponse&& response,
     SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
     RunContext&& tokenRefreshContext,
-    TokenExpiredHandler&& tokenExpiredHandler
+    TokenExpiredHandler tokenExpiredHandler
 ) noexcept :
     m_key{ *response.entity },
     m_entityToken{ response },

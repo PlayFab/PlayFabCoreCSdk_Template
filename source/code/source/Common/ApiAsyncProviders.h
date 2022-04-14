@@ -87,7 +87,7 @@ protected:
         auto copyResult = m_result->Payload().Copy(b);
         if (SUCCEEDED(copyResult.hr))
         {
-            // TODO how to ensure offset of result object within buffer. Assume for now it will always be at byte 0
+            // Result should always be written to the beginning of the result buffer
             assert((void*)(copyResult.Payload()) == buffer);
         }
         return copyResult.hr;

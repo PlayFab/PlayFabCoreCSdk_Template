@@ -20,6 +20,7 @@
   },
   "sourceFiles": {
     "source\\Common\\ApiAsyncProviders.h": "Source\\Common",
+    "source\\Common\\ApiHelpers.h": "Source\\Common",
     "source\\Common\\AsyncOp.h": "Source\\Common",
     "source\\Common\\AsyncProvider.cpp": "Source\\Common",
     "source\\Common\\AsyncProvider.h": "Source\\Common",

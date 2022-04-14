@@ -145,12 +145,12 @@ RunContext GlobalState::RunContext() const noexcept
     return m_runContext;
 }
 
-HandleTable<PFServiceConfigHandle, ServiceConfig>& GlobalState::ServiceConfigs() noexcept
+ServiceConfigHandleTable& GlobalState::ServiceConfigs() noexcept
 {
     return m_serviceConfigs;
 }
 
-HandleTable<PFTitlePlayerHandle, TitlePlayer>& GlobalState::TitlePlayers() noexcept
+TitlePlayerHandleTable& GlobalState::TitlePlayers() noexcept
 {
     return m_titlePlayers;
 }

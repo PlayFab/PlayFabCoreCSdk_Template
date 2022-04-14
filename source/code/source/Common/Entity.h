@@ -33,6 +33,13 @@ private:
 class Entity : public std::enable_shared_from_this<Entity>
 {
 public:
+    static Result<SharedPtr<Entity>> Make(
+        Authentication::EntityTokenResponse&& entityTokenResponse,
+        SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
+        RunContext&& tokenRefreshContext,
+        TokenExpiredHandler tokenExpiredHandler
+    ) noexcept;
+
     Entity(const Entity&) = delete;
     Entity(Entity&&) = delete;
     Entity& operator=(const Entity&) = delete;
@@ -54,7 +61,7 @@ protected:
         Authentication::EntityTokenResponse&& entityTokenResponse,
         SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
         RunContext&& tokenRefreshContext,
-        TokenExpiredHandler&& tokenExpiredHandler
+        TokenExpiredHandler tokenExpiredHandler
     ) noexcept;
 
     // Token refresh pulse must be started outside of constructor so we can use a weak_ptr in the callback context.

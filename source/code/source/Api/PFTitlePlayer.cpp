@@ -2,6 +2,7 @@
 #include <playfab/PFTitlePlayer.h>
 #include "GlobalState.h"
 #include "TitlePlayer.h"
+#include "ApiHelpers.h"
 
 using namespace PlayFab;
 
@@ -10,27 +11,25 @@ HRESULT PFTitlePlayerDuplicateHandle(
     _Out_ PFTitlePlayerHandle* duplicatedHandle
 ) noexcept
 {
-    RETURN_HR_INVALIDARG_IF_NULL(duplicatedHandle);
+    return ApiImpl(API_IDENTITY(PFTitlePlayerDuplicateHandle), [&](GlobalState& state)
+    {
+        RETURN_HR_INVALIDARG_IF_NULL(duplicatedHandle);
 
-    SharedPtr<GlobalState> state;
-    RETURN_IF_FAILED(GlobalState::Get(state));
-
-    SharedPtr<TitlePlayer> titlePlayer;
-    RETURN_IF_FAILED(state->TitlePlayers().FromHandle(titlePlayerHandle, titlePlayer));
-    return state->TitlePlayers().MakeHandle(std::move(titlePlayer), *duplicatedHandle);
+        SharedPtr<TitlePlayer> titlePlayer;
+        RETURN_IF_FAILED(state.TitlePlayers().FromHandle(titlePlayerHandle, titlePlayer));
+        return state.TitlePlayers().MakeHandle(std::move(titlePlayer), *duplicatedHandle);
+    }
 }
 
 void PFTitlePlayerCloseHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle
 ) noexcept
 {
-    SharedPtr<GlobalState> state;
-    HRESULT hr = GlobalState::Get(state);
-
-    if (SUCCEEDED(hr))
+    ApiImpl(API_IDENTITY(PFTitlePlayerCloseHandle), [&](GlobalState& state)
     {
-        state->TitlePlayers().CloseHandle(titlePlayerHandle);
-    }
+        state.TitlePlayers().CloseHandle(titlePlayerHandle);
+        return S_OK;
+    });
 }
 
 //HRESULT PFTitlePlayerGetEntityKeySize(

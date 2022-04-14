@@ -39,8 +39,7 @@ public:
 private:
     String GetUrl(const char* path) const;
 
-    String m_titleId;
-    String m_connectionString;
+    String const m_connectionString;
 };
 
 // Wrapper around PlayFab service response.
