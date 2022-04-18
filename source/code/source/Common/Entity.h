@@ -49,7 +49,7 @@ public:
 public:
     SharedPtr<ServiceConfig const> ServiceConfig() const;
     EntityKey const& EntityKey() const;
-    AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, RunContext&& runContext);
+    AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, RunContext runContext);
 
     HRESULT SetEntityToken(Authentication::EntityTokenResponse const& entityTokenResponse);
 

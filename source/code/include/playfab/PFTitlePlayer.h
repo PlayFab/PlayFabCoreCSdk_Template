@@ -79,19 +79,41 @@ HRESULT PFTitlePlayerGetEntityKey(
     _Out_opt_ size_t* bufferUsed
 ) noexcept;
 
+/// <summary>
+/// Get the cached PFEntityToken for a TitlePlayer.
+/// </summary>
+/// <param name="titlePlayerHandle">PFTitlePlayerHandle returned from a login call.</param>
+/// <param name="async">XAsyncBlock for the async operation.</param>
+/// <returns>Result code for this API operation.</returns>
 HRESULT PFTitlePlayerGetEntityTokenAsync(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
-    _In_ bool forceRefresh,
     _Inout_ XAsyncBlock* async
 ) noexcept;
 
-HRESULT PFTitlePlayerGetEntityTokenGetResultSize(
+/// <summary>
+/// Get the size in bytes needed to store the result of a PFTitlePlayerGetEntityTokenAsync call.
+/// </summary>
+/// <param name="async">XAsyncBlock for the async operation.</param>
+/// <param name="bufferSize">The buffer size in bytes required for the result.</param>
+/// <returns>Result code for this API operation.</returns>
+HRESULT PFTitlePlayerGetEntityTokenResultSize(
     _Inout_ XAsyncBlock* async,
     _Out_ size_t* bufferSize
 ) noexcept;
 
-
-HRESULT PFTitlePlayerGetEntityTokenGetResult(
+/// <summary>
+/// Gets the result of a successful PFTitlePlayerGetEntityTokenAsync call.
+/// </summary>
+/// <param name="async">XAsyncBlock for the async operation.</param>
+/// <param name="bufferSize">The size of the buffer for the result object.</param>
+/// <param name="buffer">Byte buffer used for the result value and its fields.</param>
+/// <param name="entityToken">Pointer to the EntityToken object.</param>
+/// <param name="bufferUsed">The number of bytes in the provided buffer that were used.</param>
+/// <returns>Result code for this API operation.</returns>
+/// <remarks>
+/// entityToken is a pointer within buffer and does not need to be freed separately.
+/// </remarks>
+HRESULT PFTitlePlayerGetEntityTokenResult(
     _Inout_ XAsyncBlock* async,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,

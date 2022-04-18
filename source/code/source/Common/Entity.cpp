@@ -280,7 +280,7 @@ PlayFab::EntityKey const& Entity::EntityKey() const
     return m_key;
 }
 
-AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext&& runContext)
+AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext runContext)
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
 

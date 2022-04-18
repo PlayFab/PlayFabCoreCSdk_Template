@@ -22,13 +22,13 @@ public:
     }
 
 protected:
-    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(const RunContext&)>>;
+    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(RunContext)>>;
 
     // Always kick of the API call during XAsyncOp::Begin so we don't have to worry about lifetime of request
     // and API objects (even though they are hidden as part of a std::bind)
     HRESULT Begin(RunContext runContext) override
     {
-        m_call(runContext).Finally([this](Result<ResultT> result)
+        m_call(std::move(runContext)).Finally([this](Result<ResultT> result)
         {
             if (Succeeded(result))
             {
@@ -111,7 +111,7 @@ template<typename CallT>
 class AuthCallProvider : public Provider
 {
 private:
-    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(SharedPtr<GlobalState const>, RunContext const&)>>;
+    using ResultT = typename Detail::UnwrapAsyncT<typename std::result_of_t<CallT(SharedPtr<GlobalState const>, RunContext)>>;
 public:
     static_assert(std::is_assignable_v<SharedPtr<Entity>, ResultT>, "CallT must return a SharedPt<Entity>");
 
@@ -128,7 +128,7 @@ protected:
     // and API objects (even though they are hidden as part of a std::bind)
     HRESULT Begin(RunContext runContext) override
     {
-        m_call(m_state, runContext).Finally([this](Result<SharedPtr<TitlePlayer>> result)
+        m_call(m_state, std::move(runContext)).Finally([this](Result<SharedPtr<TitlePlayer>> result)
         {
             if (Succeeded(result))
             {
