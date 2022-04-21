@@ -14,3 +14,12 @@
 #define _Null_terminated_
 #endif
 #endif // HC_PLATFORM_IS_MICROSOFT
+
+#if HC_PLATFORM_IS_MICROSOFT
+#define PF_API_ATTRIBUTES __declspec(dllexport)
+#else
+#define PF_API_ATTRIBUTES
+#endif
+
+#define PF_API PF_API_ATTRIBUTES HRESULT STDAPICALLTYPE
+#define PF_API_(type) PF_API_ATTRIBUTES type STDAPICALLTYPE

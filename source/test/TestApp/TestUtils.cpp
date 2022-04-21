@@ -34,7 +34,5 @@ const char* ToString(TestFinishState state)
     }
 }
 
-PlayFab::JsonAllocator s_jsonAllocator{};
-
 }
 }

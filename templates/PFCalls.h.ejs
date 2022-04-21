@@ -43,7 +43,7 @@ for (var callIndex = 0; callIndex < featureGroup.calls.length; callIndex++) {
 /// <remarks>
 <%- getFormattedCallRemarks(featureGroup.name, call) %>
 /// </remarks>
-HRESULT <%- prefix %><%- call.name %>Async(
+PF_API <%- prefix %><%- call.name %>Async(
     _In_ <%- contextHandleParam %>,
     <%- requestParam %>_Inout_ XAsyncBlock* async
 ) noexcept;
@@ -62,7 +62,7 @@ HRESULT <%- prefix %><%- call.name %>Async(
 /// If the <%- prefix %><%- call.name %>Async call fails, entityHandle with be null. Otherwise, the handle must be closed with <%- globalPrefix %><%- call.entityReturned %>CloseHandle
 /// when it is no longer needed.
 /// </remarks>
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _In_ XAsyncBlock* async,
     _Out_ <%- globalPrefix %><%- call.entityReturned %>Handle* entityHandle
 ) noexcept;
@@ -73,7 +73,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
 /// <param name="async">XAsyncBlock for the async operation.</param>
 /// <param name="result"><%- call.resultDatatype.prefix %><%- call.resultDatatype.name %> object that will be populated with the result.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _Inout_ XAsyncBlock* async,
     _Out_ <%- call.resultDatatype.prefix %><%- call.resultDatatype.name %>* result
 ) noexcept;
@@ -84,7 +84,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
 /// <param name="async">XAsyncBlock for the async operation.</param>
 /// <param name="bufferSize">The buffer size in bytes required for the result.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT <%- prefix %><%- call.name %>GetResultSize(
+PF_API <%- prefix %><%- call.name %>GetResultSize(
     _Inout_ XAsyncBlock* async,
     _Out_ size_t* bufferSize
 ) noexcept;
@@ -101,7 +101,7 @@ HRESULT <%- prefix %><%- call.name %>GetResultSize(
 /// <remarks>
 /// result is a pointer within buffer and does not need to be freed separately.
 /// </remarks>
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _Inout_ XAsyncBlock* async,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
@@ -123,7 +123,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
 /// Call XAsyncGetStatus to get the result of the operation.
 /// If successful, the cached EntityToken for the TitlePlayer will be updated in place.
 /// </remarks>
-HRESULT <%- prefix %>Re<%- call.name %>Async(
+PF_API <%- prefix %>Re<%- call.name %>Async(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     <%- requestParam %>_Inout_ XAsyncBlock* async
 ) noexcept;

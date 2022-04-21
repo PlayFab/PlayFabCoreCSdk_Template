@@ -6,7 +6,7 @@
 
 using namespace PlayFab;
 
-STDAPI PFMemSetFunctions(
+PF_API PFMemSetFunctions(
     _In_opt_ PFMemAllocFunction* memAllocFunc,
     _In_opt_ PFMemFreeFunction* memFreeFunc
 ) noexcept
@@ -31,7 +31,7 @@ STDAPI PFMemSetFunctions(
     return S_OK;
 }
 
-STDAPI PFMemGetFunctions(
+PF_API PFMemGetFunctions(
     _Out_ PFMemAllocFunction** memAllocFunc,
     _Out_ PFMemFreeFunction** memFreeFunc
 ) noexcept
@@ -46,14 +46,14 @@ STDAPI PFMemGetFunctions(
     return S_OK;
 }
 
-HRESULT PFInitialize(
+PF_API PFInitialize(
     _In_opt_ XTaskQueueHandle backgroundQueue
 ) noexcept
 {
     return GlobalState::Create(backgroundQueue);
 }
 
-HRESULT PFUninitializeAsync(
+PF_API PFUninitializeAsync(
     _In_ XAsyncBlock* async
 ) noexcept
 {

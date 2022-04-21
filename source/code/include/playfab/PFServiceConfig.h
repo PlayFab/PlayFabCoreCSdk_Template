@@ -22,7 +22,7 @@ typedef struct PFServiceConfig* PFServiceConfigHandle;
 /// <param name="playAccountPoolId">Player Account Pool Id. TODO</param>
 /// <param name="serviceConfigHandle">Pointer to a PFServiceConfigHandle to write.</param>
 /// <returns>Result code for this API operation.  Possible values are S_OK, E_PF_NOT_INITIALIZED, or E_INVALIDARG.</returns>
-HRESULT PFServiceConfigCreateHandle(
+PF_API PFServiceConfigCreateHandle(
     _In_z_ const char* connectionString,
     _In_z_ const char* playFabTitleId,
     _In_z_ const char* playerAccountPoolId,
@@ -39,7 +39,7 @@ HRESULT PFServiceConfigCreateHandle(
 /// Both the duplicated handle and the original handle need to be closed with PFServiceConfigCloseHandle when they
 /// are no longer needed.
 /// </remarks>
-HRESULT PFServiceConfigDuplicateHandle(
+PF_API PFServiceConfigDuplicateHandle(
     PFServiceConfigHandle handle,
     PFServiceConfigHandle* duplicatedHandle
 ) noexcept;
@@ -49,7 +49,7 @@ HRESULT PFServiceConfigDuplicateHandle(
 /// </summary>
 /// <param name="handle">ServiceConfig handle to close.</param>
 /// <returns>Result code for this API operation.</returns>
-void PFServiceConfigCloseHandle(
+PF_API_(void) PFServiceConfigCloseHandle(
     PFServiceConfigHandle handle
 ) noexcept;
 
@@ -61,7 +61,7 @@ void PFServiceConfigCloseHandle(
 /// <param name="handle">ServiceConfig handle.</param>
 /// <param name="connectionStringSize">Buffer size required for the connection string (including null terminator).</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFServiceConfigGetConnectionStringSize(
+PF_API PFServiceConfigGetConnectionStringSize(
     _In_  PFServiceConfigHandle handle,
     _Out_ size_t* connectionStringSize
 ) noexcept;
@@ -74,7 +74,7 @@ HRESULT PFServiceConfigGetConnectionStringSize(
 /// <param name="connectionString">Buffer the connection string will be written to.</param>
 /// <param name="connectionStringUsed">The number of bytes used in the buffer including the null terminator.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFServiceConfigGetConnectionString(
+PF_API PFServiceConfigGetConnectionString(
     _In_ PFServiceConfigHandle handle,
     _In_ size_t connectionStringSize,
     _Out_writes_(connectionStringSize) char* connectionString,
@@ -87,7 +87,7 @@ HRESULT PFServiceConfigGetConnectionString(
 /// <param name="handle">ServiceConfig handle.</param>
 /// <param name="titleIdSize">Buffer size required for the titleId (including null terminator).</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFServiceConfigGetTitleIdSize(
+PF_API PFServiceConfigGetTitleIdSize(
     _In_  PFServiceConfigHandle handle,
     _Out_ size_t* titleIdSize
 ) noexcept;
@@ -100,7 +100,7 @@ HRESULT PFServiceConfigGetTitleIdSize(
 /// <param name="titleId">Buffer the titleId will be written to.</param>
 /// <param name="titleIdUsed">The number of bytes used in the buffer including the null terminator.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFServiceConfigGetTitleId(
+PF_API PFServiceConfigGetTitleId(
     _In_ PFServiceConfigHandle handle,
     _In_ size_t titleIdSize,
     _Out_writes_(titleIdSize) char* titleId,
@@ -113,7 +113,7 @@ HRESULT PFServiceConfigGetTitleId(
 /// <param name="handle">ServiceConfig handle.</param>
 /// <param name="playerAccountPoolIdSize">Buffer size required for the player account pool Id (including null terminator).</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFServiceConfigGetPlayerAccountPoolIdSize(
+PF_API PFServiceConfigGetPlayerAccountPoolIdSize(
     _In_  PFServiceConfigHandle handle,
     _Out_ size_t* playerAccountPoolIdSize
 ) noexcept;
@@ -126,7 +126,7 @@ HRESULT PFServiceConfigGetPlayerAccountPoolIdSize(
 /// <param name="playerAccountPoolId">Buffer the player account pool id will be written to.</param>
 /// <param name="playerAccountPoolIdUsed">The number of bytes used in the buffer including the null terminator.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFServiceConfigGetPlayerAccountPoolId(
+PF_API PFServiceConfigGetPlayerAccountPoolId(
     _In_ PFServiceConfigHandle handle,
     _In_ size_t playerAccountPoolIdSize,
     _Out_writes_(playerAccountPoolIdSize) char* playerAccountPoolId,

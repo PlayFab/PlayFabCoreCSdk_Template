@@ -34,7 +34,7 @@ typedef struct PFTitlePlayer* PFTitlePlayerHandle;
 /// Both the duplicated handle and the original handle need to be closed with PFTitlePlayerCloseHandle when they
 /// are no longer needed.
 /// </remarks>
-HRESULT PFTitlePlayerDuplicateHandle(
+PF_API PFTitlePlayerDuplicateHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Out_ PFTitlePlayerHandle* duplicatedHandle
 ) noexcept;
@@ -44,7 +44,7 @@ HRESULT PFTitlePlayerDuplicateHandle(
 /// </summary>
 /// <param name="titlePlayerHandle">TitlePlayer handle to close.</param>
 /// <returns>Result code for this API operation.</returns>
-void PFTitlePlayerCloseHandle(
+PF_API_(void) PFTitlePlayerCloseHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle
 ) noexcept;
 
@@ -54,7 +54,7 @@ void PFTitlePlayerCloseHandle(
 /// <param name="titlePlayerHandle">PFTitlePlayerHandle returned from a login call.</param>
 /// <param name="bufferSize">The buffer size in bytes required for the EntityKey.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFTitlePlayerGetEntityKeySize(
+PF_API PFTitlePlayerGetEntityKeySize(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Out_ size_t* bufferSize
 ) noexcept;
@@ -71,7 +71,7 @@ HRESULT PFTitlePlayerGetEntityKeySize(
 /// <remarks>
 /// entityKey is a pointer within buffer and does not need to be freed separately.
 /// </remarks>
-HRESULT PFTitlePlayerGetEntityKey(
+PF_API PFTitlePlayerGetEntityKey(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
@@ -85,7 +85,7 @@ HRESULT PFTitlePlayerGetEntityKey(
 /// <param name="titlePlayerHandle">PFTitlePlayerHandle returned from a login call.</param>
 /// <param name="async">XAsyncBlock for the async operation.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFTitlePlayerGetEntityTokenAsync(
+PF_API PFTitlePlayerGetEntityTokenAsync(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Inout_ XAsyncBlock* async
 ) noexcept;
@@ -96,7 +96,7 @@ HRESULT PFTitlePlayerGetEntityTokenAsync(
 /// <param name="async">XAsyncBlock for the async operation.</param>
 /// <param name="bufferSize">The buffer size in bytes required for the result.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFTitlePlayerGetEntityTokenResultSize(
+PF_API PFTitlePlayerGetEntityTokenResultSize(
     _Inout_ XAsyncBlock* async,
     _Out_ size_t* bufferSize
 ) noexcept;
@@ -113,7 +113,7 @@ HRESULT PFTitlePlayerGetEntityTokenResultSize(
 /// <remarks>
 /// entityToken is a pointer within buffer and does not need to be freed separately.
 /// </remarks>
-HRESULT PFTitlePlayerGetEntityTokenResult(
+PF_API PFTitlePlayerGetEntityTokenResult(
     _Inout_ XAsyncBlock* async,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,

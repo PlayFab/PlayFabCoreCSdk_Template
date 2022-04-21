@@ -7,7 +7,7 @@
 
 using namespace PlayFab;
 
-HRESULT PFTitlePlayerDuplicateHandle(
+PF_API PFTitlePlayerDuplicateHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Out_ PFTitlePlayerHandle* duplicatedHandle
 ) noexcept
@@ -22,7 +22,7 @@ HRESULT PFTitlePlayerDuplicateHandle(
     });
 }
 
-void PFTitlePlayerCloseHandle(
+PF_API_(void) PFTitlePlayerCloseHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle
 ) noexcept
 {
@@ -33,7 +33,7 @@ void PFTitlePlayerCloseHandle(
     });
 }
 
-HRESULT PFTitlePlayerGetEntityKeySize(
+PF_API PFTitlePlayerGetEntityKeySize(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Out_ size_t* bufferSize
 ) noexcept
@@ -46,7 +46,7 @@ HRESULT PFTitlePlayerGetEntityKeySize(
     });
 }
 
-HRESULT PFTitlePlayerGetEntityKey(
+PF_API PFTitlePlayerGetEntityKey(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
@@ -77,7 +77,7 @@ HRESULT PFTitlePlayerGetEntityKey(
     });
 }
 
-HRESULT PFTitlePlayerGetEntityTokenAsync(
+PF_API PFTitlePlayerGetEntityTokenAsync(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Inout_ XAsyncBlock* async
 ) noexcept
@@ -89,7 +89,7 @@ HRESULT PFTitlePlayerGetEntityTokenAsync(
     });
 }
 
-HRESULT PFTitlePlayerGetEntityTokenGetResultSize(
+PF_API PFTitlePlayerGetEntityTokenResultSize(
     _Inout_ XAsyncBlock* async,
     _Out_ size_t* bufferSize
 ) noexcept
@@ -97,7 +97,7 @@ HRESULT PFTitlePlayerGetEntityTokenGetResultSize(
     return XAsyncGetResultSize(async, bufferSize);
 }
 
-HRESULT PFTitlePlayerGetEntityTokenGetResult(
+PF_API PFTitlePlayerGetEntityTokenResult(
     _Inout_ XAsyncBlock* async,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,

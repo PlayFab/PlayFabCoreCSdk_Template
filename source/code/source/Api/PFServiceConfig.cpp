@@ -6,7 +6,7 @@
 
 using namespace PlayFab;
 
-HRESULT PFServiceConfigCreateHandle(
+PF_API PFServiceConfigCreateHandle(
     _In_z_ const char* connectionString,
     _In_z_ const char* titleId,
     _In_z_ const char* playerAccountPoolId,
@@ -25,7 +25,7 @@ HRESULT PFServiceConfigCreateHandle(
     });
 }
 
-HRESULT PFServiceConfigDuplicateHandle(
+PF_API PFServiceConfigDuplicateHandle(
     PFServiceConfigHandle handle,
     PFServiceConfigHandle* duplicatedHandle
 ) noexcept
@@ -40,7 +40,7 @@ HRESULT PFServiceConfigDuplicateHandle(
     });
 }
 
-void PFServiceConfigCloseHandle(
+PF_API_(void) PFServiceConfigCloseHandle(
     PFServiceConfigHandle handle
 ) noexcept
 {
@@ -51,7 +51,7 @@ void PFServiceConfigCloseHandle(
     });
 }
 
-HRESULT PFServiceConfigGetConnectionStringSize(
+PF_API PFServiceConfigGetConnectionStringSize(
     _In_  PFServiceConfigHandle handle,
     _Out_ size_t* connectionStringSize
 ) noexcept
@@ -65,7 +65,7 @@ HRESULT PFServiceConfigGetConnectionStringSize(
     });
 }
 
-HRESULT PFServiceConfigGetConnectionString(
+PF_API PFServiceConfigGetConnectionString(
     _In_ PFServiceConfigHandle handle,
     _In_ size_t connectionStringSize,
     _Out_writes_(connectionStringSize) char* connectionStringBuffer,
@@ -90,7 +90,7 @@ HRESULT PFServiceConfigGetConnectionString(
     });
 }
 
-HRESULT PFServiceConfigGetTitleIdSize(
+PF_API PFServiceConfigGetTitleIdSize(
     _In_  PFServiceConfigHandle handle,
     _Out_ size_t* titleIdSize
 ) noexcept
@@ -104,7 +104,7 @@ HRESULT PFServiceConfigGetTitleIdSize(
     });
 }
 
-HRESULT PFServiceConfigGetTitleId(
+PF_API PFServiceConfigGetTitleId(
     _In_ PFServiceConfigHandle handle,
     _In_ size_t titleIdSize,
     _Out_writes_(titleIdSize) char* titleIdBuffer,
@@ -129,7 +129,7 @@ HRESULT PFServiceConfigGetTitleId(
     });
 }
 
-HRESULT PFServiceConfigGetPlayerAccountPoolIdSize(
+PF_API PFServiceConfigGetPlayerAccountPoolIdSize(
     _In_  PFServiceConfigHandle handle,
     _Out_ size_t* playerAccountPoolIdSize
 ) noexcept
@@ -143,7 +143,7 @@ HRESULT PFServiceConfigGetPlayerAccountPoolIdSize(
     });
 }
 
-HRESULT PFServiceConfigGetPlayerAccountPoolId(
+PF_API PFServiceConfigGetPlayerAccountPoolId(
     _In_ PFServiceConfigHandle handle,
     _In_ size_t playerAccountPoolIdSize,
     _Out_writes_(playerAccountPoolIdSize) char* playerAccountPoolIdBuffer,

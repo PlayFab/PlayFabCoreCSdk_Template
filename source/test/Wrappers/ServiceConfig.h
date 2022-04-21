@@ -59,32 +59,44 @@ public:
 
     String ConnectionString() const noexcept
     {
-        const char* connectionString{ nullptr };
-        HRESULT hr = PFServiceConfigGetConnectionString(m_handle, &connectionString);
+        size_t size{ 0 };
+        HRESULT hr = PFServiceConfigGetConnectionStringSize(m_handle, &size);
+        assert(SUCCEEDED(hr));
+
+        std::vector<char> connectionString(size, '\0');
+        hr = PFServiceConfigGetConnectionString(m_handle, size, &connectionString[0], nullptr);
         assert(SUCCEEDED(hr));
         UNREFERENCED_PARAMETER(hr);
 
-        return connectionString;
+        return String{ connectionString.data() };
     }
 
     String TitleId() const noexcept
     {
-        const char* titleId{ nullptr };
-        HRESULT hr = PFServiceConfigGetTitleId(m_handle, &titleId);
+        size_t size{ 0 };
+        HRESULT hr = PFServiceConfigGetTitleIdSize(m_handle, &size);
+        assert(SUCCEEDED(hr));
+
+        std::vector<char> titleId(size, '\0');
+        hr = PFServiceConfigGetTitleId(m_handle, titleIdSize, &titleId[0], nullptr);
         assert(SUCCEEDED(hr));
         UNREFERENCED_PARAMETER(hr);
 
-        return titleId;
+        return String{ titleId.data() };
     }
 
     String PlayerAccountPoolId() const noexcept
     {
-        const char* playerAccountPoolId{ nullptr };
-        HRESULT hr = PFServiceConfigGetConnectionString(m_handle, &playerAccountPoolId);
+        size_t size{ 0 };
+        HRESULT hr = PFServiceConfigGetPlayerAccountPoolIdSize(m_handle, &size);
+        assert(SUCCEEDED(hr));
+
+        std::vector<char> playerAccountPoolId(size, '\0');
+        hr = PFServiceConfigGetConnectionString(m_handle, size, &playerAccountPoolId[0], nullptr);
         assert(SUCCEEDED(hr));
         UNREFERENCED_PARAMETER(hr);
 
-        return playerAccountPoolId;
+        return String{ playerAccountPoolId.data() };
     }
 
 private:

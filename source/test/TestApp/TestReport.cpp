@@ -12,38 +12,6 @@ namespace PlayFab
 namespace Test
 {
 
-JsonValue TestCaseReport::ToJson()
-{
-    JsonValue json{ rapidjson::kObjectType };
-    json.AddMember("classname", JsonValue{ classname.data(), s_jsonAllocator }, s_jsonAllocator);
-    json.AddMember("name", JsonValue{ name.data(), s_jsonAllocator }, s_jsonAllocator);
-    json.AddMember("time", time, s_jsonAllocator);
-    json.AddMember("message", JsonValue{ message.data(), s_jsonAllocator }, s_jsonAllocator);
-    json.AddMember("failureText", JsonValue{ failureText.data(), s_jsonAllocator }, s_jsonAllocator);
-    json.AddMember("finishState", JsonValue{ JsonValue::StringRefType{ ToString(finishState) } }, s_jsonAllocator);
-    return json;
-}
-
-JsonValue TestSuiteReport::ToJson()
-{
-    JsonValue json{ rapidjson::kObjectType };
-    json.AddMember("name", JsonValue{ name.data(), s_jsonAllocator }, s_jsonAllocator);
-    json.AddMember("tests", tests, s_jsonAllocator);
-    json.AddMember("failures", failures, s_jsonAllocator);
-    json.AddMember("errors", errors, s_jsonAllocator);
-    json.AddMember("skipped", skipped, s_jsonAllocator);
-    json.AddMember("time", time, s_jsonAllocator);
-
-    JsonValue testResultsJson{ rapidjson::kArrayType };
-    for (auto testResult : testResults)
-    {
-        testResultsJson.PushBack(testResult->ToJson(), s_jsonAllocator);
-    }
-    json.AddMember("testResults", testResultsJson, s_jsonAllocator);
-
-    return json;
-}
-
 TestReport::TestReport(const std::string& className)
 {
     internalReport.name = className;

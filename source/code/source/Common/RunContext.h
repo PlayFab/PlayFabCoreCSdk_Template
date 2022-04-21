@@ -48,6 +48,7 @@ public:
 
     XTaskQueueHandle Handle() const noexcept;
     void SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs = 0) const noexcept;
+    void SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept;
     void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
 
 private:

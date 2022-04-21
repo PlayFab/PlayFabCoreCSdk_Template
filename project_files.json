@@ -54,8 +54,6 @@
     "source\\Common\\SdkVersion.h": "Source\\Common",
     "source\\Common\\ServiceConfig.cpp": "Source\\Common",
     "source\\Common\\ServiceConfig.h": "Source\\Common",
-    "source\\Common\\Socket.cpp": "Source\\Common",
-    "source\\Common\\Socket.h": "Source\\Common",
     "source\\Common\\TitlePlayer.cpp": "Source\\Common",
     "source\\Common\\TitlePlayer.h": "Source\\Common",
     "source\\Common\\TokenExpiredHandler.cpp": "Source\\Common",

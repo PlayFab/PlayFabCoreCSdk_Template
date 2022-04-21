@@ -56,7 +56,7 @@ typedef void STDAPIVCALLTYPE PFMemFreeFunction(
 /// <param name="memAllocFunc">A pointer to the custom allocation callback to use.</param>
 /// <param name="memFreeFunc">A pointer to the custom freeing callback to use.</param>
 /// <returns>HRESULT return code for this API operation.</returns>
-STDAPI PFMemSetFunctions(
+PF_API PFMemSetFunctions(
     _In_opt_ PFMemAllocFunction* memAllocFunc,
     _In_opt_ PFMemFreeFunction* memFreeFunc
 ) noexcept;
@@ -71,7 +71,7 @@ STDAPI PFMemSetFunctions(
 /// <param name="memFreeFunc">Set to the to the current memory free callback. Returns the default 
 /// routine if not previously set</param>
 /// <returns>HRESULT return code for this API operation.</returns>
-STDAPI PFMemGetFunctions(
+PF_API PFMemGetFunctions(
     _Out_ PFMemAllocFunction** memAllocFunc,
     _Out_ PFMemFreeFunction** memFreeFunc
 ) noexcept;
@@ -81,7 +81,7 @@ STDAPI PFMemGetFunctions(
 /// </summary>
 /// <param name="backgroundQueue">An XTaskQueue that should be used for background work. If no queue is a default (threadpool) queue will be used.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFInitialize(
+PF_API PFInitialize(
     _In_opt_ XTaskQueueHandle backgroundQueue
 ) noexcept;
 
@@ -91,7 +91,7 @@ HRESULT PFInitialize(
 /// <param name="async">XAsyncBlock for the async operation.</param>
 /// <returns>Result code for this API operation.</returns>
 /// <remarks>Asynchronous result returned via XAsyncGetStatus.</remarks>
-HRESULT PFUninitializeAsync(
+PF_API PFUninitializeAsync(
     _In_ XAsyncBlock* async
 ) noexcept;
 

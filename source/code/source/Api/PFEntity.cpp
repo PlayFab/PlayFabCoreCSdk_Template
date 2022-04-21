@@ -4,7 +4,7 @@
 
 using namespace PlayFab;
 
-HRESULT PFEntityRegisterTokenExpiredEventHandler(
+PF_API PFEntityRegisterTokenExpiredEventHandler(
     _In_opt_ XTaskQueueHandle queue,
     _In_opt_ void* context,
     _In_ PFEntityTokenExpiredEventHandler* handler,
@@ -22,7 +22,7 @@ HRESULT PFEntityRegisterTokenExpiredEventHandler(
     );
 }
 
-void PFEntityUnregisterTokenExpiredEventHandler(
+PF_API_(void) PFEntityUnregisterTokenExpiredEventHandler(
     _In_ PFRegistrationToken token
 ) noexcept
 {

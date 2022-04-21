@@ -27,9 +27,12 @@ public:
 
     XTaskQueueHandle Handle() const noexcept;
     void SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept;
+    void SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept;
     void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
 
 private:
+    void SubmitCallback(XTaskQueuePort port, SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept;
+
     static void CALLBACK TaskQueueCallback(void* context, bool cancelled) noexcept;
     static void CALLBACK TaskQueueTerminated(void* context) noexcept;
 
@@ -111,17 +114,14 @@ void CALLBACK TaskQueue::State::TaskQueueCallback(void* context, bool cancelled)
     }
 }
 
-void TaskQueue::State::SubmitWork(
-    SharedPtr<ITaskQueueWork> work,
-    uint32_t delayInMs
-) const noexcept
+void TaskQueue::State::SubmitCallback(XTaskQueuePort port, SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept
 {
     assert(work);
     assert(m_handle);
 
     UniquePtr<TaskQueueCallbackContext> context = MakeUnique<TaskQueueCallbackContext>(std::move(work));
 
-    HRESULT hr = XTaskQueueSubmitDelayedCallback(m_handle, XTaskQueuePort::Work, delayInMs, context.get(), TaskQueueCallback);
+    HRESULT hr = XTaskQueueSubmitDelayedCallback(m_handle, port, delayInMs, context.get(), TaskQueueCallback);
     if (SUCCEEDED(hr))
     {
         // Will be reclaimed in TaskQueueCallback
@@ -135,9 +135,19 @@ void TaskQueue::State::SubmitWork(
     else
     {
         // Other errors are likely fatal
-        TRACE_ERROR_HR(hr, "TaskQueue::SubmitWork failed unexpectedly");
+        TRACE_ERROR_HR(hr, "TaskQueue::SubmitCallback failed unexpectedly");
         assert(false);
     }
+}
+
+void TaskQueue::State::SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept
+{
+    SubmitCallback(XTaskQueuePort::Work, std::move(work), delayInMs);
+}
+
+void TaskQueue::State::SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept
+{
+    SubmitCallback(XTaskQueuePort::Completion, std::move(completion), 0);
 }
 
 struct XTaskQueueTerminateContext
@@ -211,6 +221,11 @@ XTaskQueueHandle TaskQueue::Handle() const noexcept
 void TaskQueue::SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept
 {
     return m_state->SubmitWork(std::move(work), delayInMs);
+}
+
+void TaskQueue::SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept
+{
+    return m_state->SubmitCompletion(std::move(completion));
 }
 
 void TaskQueue::Terminate(SharedPtr<ITerminationListener> listener, void* context)
