@@ -26,7 +26,7 @@ for (var i = 0; i < featureGroup.calls.length; i++) {
     var requestParam = call.requestDatatype ? "_In_ const " + call.requestDatatype.prefix + call.requestDatatype.name + "* request,\n    " : "";
     var makeProvider = call.entityReturned ? "MakeAuthProvider" : "MakeProvider";
     var requestBinder = call.requestDatatype ? "*request, " : ""; %>
-HRESULT <%- prefix %><%- call.name %>Async(
+PF_API <%- prefix %><%- call.name %>Async(
     _In_ <%- contextHandleParam %>,
     <%- requestParam %>_In_ XAsyncBlock* async
 ) noexcept
@@ -50,7 +50,7 @@ HRESULT <%- prefix %><%- call.name %>Async(
         // No Get Result method needed
     } else if (call.entityReturned) {
         /* Custom logic for all other calls that result in an Entity object*/ %>
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _In_ XAsyncBlock* async,
     _Out_ <%- globalPrefix %><%- call.entityReturned %>Handle* entityHandle
 ) noexcept
@@ -58,7 +58,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
     return XAsyncGetResult(async, nullptr, sizeof(<%- globalPrefix %><%- call.entityReturned %>Handle), entityHandle, nullptr);
 }
 <%  } else if (isFixedSize(call.resultDatatype)) { %>
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _In_ XAsyncBlock* async,
     _Out_ <%- call.resultDatatype.prefix %><%- call.resultDatatype.name %>* result
 ) noexcept
@@ -66,7 +66,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
     return XAsyncGetResult(async, nullptr, sizeof(<%- call.resultDatatype.prefix %><%- call.resultDatatype.name %>), result, nullptr);
 }
 <%  } else { %>
-HRESULT <%- prefix %><%- call.name %>GetResultSize(
+PF_API <%- prefix %><%- call.name %>GetResultSize(
     _In_ XAsyncBlock* async,
     _Out_ size_t* bufferSize
 ) noexcept
@@ -74,7 +74,7 @@ HRESULT <%- prefix %><%- call.name %>GetResultSize(
     return XAsyncGetResultSize(async, bufferSize);
 }
 
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _In_ XAsyncBlock* async,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
@@ -92,7 +92,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
 <%  } // end if
 
     if (call.entityReturned === "TitlePlayer") { %>
-HRESULT <%- prefix %>Re<%- call.name %>Async(
+PF_API <%- prefix %>Re<%- call.name %>Async(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     <%- requestParam %>_Inout_ XAsyncBlock* async
 ) noexcept

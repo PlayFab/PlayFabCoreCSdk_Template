@@ -50,7 +50,7 @@ typedef void CALLBACK PFEntityTokenExpiredEventHandler(
 /// <param name="handler">The event handler, <see cref="XalUserChangeEventHandler"/>.</param>
 /// <param name="token">The token for unregistering this callback</param>
 /// <returns>Result code for this API operation.  Possible values are S_OK, E_PF_NOT_INITIALIZED, or E_FAIL.</returns>
-HRESULT PFEntityRegisterTokenExpiredEventHandler(
+PF_API PFEntityRegisterTokenExpiredEventHandler(
     _In_opt_ XTaskQueueHandle queue,
     _In_opt_ void* context,
     _In_ PFEntityTokenExpiredEventHandler* handler,
@@ -62,7 +62,7 @@ HRESULT PFEntityRegisterTokenExpiredEventHandler(
 /// </summary>
 /// <param name="token">The token returned from PFEntityRegisterTokenExpiredEventHandler.</param>
 /// <returns></returns>
-void PFEntityUnregisterTokenExpiredEventHandler(
+PF_API_(void) PFEntityUnregisterTokenExpiredEventHandler(
     _In_ PFRegistrationToken token
 ) noexcept;
 

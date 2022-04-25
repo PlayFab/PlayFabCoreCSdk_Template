@@ -10,6 +10,7 @@ namespace PlayFab
 {
 namespace Test
 {
+
 /// <summary>
 /// Data container defining the test-case data saved to JUnit XML format
 /// </summary>
@@ -25,8 +26,6 @@ public:
     /// <summary> The xml spec allows failureText to be an arbitrary string.  When possible it should match FinishState (But not required) </summary>
     std::string failureText;
     TestFinishState finishState;
-
-    PlayFab::JsonValue ToJson();
 };
 
 /// <summary>
@@ -45,8 +44,6 @@ public:
     int64_t timeStamp;
     int passed; // Could be calculated from the others, but sometimes knowing if they don't add up means something
     std::list<std::shared_ptr<TestCaseReport>> testResults;
-
-    PlayFab::JsonValue ToJson();
 };
 
 class TestReport

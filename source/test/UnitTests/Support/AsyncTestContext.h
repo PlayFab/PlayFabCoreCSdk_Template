@@ -8,12 +8,12 @@ namespace UnitTests
 {
 
 // Helper class for marshalling result of multithreaded/asyncronous tests to the correct thread
-class TestContext
+class AsyncTestContext
 {
 public:
-    TestContext() = default;
-    TestContext(const TestContext&) = delete;
-    ~TestContext();
+    AsyncTestContext() = default;
+    AsyncTestContext(const AsyncTestContext&) = delete;
+    ~AsyncTestContext();
 
     void Assert(bool condition);
     void AssertSucceeded(HRESULT hr);
@@ -31,7 +31,7 @@ private:
 };
 
 template<typename T>
-void TestContext::AssertSucceeded(Result<T> result)
+void AsyncTestContext::AssertSucceeded(Result<T> result)
 {
     AssertSucceeded(result.hr);
 }

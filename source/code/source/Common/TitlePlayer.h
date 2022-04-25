@@ -12,7 +12,7 @@ public:
     static Result<SharedPtr<TitlePlayer>> Make(
         Authentication::AuthenticateIdentityResult&& authResult,
         SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
-        RunContext&& tokenRefreshContext,
+        RunContext tokenRefreshContext,
         TokenExpiredHandler&& tokenExpiredHandler
     ) noexcept; 
 
@@ -27,7 +27,7 @@ private:
     TitlePlayer(
         Authentication::AuthenticateIdentityResult&& authResult,
         SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
-        RunContext&& tokenRefreshContext,
+        RunContext tokenRefreshContext,
         TokenExpiredHandler&& tokenExpiredHandler
     ) noexcept;
 

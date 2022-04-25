@@ -25,12 +25,12 @@ HRESULT Provider::Run(_In_ UniquePtr<Provider>&& provider) noexcept
     return S_OK;
 }
 
-HRESULT Provider::Begin(RunContext const&)
+HRESULT Provider::Begin(RunContext)
 {
     return Schedule(0);
 }
 
-HRESULT Provider::DoWork(RunContext const&)
+HRESULT Provider::DoWork(RunContext)
 {
     return E_FAIL;
 }

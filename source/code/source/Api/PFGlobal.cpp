@@ -6,7 +6,7 @@
 
 using namespace PlayFab;
 
-STDAPI PFMemSetFunctions(
+PF_API PFMemSetFunctions(
     _In_opt_ PFMemAllocFunction* memAllocFunc,
     _In_opt_ PFMemFreeFunction* memFreeFunc
 ) noexcept
@@ -31,7 +31,7 @@ STDAPI PFMemSetFunctions(
     return S_OK;
 }
 
-STDAPI PFMemGetFunctions(
+PF_API PFMemGetFunctions(
     _Out_ PFMemAllocFunction** memAllocFunc,
     _Out_ PFMemFreeFunction** memFreeFunc
 ) noexcept
@@ -46,63 +46,16 @@ STDAPI PFMemGetFunctions(
     return S_OK;
 }
 
-HRESULT PFInitialize(
+PF_API PFInitialize(
     _In_opt_ XTaskQueueHandle backgroundQueue
 ) noexcept
 {
     return GlobalState::Create(backgroundQueue);
 }
 
-HRESULT PFUninitializeAsync(
+PF_API PFUninitializeAsync(
     _In_ XAsyncBlock* async
 ) noexcept
 {
     return GlobalState::CleanupAsync(async);
-}
-
-HRESULT PFServiceConfigCreateHandle(
-    _In_z_ const char* connectionString,
-    _In_z_ const char* titleId,
-    _In_z_ const char* playerAccountPoolId,
-    _Out_ PFServiceConfigHandle* serviceConfigHandle
-) noexcept
-{
-    RETURN_HR_INVALIDARG_IF_NULL(connectionString);
-    RETURN_HR_INVALIDARG_IF_NULL(titleId);
-    RETURN_HR_INVALIDARG_IF_NULL(playerAccountPoolId);
-    RETURN_HR_INVALIDARG_IF_NULL(serviceConfigHandle);
-
-    SharedPtr<GlobalState> state;
-    RETURN_IF_FAILED(GlobalState::Get(state));
-
-    auto serviceConfig = MakeShared<PlayFab::ServiceConfig>(connectionString, titleId, playerAccountPoolId);
-    return state->ServiceConfigs().MakeHandle(std::move(serviceConfig), *serviceConfigHandle);
-}
-
-HRESULT PFServiceConfigDuplicateHandle(
-    PFServiceConfigHandle handle,
-    PFServiceConfigHandle* duplicatedHandle
-) noexcept
-{
-    RETURN_HR_INVALIDARG_IF_NULL(duplicatedHandle);
-
-    SharedPtr<GlobalState> state;
-    RETURN_IF_FAILED(GlobalState::Get(state));
-
-    SharedPtr<ServiceConfig> serviceConfig;
-    RETURN_IF_FAILED(state->ServiceConfigs().FromHandle(handle, serviceConfig));
-    return state->ServiceConfigs().MakeHandle(std::move(serviceConfig), *duplicatedHandle);
-}
-
-void PFServiceConfigCloseHandle(
-    PFServiceConfigHandle handle
-) noexcept
-{
-    SharedPtr<GlobalState> state;
-    HRESULT hr = GlobalState::Get(state);
-
-    if (SUCCEEDED(hr))
-    {
-        state->ServiceConfigs().CloseHandle(handle);
-    }
 }

@@ -10,6 +10,12 @@
     <Filter Include="Source\Support">
       <UniqueIdentifier>{fbfb7603-d5ae-4fa8-99a6-5cc71b83d9af}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Mocks">
+      <UniqueIdentifier>{03641ec5-72eb-4306-a966-1c7ea89e91f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Wrappers">
+      <UniqueIdentifier>{20739e53-c722-4b60-89a3-d3012f251d8d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\test\UnitTests\pch.cpp">
@@ -17,12 +23,6 @@
     </ClCompile>
     <ClCompile Include="..\..\test\UnitTests\Tests\AsyncOpTests.cpp">
       <Filter>Source\Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\TestContext.cpp">
-      <Filter>Source\Support</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Event.cpp">
-      <Filter>Source\Support</Filter>
     </ClCompile>
     <ClCompile Include="..\..\test\UnitTests\Tests\CancellationTokenTests.cpp">
       <Filter>Source\Tests</Filter>
@@ -33,19 +33,43 @@
     <ClCompile Include="..\..\test\UnitTests\Tests\RunContextTests.cpp">
       <Filter>Source\Tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Support\AsyncTestContext.cpp">
+      <Filter>Source\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Support\Event.cpp">
+      <Filter>Source\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Mocks\HttpMock.cpp">
+      <Filter>Source\Mocks</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\TokenRefreshTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\test\UnitTests\pch.h">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\TestContext.h">
+    <ClInclude Include="..\..\test\UnitTests\Support\AsyncTestContext.h">
       <Filter>Source\Support</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\Event.h">
+    <ClInclude Include="..\..\test\UnitTests\Support\Event.h">
       <Filter>Source\Support</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\TestMacros.h">
+    <ClInclude Include="..\..\test\UnitTests\Support\TestMacros.h">
       <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\UnitTests\Mocks\HttpMock.h">
+      <Filter>Source\Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\Wrappers\PlayFabSession.h">
+      <Filter>Source\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\Wrappers\ServiceConfig.h">
+      <Filter>Source\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\Wrappers\TitlePlayer.h">
+      <Filter>Source\Wrappers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

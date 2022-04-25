@@ -22,7 +22,7 @@ static const char* PFTitlePlayerEntityType = "title_player_account";
 /// Handle to an authenticated TitlePlayer Entity. Returned from one of the PFAuthenticationClientLogin* APIs.
 /// When no longer needed, the Entity handle must be closed with PFTitlePlayerCloseHandle.
 /// </summary>
-typedef PFHandle PFTitlePlayerHandle;
+typedef struct PFTitlePlayer* PFTitlePlayerHandle;
 
 /// <summary>
 /// Duplicates a PFTitlePlayerHandle.
@@ -34,7 +34,7 @@ typedef PFHandle PFTitlePlayerHandle;
 /// Both the duplicated handle and the original handle need to be closed with PFTitlePlayerCloseHandle when they
 /// are no longer needed.
 /// </remarks>
-HRESULT PFTitlePlayerDuplicateHandle(
+PF_API PFTitlePlayerDuplicateHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Out_ PFTitlePlayerHandle* duplicatedHandle
 ) noexcept;
@@ -44,7 +44,7 @@ HRESULT PFTitlePlayerDuplicateHandle(
 /// </summary>
 /// <param name="titlePlayerHandle">TitlePlayer handle to close.</param>
 /// <returns>Result code for this API operation.</returns>
-void PFTitlePlayerCloseHandle(
+PF_API_(void) PFTitlePlayerCloseHandle(
     _In_ PFTitlePlayerHandle titlePlayerHandle
 ) noexcept;
 
@@ -54,7 +54,7 @@ void PFTitlePlayerCloseHandle(
 /// <param name="titlePlayerHandle">PFTitlePlayerHandle returned from a login call.</param>
 /// <param name="bufferSize">The buffer size in bytes required for the EntityKey.</param>
 /// <returns>Result code for this API operation.</returns>
-HRESULT PFTitlePlayerGetEntityKeySize(
+PF_API PFTitlePlayerGetEntityKeySize(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _Out_ size_t* bufferSize
 ) noexcept;
@@ -71,7 +71,7 @@ HRESULT PFTitlePlayerGetEntityKeySize(
 /// <remarks>
 /// entityKey is a pointer within buffer and does not need to be freed separately.
 /// </remarks>
-HRESULT PFTitlePlayerGetEntityKey(
+PF_API PFTitlePlayerGetEntityKey(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
@@ -79,19 +79,41 @@ HRESULT PFTitlePlayerGetEntityKey(
     _Out_opt_ size_t* bufferUsed
 ) noexcept;
 
-HRESULT PFTitlePlayerGetEntityTokenAsync(
+/// <summary>
+/// Get the cached PFEntityToken for a TitlePlayer.
+/// </summary>
+/// <param name="titlePlayerHandle">PFTitlePlayerHandle returned from a login call.</param>
+/// <param name="async">XAsyncBlock for the async operation.</param>
+/// <returns>Result code for this API operation.</returns>
+PF_API PFTitlePlayerGetEntityTokenAsync(
     _In_ PFTitlePlayerHandle titlePlayerHandle,
-    _In_ bool forceRefresh,
     _Inout_ XAsyncBlock* async
 ) noexcept;
 
-HRESULT PFTitlePlayerGetEntityTokenGetResultSize(
+/// <summary>
+/// Get the size in bytes needed to store the result of a PFTitlePlayerGetEntityTokenAsync call.
+/// </summary>
+/// <param name="async">XAsyncBlock for the async operation.</param>
+/// <param name="bufferSize">The buffer size in bytes required for the result.</param>
+/// <returns>Result code for this API operation.</returns>
+PF_API PFTitlePlayerGetEntityTokenResultSize(
     _Inout_ XAsyncBlock* async,
     _Out_ size_t* bufferSize
 ) noexcept;
 
-
-HRESULT PFTitlePlayerGetEntityTokenGetResult(
+/// <summary>
+/// Gets the result of a successful PFTitlePlayerGetEntityTokenAsync call.
+/// </summary>
+/// <param name="async">XAsyncBlock for the async operation.</param>
+/// <param name="bufferSize">The size of the buffer for the result object.</param>
+/// <param name="buffer">Byte buffer used for the result value and its fields.</param>
+/// <param name="entityToken">Pointer to the EntityToken object.</param>
+/// <param name="bufferUsed">The number of bytes in the provided buffer that were used.</param>
+/// <returns>Result code for this API operation.</returns>
+/// <remarks>
+/// entityToken is a pointer within buffer and does not need to be freed separately.
+/// </remarks>
+PF_API PFTitlePlayerGetEntityTokenResult(
     _Inout_ XAsyncBlock* async,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,

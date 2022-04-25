@@ -18,8 +18,8 @@ public:
 
 private:
     SharedPtr<PlayFab::HttpClient> m_httpClient;
-    String m_titleId;
-    String m_playerAccountPoolId;
+    String const m_titleId;
+    String const m_playerAccountPoolId;
 };
 
 }

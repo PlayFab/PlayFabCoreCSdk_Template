@@ -2,54 +2,86 @@
 
 #pragma once
 
-#include "TaskQueue.h"
+#include "XTaskQueue.h"
 #include "CancellationToken.h"
 
 namespace PlayFab
 {
 
-class RunContextTracker;
-
-class RunContext
+struct ITerminationListener
 {
-public:
-    RunContext Derive() const noexcept;
-    RunContext DeriveOnQueue(XTaskQueueHandle queueHandle) const noexcept;
+    virtual ~ITerminationListener() = default;
 
-    RunContext(RunContext const&) noexcept = delete;
-    RunContext(RunContext&&) noexcept;
-    RunContext& operator=(RunContext const&) noexcept = delete;
-    RunContext& operator=(RunContext&&) noexcept = delete;
-    virtual ~RunContext() noexcept;
-
-    PlayFab::TaskQueue const& TaskQueue() const noexcept;
-    PlayFab::CancellationToken CancellationToken() const noexcept;
-
-    // Terminate Queue
-    HRESULT TerminateTaskQueue() noexcept;
-
-protected:
-    RunContext(PlayFab::TaskQueue&& q, PlayFab::CancellationToken&& ct, SharedPtr<RunContextTracker> tracker) noexcept;
-
-private:
-    PlayFab::TaskQueue m_queue;
-    PlayFab::CancellationToken m_cancellationToken;
-
-protected:
-    SharedPtr<RunContextTracker> m_tracker;
+    // This signature looks a bit strange, but is intentional. Termination typically happens during cleanup, so 
+    // we need to be very precise about ownership and cleanup timing. When Terminating, shared ownership
+    // of the ITerminationListener is given to the ITerminable. When it has finished terminating, it should relinquish
+    // that ownership as part of invoking OnTerminated rather than holding onto the reference until after OnTerminated
+    // returns. This allows the ITerminationListener to be destroyed within the OnTerminated callback.
+    virtual void OnTerminated(_In_ SharedPtr<ITerminationListener>&& self, void* context) = 0;
 };
 
-using TerminationCallback = void CALLBACK(void* context);
+struct ITerminable
+{
+    virtual ~ITerminable() = default;
+    virtual void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) = 0;
+};
 
-class RootRunContext : public RunContext
+// Interface for work submitted to TaskQueues
+struct ITaskQueueWork
+{
+    virtual void Run() = 0;
+    virtual void WorkCancelled() {}
+};
+
+// RAII wrapper around XTaskQueueHandle
+class TaskQueue : public ITerminable
 {
 public:
-    RootRunContext(XTaskQueueHandle backgroundQueue) noexcept;
+    TaskQueue DeriveWorkQueue() const noexcept;
+    static TaskQueue DeriveWorkQueue(XTaskQueueHandle handle) noexcept;
 
-    // TODO figure out best signature here. Since this will be called during clean up, we need strong
-    // guarantees that SDK allocations are freed before the callback is fired.
-    // Might also want to allow specification of of queue on which the callback will be fired
-    void Terminate(TerminationCallback* callback, void* context) noexcept;
+    TaskQueue(const TaskQueue& other) noexcept = default;
+    TaskQueue(TaskQueue&& other) noexcept = default;
+    TaskQueue& operator=(TaskQueue const& other) noexcept = delete;
+    TaskQueue& operator=(TaskQueue&& other) noexcept = delete;
+    ~TaskQueue() noexcept = default;
+
+    XTaskQueueHandle Handle() const noexcept;
+    void SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs = 0) const noexcept;
+    void SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept;
+    void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
+
+private:
+    class State;
+
+    TaskQueue(SharedPtr<State> state) noexcept;
+
+    SharedPtr<State> m_state;
+};
+
+class RunContext : public ITerminable
+{
+public:
+    static RunContext Root(XTaskQueueHandle backgroundQueue) noexcept;
+    RunContext Derive() noexcept;
+    RunContext DeriveOnQueue(XTaskQueueHandle queueHandle) noexcept;
+
+    RunContext(RunContext const&) noexcept = default;
+    RunContext(RunContext&&) noexcept = default;
+    RunContext& operator=(RunContext const&) noexcept = delete;
+    RunContext& operator=(RunContext&&) noexcept = delete;
+    ~RunContext() noexcept = default;
+
+    PlayFab::TaskQueue TaskQueue() const noexcept;
+    PlayFab::CancellationToken CancellationToken() const noexcept;
+    void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) noexcept override;
+
+private:
+    class State;
+
+    RunContext(SharedPtr<State> state) noexcept;
+
+    SharedPtr<State> m_state;
 };
 
 }

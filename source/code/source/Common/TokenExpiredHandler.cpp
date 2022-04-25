@@ -4,27 +4,28 @@
 namespace PlayFab
 {
 
-class ClientHandler : public ICancellationListener
+class ClientHandlerInvocation : public ITaskQueueWork
+{
+public:
+    ClientHandlerInvocation(void* context, PFEntityTokenExpiredEventHandler* handler, String&& entityId) noexcept;
+
+    void Run() override;
+
+private:
+    void* const m_context;
+    PFEntityTokenExpiredEventHandler* const m_handler;
+    String m_entityId;
+};
+
+class ClientHandler
 {
 public:
     ClientHandler(RunContext&& rc, void* context, PFEntityTokenExpiredEventHandler* handler) noexcept;
-    ClientHandler(ClientHandler const&) = delete;
-    ClientHandler(ClientHandler&&) = delete;
-    ClientHandler& operator=(ClientHandler const&) = delete;
-    ClientHandler& operator=(ClientHandler&&) = delete;
-    ~ClientHandler() noexcept;
 
-    static void Invoke(SharedPtr<ClientHandler> handler, String entityId) noexcept;
-
-    RunContext const& RunContext() const noexcept;
+    RunContext RunContext() const noexcept;
+    void Invoke(String entityId) noexcept;
 
 private:
-    void OnCancellation() noexcept override;
-
-    using CallbackContext = std::tuple<SharedPtr<ClientHandler const>, String>;
-
-    static void CALLBACK TaskQueueCallback(void* context, bool cancelled) noexcept;
-
     PlayFab::RunContext m_rc;
     void* const m_context;
     PFEntityTokenExpiredEventHandler* const m_handler;
@@ -58,65 +59,42 @@ private:
     PFRegistrationToken m_nextToken;
 };
 
+ClientHandlerInvocation::ClientHandlerInvocation(void* context, PFEntityTokenExpiredEventHandler* handler, String&& entityId) noexcept :
+    m_context{ context },
+    m_handler{ handler },
+    m_entityId{ std::move(entityId) }
+{
+}
+
+void ClientHandlerInvocation::Run()
+{
+    try
+    {
+        m_handler(m_context, m_entityId.data());
+    }
+    catch (...)
+    {
+        TRACE_ERROR("Caught unhandled exception in client TokenExpired handler");
+    }
+}
+
 ClientHandler::ClientHandler(PlayFab::RunContext&& rc, void* context, PFEntityTokenExpiredEventHandler* handler) noexcept :
     m_rc{ std::move(rc) },
     m_context{ context },
     m_handler{ handler }
 {
-    auto cancelled = m_rc.CancellationToken().RegisterForNotificationAndCheck(*this);
-    if (cancelled)
-    {
-        OnCancellation();
-    }
 }
 
-ClientHandler::~ClientHandler() noexcept
-{
-    m_rc.CancellationToken().UnregisterForNotificationAndCheck(*this);
-}
-
-void ClientHandler::Invoke(SharedPtr<ClientHandler> handler, String entityId) noexcept
-{
-    auto context = MakeUnique<CallbackContext>(handler, std::move(entityId));
-
-    HRESULT hr = handler->m_rc.TaskQueue().ScheduleWork(TaskQueueCallback, context.get(), 0);
-    if (FAILED(hr))
-    {
-        TRACE_ERROR_HR(hr, "Failed to schedule TokenExpiredEventHanler");
-    }
-    else
-    {
-        context.release();
-    }
-}
-
-RunContext const& ClientHandler::RunContext() const noexcept
+RunContext ClientHandler::RunContext() const noexcept
 {
     return m_rc;
 }
 
-void ClientHandler::OnCancellation() noexcept
+void ClientHandler::Invoke(String entityId) noexcept
 {
-    m_rc.TerminateTaskQueue();
+    m_rc.TaskQueue().SubmitWork(MakeShared<ClientHandlerInvocation>(m_context, m_handler, std::move(entityId)));
 }
 
-void CALLBACK ClientHandler::TaskQueueCallback(void* c, bool cancelled) noexcept
-{
-    TRACE_VERBOSE("%s: cancelled=%u", __FUNCTION__, cancelled);
-
-    UniquePtr<CallbackContext> context{ static_cast<CallbackContext*>(c) };
-    if (!cancelled)
-    {
-        // Could this be racing with Unregister: 
-        // 1) SDK calls TokenExpiredHandler::Invoke
-        // 2) ClientHandler::TaskQueueCallback scheduled
-        // 3) Before TaskQueueCallback runs, client calls TokenExpiredHandler::Unregister
-        // 4) TaskQueueCallback runs. Unsure if its possible for cancelled=false here however
-
-        auto& clientHandler{ std::get<0>(*context) };
-        clientHandler->m_handler(clientHandler->m_context, std::get<1>(*context).data());
-    }
-}
 
 namespace Detail
 {
@@ -156,7 +134,7 @@ void TokenExpiredHandler::SharedState::UnregisterClientHandler(PFRegistrationTok
         return;
     }
 
-    it->second->RunContext().CancellationToken().Cancel();
+    it->second->RunContext().Terminate(nullptr, nullptr);
 
     m_clientHandlers.erase(it);
 }
@@ -169,7 +147,7 @@ void TokenExpiredHandler::SharedState::Invoke(String&& entityId) const noexcept
 
     for (auto& pair : m_clientHandlers)
     {
-        ClientHandler::Invoke(pair.second, entityId);
+        pair.second->Invoke(entityId);
     }
 }
 

@@ -23,13 +23,22 @@ struct GlobalStateBootstrapper
         XTaskQueueHandle backgroundQueue;
     };
 
-    static HRESULT StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state);
+    static HRESULT StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state) noexcept;
 };
 
+namespace Detail
+{
+
+// Choose arbitrary but recognizable values for handles
+uintptr_t const kFirstServiceConfigHandle = 0x10000000;
+uintptr_t const kFirstTitlePlayerHandle = 0x20000000;
+
+}
+
 GlobalState::GlobalState(XTaskQueueHandle backgroundQueue) noexcept :
-    m_runContext{ backgroundQueue },
-    m_serviceConfigs{ (HANDLE)0x10000000 }, // TODO choose sensible values here
-    m_titlePlayers{ (HANDLE)0x20000000 }
+    m_runContext{ RunContext::Root(backgroundQueue) },
+    m_serviceConfigs{ Detail::kFirstServiceConfigHandle },
+    m_titlePlayers{ Detail::kFirstTitlePlayerHandle }
 {
 }
 
@@ -55,17 +64,50 @@ HRESULT GlobalState::Get(SharedPtr<GlobalState>& state) noexcept
 
 struct CleanupContext
 {
-    SharedPtr<GlobalState> state;
     XAsyncBlock lhcCleanupAsync{};
     XAsyncBlock* cleanupAsync{};
 };
 
 HRESULT GlobalState::CleanupAsync(XAsyncBlock* async) noexcept
 {
-    UniquePtr<CleanupContext> context = MakeUnique<CleanupContext>();
-    RETURN_IF_FAILED(XAsyncBegin(async, context.get(), __FUNCTION__, __FUNCTION__, CleanupAsyncProvider));
-    context.release();
-    return S_OK;
+    try
+    {
+        UniquePtr<CleanupContext> context = MakeUnique<CleanupContext>();
+        RETURN_IF_FAILED(XAsyncBegin(async, context.get(), __FUNCTION__, __FUNCTION__, CleanupAsyncProvider));
+        context.release();
+        return S_OK;
+    }
+    catch (...)
+    {
+        return CurrentExceptionToHR();
+    }
+}
+
+HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderData const* data)
+{
+    CleanupContext* context{ static_cast<CleanupContext*>(data->context) };
+
+    switch (op)
+    {
+    case XAsyncOp::Begin:
+    try
+    {
+        SharedPtr<GlobalState> state;
+        RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, state));
+        context->cleanupAsync = data->async;
+
+        state->m_runContext.Terminate(std::move(state), context);
+        return S_OK;
+    }
+    catch (...)
+    {
+        return CurrentExceptionToHR();
+    }
+    default:
+    {
+        return S_OK;
+    }
+    }
 }
 
 void CALLBACK HCCleanupComplete(XAsyncBlock* async)
@@ -94,11 +136,14 @@ void CALLBACK HCCleanupComplete(XAsyncBlock* async)
     XAsyncComplete(cleanupAsync, hr, 0);
 }
 
-void CALLBACK RunContextTerminated(void* c)
+void GlobalState::OnTerminated(SharedPtr<ITerminationListener>&& self, void* c) noexcept
 {
     TRACE_VERBOSE(__FUNCTION__);
 
     CleanupContext* context{ static_cast<CleanupContext*>(c) };
+
+    // Free GlobalState before calling HCCleanup - 'this' will be destroyed here
+    self.reset();
 
     context->lhcCleanupAsync.callback = HCCleanupComplete;
     context->lhcCleanupAsync.queue = context->cleanupAsync->queue; // Should use derived queue
@@ -107,40 +152,17 @@ void CALLBACK RunContextTerminated(void* c)
     HCCleanupAsync(&context->lhcCleanupAsync);
 }
 
-HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderData const* data)
-{
-    CleanupContext* context{ static_cast<CleanupContext*>(data->context) };
-
-    switch (op)
-    {
-    case XAsyncOp::Begin:
-    {
-        RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, context->state));
-        context->cleanupAsync = data->async;
-
-        // TODO cleanup all users?
-
-        context->state->m_runContext.Terminate(RunContextTerminated, context);
-        return S_OK;
-    }
-    default:
-    {
-        return S_OK;
-    }
-    }
-}
-
-RunContext const& GlobalState::RunContext() const noexcept
+RunContext GlobalState::RunContext() const noexcept
 {
     return m_runContext;
 }
 
-HandleTable<ServiceConfig>& GlobalState::ServiceConfigs() noexcept
+ServiceConfigHandleTable& GlobalState::ServiceConfigs() noexcept
 {
     return m_serviceConfigs;
 }
 
-HandleTable<TitlePlayer>& GlobalState::TitlePlayers() noexcept
+TitlePlayerHandleTable& GlobalState::TitlePlayers() noexcept
 {
     return m_titlePlayers;
 }
@@ -150,7 +172,7 @@ TokenExpiredHandler GlobalState::TokenExpiredHandler() const noexcept
     return m_tokenExpiredHandler;
 }
 
-HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state)
+HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state) noexcept
 {
     struct StateHolder
     {
@@ -161,55 +183,62 @@ HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* create
     static std::mutex s_mutex;
     static StateHolder* s_stateHolder{ nullptr }; // intentional non-owning pointer
 
-    std::lock_guard<std::mutex> lock{ s_mutex };
+    try
+    {
+        std::lock_guard<std::mutex> lock{ s_mutex };
 
-    switch (mode)
-    {
-    case AccessMode::Create:
-    {
-        // Assuming for now initialization is not ref counted - there should be exactly one call to create
-        // and exactly one call to cleanup
-        if (s_stateHolder)
+        switch (mode)
         {
-            return E_PF_ALREADY_INITIALIZED;
-        }
-
-        assert(createArgs);
-        state = SharedPtr<GlobalState>{ new (Allocator<GlobalState>{}.allocate(1)) GlobalState{ createArgs->backgroundQueue }, Deleter<GlobalState>() };
-        s_stateHolder = MakeUnique<StateHolder>().release(); // will be reclaimed in cleanup
-        s_stateHolder->state = std::move(state);
-
-        return S_OK;
-    }
-    case AccessMode::Get:
-    {
-        if (!s_stateHolder)
+        case AccessMode::Create:
         {
-            return E_PF_NOT_INITIALIZED;
-        }
-        assert(s_stateHolder->state);
-        state = s_stateHolder->state;
+            // Assuming for now initialization is not ref counted - there should be exactly one call to create
+            // and exactly one call to cleanup
+            if (s_stateHolder)
+            {
+                return E_PF_ALREADY_INITIALIZED;
+            }
 
-        return S_OK;
-    }
-    case AccessMode::Cleanup:
-    {
-        if (!s_stateHolder)
+            assert(createArgs);
+            state = SharedPtr<GlobalState>{ new (Allocator<GlobalState>{}.allocate(1)) GlobalState{ createArgs->backgroundQueue }, Deleter<GlobalState>() };
+            s_stateHolder = MakeUnique<StateHolder>().release(); // will be reclaimed in cleanup
+            s_stateHolder->state = std::move(state);
+
+            return S_OK;
+        }
+        case AccessMode::Get:
         {
-            return E_PF_NOT_INITIALIZED;
+            if (!s_stateHolder)
+            {
+                return E_PF_NOT_INITIALIZED;
+            }
+            assert(s_stateHolder->state);
+            state = s_stateHolder->state;
+
+            return S_OK;
         }
+        case AccessMode::Cleanup:
+        {
+            if (!s_stateHolder)
+            {
+                return E_PF_NOT_INITIALIZED;
+            }
 
-        UniquePtr<StateHolder> stateHolder{ s_stateHolder };
-        s_stateHolder = nullptr;
-        state = stateHolder->state; // state is the only remaining reference to the GlobalState
+            UniquePtr<StateHolder> stateHolder{ s_stateHolder };
+            s_stateHolder = nullptr;
+            state = stateHolder->state; // state is the only remaining reference to the GlobalState
 
-        return S_OK;
+            return S_OK;
+        }
+        default:
+        {
+            assert(false);
+            return E_UNEXPECTED;
+        }
+        }
     }
-    default:
+    catch (...)
     {
-        assert(false);
-        return E_UNEXPECTED;
-    }
+        return CurrentExceptionToHR();
     }
 }
 

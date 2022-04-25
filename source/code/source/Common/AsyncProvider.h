@@ -42,13 +42,13 @@ protected:
     // another asynchronous API. Begin will be invoked synchronously by Run(), so this operation should never block.
     //
     // Default implementation will call Schedule with no delay.
-    virtual HRESULT Begin(RunContext const& runContext);
+    virtual HRESULT Begin(RunContext runContext);
 
     // Perform any long running work. This method is invoked is guaranteed always be invoked on the thread dictated by the Provider's
     // XAsync task queue.
     //
     // Default implementation will return E_FAIL, marking the operation as completed with no result payload.
-    virtual HRESULT DoWork(RunContext const& runContext);
+    virtual HRESULT DoWork(RunContext runContext);
 
     // The GetResult operation should copy the result payload into a client provided buffer. GetResult will be called
     // synchronously when the client calls the appropriate get result API.
