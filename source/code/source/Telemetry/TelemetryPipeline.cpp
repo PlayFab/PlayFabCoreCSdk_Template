@@ -45,7 +45,7 @@ private:
     SharedPtr<EventBuffer> m_buffer;
     uint32_t const m_maxWaitTimeInSeconds;
     uint32_t const m_pollDelayInMs;
-    ModelVector<Events::EventContents> m_pendingPayload;
+    Vector<Events::EventContents> m_pendingPayload;
     time_t m_oldestEventTimeStamp;
 };
 
@@ -117,10 +117,10 @@ void EventUploader::Run() noexcept
         if (haveEvents)
         {
             Events::EventContents eventContents;
-            eventContents.SetEventNamespace(std::move(eventData.eventNamespace));
-            eventContents.SetName(std::move(eventData.eventName));
-            eventContents.SetPayload(std::move(eventData.payloadJson));
-            eventContents.SetOriginalTimestamp(eventData.emitTime);
+            eventContents.eventNamespace = std::move(eventData.eventNamespace);
+            eventContents.name = std::move(eventData.eventName);
+            eventContents.payloadJSON = std::move(eventData.payloadJson);
+            eventContents.originalTimestamp = eventData.emitTime;
 
             if (m_pendingPayload.empty())
             {
@@ -133,7 +133,7 @@ void EventUploader::Run() noexcept
         if (!m_pendingPayload.empty() && std::time(nullptr) - m_oldestEventTimeStamp >= m_maxWaitTimeInSeconds)
         {
             Events::WriteEventsRequest request;
-            request.SetEvents(std::move(m_pendingPayload));
+            request.events = std::move(m_pendingPayload);
 
             assert(m_pendingPayload.empty());
 

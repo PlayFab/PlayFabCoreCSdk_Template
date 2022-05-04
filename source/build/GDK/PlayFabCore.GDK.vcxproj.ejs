@@ -142,16 +142,20 @@ for (var file in projectFiles.sourceFiles) {
     <ClCompile Include="$(PlayFabSourceDir)\<%- file %>" /><%
     }
 } 
-for(var featureGroupName in SDKFeatureGroups) { %>
-    <ClInclude Include="$(PlayFabSourceDir)\include\playfab\<%- prefix + featureGroupName %>DataModels.h" />
-    <ClInclude Include="$(PlayFabSourceDir)\include\playfab\cpp\<%- prefix + featureGroupName %>DataModelWrappers.h" />
-    <ClInclude Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.h" />
-    <ClCompile Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.cpp" /><%
+for(var featureGroupName in SDKFeatureGroups) { 
+    if (!SDKFeatureGroups[featureGroupName].isInternalOnly) { %>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>DataModels.h" />
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\cpp\<%- prefix + featureGroupName %>DataModelWrappers.h" /><%
+    } %>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.h" />
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.cpp" /><%
     if (!(featureGroupName === "Shared")) { %>
-    <ClInclude Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.h" />
-    <ClCompile Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.cpp" />
-    <ClInclude Include="$(PlayFabSourceDir)\include\playfab\<%- prefix + featureGroupName %>.h" />
-    <ClCompile Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- prefix + featureGroupName %>.cpp" /><%
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.h" />
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.cpp" /><%
+        if (!SDKFeatureGroups[featureGroupName].isInternalOnly) { %>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>.h" />
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- prefix + featureGroupName %>.cpp" /><%
+        }
     }
 } %>
     <ClInclude Include="$(PlayFabSourceDir)\source\stdafx.h" />

@@ -64,7 +64,9 @@ public:
         {
             rapidjson::Document requestJson;
             requestJson.Parse(requestBody.data());
-            tc.Assert(requestJson["Events"][0]["Payload"]["eventId"].GetInt() == 0);
+            rapidjson::Document payloadJson;
+            payloadJson.Parse(requestJson["Events"][0]["PayloadJSON"].GetString());
+            tc.Assert(payloadJson["eventId"].GetInt() == 0);
             tc.Complete();
         });
 
@@ -116,7 +118,9 @@ public:
             auto& eventsJson = requestJson["Events"];
             for (auto& eventJson : eventsJson.GetArray())
             {
-                tc.Assert(eventIdsToWrite.find(eventJson["Payload"]["eventId"].GetInt()) != eventIdsToWrite.end());
+                rapidjson::Document payloadJson;
+                payloadJson.Parse(eventJson["PayloadJSON"].GetString());
+                tc.Assert(eventIdsToWrite.find(payloadJson["eventId"].GetInt()) != eventIdsToWrite.end());
                 ++eventsWritten;
             }
 
