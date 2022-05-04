@@ -27,10 +27,6 @@ MemoryHooks& GetMemoryHooks()
 
 HRESULT SetMemoryHooks(PFMemAllocFunction* memAllocFunc, PFMemFreeFunction* memFreeFunc)
 {
-    SharedPtr<GlobalState> state;
-    GlobalState::Get(state);
-    RETURN_HR_IF(E_PF_ALREADY_INITIALIZED, state);
-
     auto& hooks = GetMemoryHooks();
 
     if (memAllocFunc && memFreeFunc)

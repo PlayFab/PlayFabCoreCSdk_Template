@@ -56,10 +56,11 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     // populate SDKFeatureGroups structure
     populateSDKFeatureGroups(apis);
 
-    // temporarily only including auth and shared
+    // only including auth, events, and shared in SDK Core.
+    // TODO might want an easier way to specify what gets generated here
     var tempFeatureGroups = {};
     for (var featureGroupName in SDKFeatureGroups) {
-        if (featureGroupName === "Shared" || featureGroupName === "Authentication") {
+        if (featureGroupName === "Shared" || featureGroupName === "Authentication" || featureGroupName === "Events") {
             tempFeatureGroups[featureGroupName] = SDKFeatureGroups[featureGroupName];
         }
     }

@@ -1,4 +1,5 @@
-#include "pch.h"
+#include "stdafx.h"
+#include "TestIncludes.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 

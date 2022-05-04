@@ -1,4 +1,5 @@
-#include "pch.h"
+#include "stdafx.h"
+#include "TestIncludes.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -6,40 +7,6 @@ namespace PlayFab
 {
 namespace UnitTests
 {
-
-constexpr char* mockAuthResponseBody =
-R"({
-  "code": 200,
-  "status": "OK",
-  "data": {
-    "MasterPlayerAccount": {
-      "EntityToken": "MasterPlayerMockEntityToken",
-      "Entity": {
-        "Id": "MasterPlayerId",
-        "Type": "master_player_account",
-        "TypeString": "master_player_account",
-        "IsTitle": false,
-        "IsNamespace": false,
-        "IsService": false,
-        "IsMasterPlayer": true,
-        "IsTitlePlayer": false
-      }
-    },
-    "TitlePlayerAccount": {
-      "EntityToken": "TitlePlayerMockEntityToken",
-      "Entity": {
-        "Id": "TitlePlayerId",
-        "Type": "title_player_account",
-        "TypeString": "title_player_account",
-        "IsTitle": false,
-        "IsNamespace": false,
-        "IsService": false,
-        "IsMasterPlayer": false,
-        "IsTitlePlayer": true
-      }
-    }
-  }
-})";
 
 TEST_CLASS(TokenRefreshTests)
 {
@@ -56,7 +23,7 @@ public:
 
         rapidjson::Document authResponseBodyJson;
         auto& allocator{ authResponseBodyJson.GetAllocator() };
-        authResponseBodyJson.Parse(mockAuthResponseBody);
+        authResponseBodyJson.Parse(kMockAuthResponseBody);
 
         // Set Token to expire in 1 minute to trigger a refresh
         time_t tokenExpiration = time(nullptr) + 60;
@@ -80,7 +47,7 @@ public:
         VERIFY_SUCCEEDED(XAsyncGetStatus(&async, true));
         PFTitlePlayerHandle titlePlayerHandle{ nullptr };
         VERIFY_SUCCEEDED(PFAuthenticationAuthenticateWithCustomIdGetResult(&async, &titlePlayerHandle));
-        Wrappers::TitlePlayer<>::Wrap(titlePlayerHandle);
+        auto titlePlayer = Wrappers::TitlePlayer<>::Wrap(titlePlayerHandle);
 
         Assert::IsTrue(tokenRefreshedEvent.Wait(1000));
     }

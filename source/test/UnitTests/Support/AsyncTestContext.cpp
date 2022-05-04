@@ -1,5 +1,5 @@
-#include "pch.h"
-#include "AsyncTestContext.h"
+#include "stdafx.h"
+#include "TestIncludes.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 

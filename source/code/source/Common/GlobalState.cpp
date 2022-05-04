@@ -32,13 +32,15 @@ namespace Detail
 // Choose arbitrary but recognizable values for handles
 uintptr_t const kFirstServiceConfigHandle = 0x10000000;
 uintptr_t const kFirstTitlePlayerHandle = 0x20000000;
+uintptr_t const kFirstTelemetryPipelineHandle = 0x30000000;
 
 }
 
 GlobalState::GlobalState(XTaskQueueHandle backgroundQueue) noexcept :
     m_runContext{ RunContext::Root(backgroundQueue) },
     m_serviceConfigs{ Detail::kFirstServiceConfigHandle },
-    m_titlePlayers{ Detail::kFirstTitlePlayerHandle }
+    m_titlePlayers{ Detail::kFirstTitlePlayerHandle },
+    m_clientTeletryPipelines{ Detail::kFirstTelemetryPipelineHandle }
 {
 }
 
@@ -165,6 +167,11 @@ ServiceConfigHandleTable& GlobalState::ServiceConfigs() noexcept
 TitlePlayerHandleTable& GlobalState::TitlePlayers() noexcept
 {
     return m_titlePlayers;
+}
+
+TelemetryPipelineHandleTable& GlobalState::ClientTelemetryPipelines() noexcept
+{
+    return m_clientTeletryPipelines;
 }
 
 TokenExpiredHandler GlobalState::TokenExpiredHandler() const noexcept

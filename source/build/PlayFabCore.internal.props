@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--Props file for building PlayFabCore dll-->
+  <Import Project="PlayFabCore.paths.props" />
+
+  <!--Configure build output directories-->
+  <PropertyGroup>
+    <OutDir>$(PlayFabCoreOutDir)</OutDir>
+    <IntDir>$(PlayFabCoreIntDir)</IntDir>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <!-- Include paths -->
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabCoreSourceDir)include;$(PlayFabCoreSourceDir)source;$(PlayFabCoreSourceDir)source\Common</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Lib>
+      <!-- Are these needed on all platforms? -->
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+
+  <!--RapidJSON dependency-->
+  <PropertyGroup Label="RapidJson">
+    <RapidJsonSdkRoot>$(PlayFabCoreExternalDir)\rapidjson\</RapidJsonSdkRoot>
+    <RapidJsonSdkInclude>$(RapidJsonSdkRoot)include\</RapidJsonSdkInclude>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(RapidJsonSdkInclude)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RAPIDJSON_NO_INT64DEFINE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!--LibHttpClient dependency-->
+  <Import Project="$(PlayFabCoreExternalDir)\libHttpClient\libHttpClient.props" />
+
+</Project>

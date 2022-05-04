@@ -4,8 +4,11 @@ VisualStudioVersion = 16.0.32228.343
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PropertySheets", "PropertySheets", "{DDB43465-C46F-4041-9AC4-687E42680072}"
 	ProjectSection(SolutionItems) = preProject
+		..\..\external\libHttpClient\libHttpClient.props = ..\..\external\libHttpClient\libHttpClient.props
+		..\..\external\libHttpClient\platform_select.props = ..\..\external\libHttpClient\platform_select.props
+		..\PlayFabCore.internal.props = ..\PlayFabCore.internal.props
+		..\PlayFabCore.paths.props = ..\PlayFabCore.paths.props
 		..\PlayFabCore.props = ..\PlayFabCore.props
-		..\PlayFabCoreStaticLib.props = ..\PlayFabCoreStaticLib.props
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libHttpClient.141.Win32.C", "..\..\external\libHttpClient\Build\libHttpClient.141.Win32.C\libHttpClient.141.Win32.C.vcxproj", "{9164C6C9-3872-4922-A3E3-3822622D3E71}"
@@ -79,7 +82,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		        SolutionGuid = {3F4F42F0-0F64-4D7F-9C01-7918C9A0828F}
 		SolutionGuid = {5FBC6BF0-5E0A-4A8A-A726-C664DC7FB893}
+		        SolutionGuid = {3F4F42F0-0F64-4D7F-9C01-7918C9A0828F}
 	EndGlobalSection
 EndGlobal

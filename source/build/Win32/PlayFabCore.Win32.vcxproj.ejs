@@ -66,7 +66,7 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), PlayFabCoreStaticLib.props))\PlayFabCoreStaticLib.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), PlayFabCore.internal.props))\PlayFabCore.internal.props" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -168,35 +168,35 @@
   </ItemDefinitionGroup>
   <ItemGroup><%
 for (var file in projectFiles.includeFiles) { %>
-    <ClInclude Include="$(PlayFabSourceDir)\<%- file %>" /><% 
+    <ClInclude Include="$(PlayFabCoreSourceDir)\<%- file %>" /><% 
 } 
 for (var file in projectFiles.sourceFiles) { 
     var header = file.endsWith(".h"); 
     if (header) { %>
-    <ClInclude Include="$(PlayFabSourceDir)\<%- file %>" /><%
+    <ClInclude Include="$(PlayFabCoreSourceDir)\<%- file %>" /><%
     } else { %>
-    <ClCompile Include="$(PlayFabSourceDir)\<%- file %>" /><%
+    <ClCompile Include="$(PlayFabCoreSourceDir)\<%- file %>" /><%
     }
 } 
 for(var featureGroupName in SDKFeatureGroups) { %>
-    <ClInclude Include="$(PlayFabSourceDir)\include\playfab\<%- prefix + featureGroupName %>DataModels.h" />
-    <ClInclude Include="$(PlayFabSourceDir)\include\playfab\cpp\<%- prefix + featureGroupName %>DataModelWrappers.h" />
-    <ClInclude Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.h" />
-    <ClCompile Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.cpp" /><%
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>DataModels.h" />
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\cpp\<%- prefix + featureGroupName %>DataModelWrappers.h" />
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.h" />
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.cpp" /><%
     if (!(featureGroupName === "Shared")) { %>
-    <ClInclude Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.h" />
-    <ClCompile Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.cpp" />
-    <ClInclude Include="$(PlayFabSourceDir)\include\playfab\<%- prefix + featureGroupName %>.h" />
-    <ClCompile Include="$(PlayFabSourceDir)\source\<%- featureGroupName %>\<%- prefix + featureGroupName %>.cpp" /><%
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.h" />
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.cpp" />
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>.h" />
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- prefix + featureGroupName %>.cpp" /><%
     }
 } %>
-    <ClInclude Include="$(PlayFabSourceDir)\source\stdafx.h" />
-    <ClCompile Include="$(PlayFabSourceDir)\source\stdafx.cpp">
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\stdafx.h" />
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\stdafx.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="$(PlayFabExternalDir)\rapidjson.natvis" />
+    <Natvis Include="$(PlayFabCoreExternalDir)\rapidjson.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
