@@ -193,10 +193,13 @@ class ModelVector : public PointerVector<typename ModelWrapperT::ModelType, Mode
 public:
     using PointerVectorType = PointerVector<typename ModelWrapperT::ModelType, ModelWrapperT, Alloc>;
 
-    using PointerVectorType::PointerVectorType;
     ModelVector() = default;
     ModelVector(typename ModelWrapperT::ModelType const* const* begin, typename ModelWrapperT::ModelType const* const* end);
     ModelVector(const ModelVector& src);
+    ModelVector(ModelVector&& src) = default;
+    ModelVector& operator=(const ModelVector& src) = default;
+    ModelVector& operator=(ModelVector&&) = default;
+    ~ModelVector() = default;
 
 private:
     typename PointerVectorType::pointer_type GetPointer(const typename PointerVectorType::value_type& value) const override

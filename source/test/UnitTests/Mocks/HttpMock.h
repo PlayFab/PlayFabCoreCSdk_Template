@@ -4,8 +4,6 @@
 #pragma once
 
 #include "httpClient/httpClient.h"
-#include "rapidjson/document.h"
-#include <map>
 
 namespace PlayFab
 {
@@ -28,7 +26,7 @@ public:
     virtual ~HttpMock();
 
     void SetResponseHttpStatus(uint32_t httpStatus) const noexcept;
-    void SetResponseBody(const std::string& responseBodyString) const noexcept;
+    void SetResponseBody(const char* responseBodyString) const noexcept;
     void SetResponseBody(const rapidjson::Value& responseBodyJson) const noexcept;
     void SetResponseBody(const uint8_t* responseBodyBytes, size_t responseBodySize) const noexcept;
     void ClearReponseBody() const noexcept;

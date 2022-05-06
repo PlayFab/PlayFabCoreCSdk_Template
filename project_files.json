@@ -5,7 +5,8 @@
     "C Public Includes\\playfab\\cpp",
     "Source",
     "Source\\Api",
-    "Source\\Common"
+    "Source\\Common",
+    "Source\\Telemetry"
   ],
   "includeFiles": {
     "include\\playfab\\PFCore.h": "C Public Includes\\playfab",
@@ -14,6 +15,7 @@
     "include\\playfab\\PFGlobal.h": "C Public Includes\\playfab",
     "include\\playfab\\PFPal.h": "C Public Includes\\playfab",
     "include\\playfab\\PFServiceConfig.h": "C Public Includes\\playfab",
+    "include\\playfab\\PFTelemetry.h": "C Public Includes\\playfab",
     "include\\playfab\\PFTitlePlayer.h": "C Public Includes\\playfab",
     "include\\playfab\\cpp\\PFModelWrapperHelpers.h": "C Public Includes\\playfab\\cpp",
     "include\\playfab\\cpp\\StdOptional.h": "C Public Includes\\playfab\\cpp"
@@ -61,6 +63,9 @@
     "source\\Common\\Trace.cpp": "Source\\Common",
     "source\\Common\\Trace.h": "Source\\Common",
     "source\\Common\\Types.h": "Source\\Common",
+    "source\\Telemetry\\PFTelemetry.cpp": "Source\\Telemetry",
+    "source\\Telemetry\\TelemetryPipeline.cpp": "Source\\Telemetry",
+    "source\\Telemetry\\TelemetryPipeline.h": "Source\\Telemetry",
     "source\\Api\\PFEntity.cpp": "Source\\Api",
     "source\\Api\\PFGlobal.cpp": "Source\\Api",
     "source\\Api\\PFServiceConfig.cpp": "Source\\Api",

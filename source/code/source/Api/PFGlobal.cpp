@@ -11,6 +11,10 @@ PF_API PFMemSetFunctions(
     _In_opt_ PFMemFreeFunction* memFreeFunc
 ) noexcept
 {
+    SharedPtr<GlobalState> state;
+    GlobalState::Get(state);
+    RETURN_HR_IF(E_PF_ALREADY_INITIALIZED, state);
+
     RETURN_IF_FAILED(PlayFab::Detail::SetMemoryHooks(memAllocFunc, memFreeFunc));
 
     // Try to set the memory hooks for libHttpClient as well. If it has already be initialized, there is nothing we can do

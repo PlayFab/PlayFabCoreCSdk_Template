@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source" />
-    <Filter Include="Source\AutoGen Tests" />
     <Filter Include="Source\Tests" />
     <Filter Include="Source\GDK" />
     <Filter Include="Source\GDK\ATGTK" />
@@ -21,23 +20,6 @@ for (var file in projectFiles.TestClientAppFiles) {
       <Filter><%- filter %></Filter>
     </ClCompile><%
     }
-}
-for(var featureGroupName in SDKFeatureGroups) { %>
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>Tests.h">
-      <Filter>Source\AutoGen Tests</Filter>
-    </ClInclude>
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>ResultHolders.h">
-      <Filter>Source\AutoGen Tests</Filter>
-    </ClInclude>
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>TestData.cpp">
-      <Filter>Source\AutoGen Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>TestLog.cpp">
-      <Filter>Source\AutoGen Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>Tests.cpp">
-      <Filter>Source\AutoGen Tests</Filter>
-    </ClCompile><%
 } %>
     <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\ATGColors.h" >
       <Filter>Source\GDK\ATGTK</Filter>

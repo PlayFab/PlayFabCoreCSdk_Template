@@ -290,12 +290,10 @@ RunContext::State::State(PlayFab::TaskQueue&& q, PlayFab::CancellationToken&& ct
     m_id{ g_nextId++ },
     m_depth{ m_parent ? m_parent->m_depth + 1 : 0 }
 {
-    TRACE_VERBOSE("%s: id[%u] depth[%u]", __FUNCTION__, m_id, m_depth);
 }
 
 RunContext::State::~State()
 {
-    TRACE_VERBOSE("%s: id[%u] depth[%u]", __FUNCTION__, m_id, m_depth);
 }
 
 SharedPtr<RunContext::State> RunContext::State::Root(XTaskQueueHandle queueHandle) noexcept

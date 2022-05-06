@@ -24,8 +24,6 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>TestApp</RootNamespace>
     <ProjectName>TestClientApp</ProjectName>
-    <OutputSubDir>TestClientApp</OutputSubDir>
-    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(OutputSubDir)\</OutDir>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -75,22 +73,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
-    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(PlayFabCoreBuiltDir)bins\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <IntDir>$(PlayFabCoreBuiltDir)obj\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
-    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(PlayFabCoreBuiltDir)bins\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <IntDir>$(PlayFabCoreBuiltDir)obj\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
-    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(PlayFabCoreBuiltDir)bins\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <IntDir>$(PlayFabCoreBuiltDir)obj\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
-    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(PlayFabCoreBuiltDir)bins\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <IntDir>$(PlayFabCoreBuiltDir)obj\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
     <ItemDefinitionGroup>
         <ClCompile>
@@ -105,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabTestDir)\TestApp;$(PlayFabTestDir)\TestApp\Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabCoreTestDir)\TestApp;$(PlayFabCoreTestDir)\TestApp\Tests;$(PlayFabCoreSourceDir)\source;$(PlayFabCoreExternalDir)rapidjson\include;$(PlayFabCoreSourceDir)\source\Common</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>TestAppPch.h</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -128,7 +130,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabTestDir)\TestApp;$(PlayFabTestDir)\TestApp\Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabCoreTestDir)\TestApp;$(PlayFabCoreTestDir)\TestApp\Tests;$(PlayFabCoreSourceDir)\source;$(PlayFabCoreExternalDir)rapidjson\include;$(PlayFabCoreSourceDir)\source\Common</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>TestAppPch.h</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -150,7 +152,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CONSOLE;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabTestDir)\TestApp;$(PlayFabTestDir)\TestApp\Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabCoreTestDir)\TestApp;$(PlayFabCoreTestDir)\TestApp\Tests;$(PlayFabCoreSourceDir)\source;$(PlayFabCoreExternalDir)rapidjson\include;$(PlayFabCoreSourceDir)\source\Common</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>TestAppPch.h</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -172,7 +174,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CONSOLE;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabTestDir)\TestApp;$(PlayFabTestDir)\TestApp\Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabCoreTestDir)\TestApp;$(PlayFabCoreTestDir)\TestApp\Tests;$(PlayFabCoreSourceDir)\source;$(PlayFabCoreExternalDir)rapidjson\include;$(PlayFabCoreSourceDir)\source\Common</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>TestAppPch.h</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -191,24 +193,19 @@
 for (var file in projectFiles.TestClientAppFiles) { 
     var header = file.endsWith(".h"); 
     if (header) { %>
-    <ClInclude Include="$(PlayFabTestDir)\<%- file %>" /><%
+    <ClInclude Include="$(PlayFabCoreTestDir)\<%- file %>" /><%
     } else { %>
-    <ClCompile Include="$(PlayFabTestDir)\<%- file %>" /><%
+    <ClCompile Include="$(PlayFabCoreTestDir)\<%- file %>" /><%
     }
 } %>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\TestAppPch.h" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\TestAppPch.cpp">
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\TestAppPch.h" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\TestAppPch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\Win32\MainWin32.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\Win32\TestAppWin32.cpp" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\Win32\MainWin32.cpp" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\Win32\TestAppWin32.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ItemDefinitionGroup>
-    <PostBuildEvent>
-      <Command>xcopy /Y /I /E "$(SolutionDir)\$(Platform)\$(Configuration)\$(PlayFabProjectName)\$(PlayFabProjectName).dll" "$(TargetDir)"</Command>
-    </PostBuildEvent>
-  </ItemDefinitionGroup>
 </Project>

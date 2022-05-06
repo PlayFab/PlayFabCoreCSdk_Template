@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "stdafx.h"
 #include "HttpMock.h"
 
 namespace PlayFab
@@ -44,12 +44,11 @@ void HttpMock::SetResponseHttpStatus(uint32_t httpStatus) const noexcept
     UNREFERENCED_PARAMETER(hr);
 }
 
-void HttpMock::SetResponseBody(const std::string& responseBodyString) const noexcept
+void HttpMock::SetResponseBody(const char* responseBodyString) const noexcept
 {
-    if (!responseBodyString.empty())
+    if (responseBodyString)
     {
-        Vector<uint8_t> bodyBytes{ responseBodyString.begin(), responseBodyString.end() };
-        SetResponseBody(bodyBytes.data(), bodyBytes.size());
+        SetResponseBody((uint8_t*)(responseBodyString), std::strlen(responseBodyString) + 1);
     }
 }
 

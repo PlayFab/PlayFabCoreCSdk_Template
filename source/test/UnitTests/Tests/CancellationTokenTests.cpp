@@ -1,4 +1,5 @@
-#include "pch.h"
+#include "stdafx.h"
+#include "TestIncludes.h"
 #include "AsyncOp.h"
 #include "CancellationToken.h"
 

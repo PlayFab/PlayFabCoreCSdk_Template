@@ -14,7 +14,7 @@
 
 // PlayFab service wrappers<%
 for(var featureGroupName in SDKFeatureGroups) {
-    if (featureGroupName === "Shared") {
+    if (featureGroupName === "Shared" || SDKFeatureGroups[featureGroupName].isInternalOnly) {
         continue;
     }
     var featureGroup = SDKFeatureGroups[featureGroupName]; %>

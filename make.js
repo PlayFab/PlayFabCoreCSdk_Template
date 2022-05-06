@@ -56,11 +56,15 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     // populate SDKFeatureGroups structure
     populateSDKFeatureGroups(apis);
 
-    // temporarily only including auth and shared
+    // only including auth, events, and shared in SDK Core.
+    // TODO might want an easier way to specify what gets generated here
     var tempFeatureGroups = {};
     for (var featureGroupName in SDKFeatureGroups) {
-        if (featureGroupName === "Shared" || featureGroupName === "Authentication") {
+        if (featureGroupName === "Shared" || featureGroupName === "Authentication" || featureGroupName === "Events") {
             tempFeatureGroups[featureGroupName] = SDKFeatureGroups[featureGroupName];
+        }
+        if (featureGroupName === "Events") {
+            tempFeatureGroups[featureGroupName].isInternalOnly = true;
         }
     }
     SDKFeatureGroups = tempFeatureGroups;
@@ -140,11 +144,13 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
     };
 
     // DataModels
-    var publicDataModelsHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/PFDataModels.h.ejs"));
-    writeFile(path.resolve(apiOutputDir, "code/include/playFab", globalPrefix + featureGroup.name + "DataModels.h"), publicDataModelsHeader(locals));
+    if (!featureGroup.isInternalOnly) {
+        var publicDataModelsHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/PFDataModels.h.ejs"));
+        writeFile(path.resolve(apiOutputDir, "code/include/playFab", globalPrefix + featureGroup.name + "DataModels.h"), publicDataModelsHeader(locals));
 
-    var publicDataModelWrappers = getCompiledTemplate(path.resolve(sourceDir, "templates/PFDataModelWrappers.h.ejs"));
-    writeFile(path.resolve(apiOutputDir, "code/include/playFab/cpp", globalPrefix + featureGroup.name + "DataModelWrappers.h"), publicDataModelWrappers(locals));
+        var publicDataModelWrappers = getCompiledTemplate(path.resolve(sourceDir, "templates/PFDataModelWrappers.h.ejs"));
+        writeFile(path.resolve(apiOutputDir, "code/include/playFab/cpp", globalPrefix + featureGroup.name + "DataModelWrappers.h"), publicDataModelWrappers(locals));
+    }
 
     var internalDataModelsHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/DataModels.h.ejs"));
     writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, featureGroup.name + "DataModels.h"), internalDataModelsHeader(locals));
@@ -162,12 +168,14 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
         var internalApis = getCompiledTemplate(path.resolve(sourceDir, "templates/Calls.cpp.ejs"));
         writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, featureGroup.name + ".cpp"), internalApis(locals));
 
-        // Public APIs
-        var publicApisHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/PFCalls.h.ejs"));
-        writeFile(path.resolve(apiOutputDir, "code/include/playfab", globalPrefix + featureGroup.name + ".h"), publicApisHeader(locals));
+        if (!featureGroup.isInternalOnly) {
+            // Public APIs
+            var publicApisHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/PFCalls.h.ejs"));
+            writeFile(path.resolve(apiOutputDir, "code/include/playfab", globalPrefix + featureGroup.name + ".h"), publicApisHeader(locals));
 
-        var publicApis = getCompiledTemplate(path.resolve(sourceDir, "templates/PFCalls.cpp.ejs"));
-        writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, globalPrefix + featureGroup.name + ".cpp"), publicApis(locals));
+            var publicApis = getCompiledTemplate(path.resolve(sourceDir, "templates/PFCalls.cpp.ejs"));
+            writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, globalPrefix + featureGroup.name + ".cpp"), publicApis(locals));
+        }
     }
 }
 
@@ -460,6 +468,7 @@ function getOrCreateFeatureGroup(name) {
     if (!SDKFeatureGroups.hasOwnProperty(name)) {
         SDKFeatureGroups[name] = {
             "name": name,
+            "isInternalOnly": false,
             "datatypes": {},
             "calls": [],
             "sortedClasses": [], // subset of 'datatypes' that are classes (datatype.isclass = true), sorted such that type dependencies are honored
@@ -692,7 +701,7 @@ function getInternalPropertyType(property) {
     // Service types that can be mapped directly to C++ types
     var types = {
         "String": "String", "Boolean": "bool", "int16": "int16_t", "uint16": "uint16_t", "int32": "int32_t", "uint32": "uint32_t",
-        "int64": "int64_t", "uint64": "uint64_t", "float": "float", "double": "double", "DateTime": "time_t", "object": "JsonObject"
+        "int64": "int64_t", "uint64": "uint64_t", "float": "float", "double": "double", "DateTime": "time_t", "object": "JsonValue"
     };
 
     if (property.actualtype in types) {
@@ -939,17 +948,6 @@ function getPropertyDefinition(datatype, property, isInternal) {
         output += "\n";
     }
 
-    return output;
-}
-
-function getWrapperPropertyDefinition(property){
-    var output = "";
-
-    if (requiresDynamicStorage(property)) {
-        var type = getWrapperPropertyType(property);
-        var propName = getPropertyName(property, true);
-        output += ("\n" + tab + type + " " + propName + ";");
-    }
     return output;
 }
 
