@@ -70,7 +70,7 @@ public:
             tc.Complete();
         });
 
-        pipeline.EmitEvent("playfab.core", "testEvent", kTestEventTemplate);
+        pipeline.EmitEvent(titlePlayer.Handle(), "playfab.core", "testEvent", kTestEventTemplate);
 
         tc.AwaitResult();
     }
@@ -141,7 +141,7 @@ public:
             rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
             eventPayloadJson.Accept(writer);
 
-            pipeline.EmitEvent("playfab.core", "testEvent", buffer.GetString());
+            pipeline.EmitEvent(titlePlayer.Handle(), "playfab.core", "testEvent", buffer.GetString());
         }
 
         tc.AwaitResult();

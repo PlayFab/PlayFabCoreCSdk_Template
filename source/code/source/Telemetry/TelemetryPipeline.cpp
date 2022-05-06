@@ -7,6 +7,7 @@ namespace PlayFab
 
 struct EventData
 {
+    SharedPtr<Entity> entity;
     String eventNamespace;
     String eventName;
     String payloadJson;
@@ -23,7 +24,7 @@ public:
     EventBuffer& operator=(EventBuffer const&) = delete;
     ~EventBuffer() = default;
 
-    HRESULT Push(const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept;
+    HRESULT Push(SharedPtr<Entity> entity, const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept;
     bool PopFront(EventData& eventData) noexcept;
 
 private:
@@ -34,7 +35,7 @@ private:
 class EventUploader : public ITaskQueueWork, public std::enable_shared_from_this<EventUploader>
 {
 public:
-    EventUploader(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, SharedPtr<EventBuffer> buffer, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs);
+    EventUploader(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, SharedPtr<EventBuffer> buffer, uint32_t maxEventsPerBatch, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs);
 
     void Start();
 private:
@@ -43,33 +44,35 @@ private:
     RunContext m_rc;
     SharedPtr<TitlePlayer> m_entity;
     SharedPtr<EventBuffer> m_buffer;
+    uint32_t const m_maxEventsPerBatch;
     uint32_t const m_maxWaitTimeInSeconds;
     uint32_t const m_pollDelayInMs;
     Vector<Events::EventContents> m_pendingPayload;
     time_t m_oldestEventTimeStamp;
+    std::mutex m_mutex;
 };
 
-TelemetryPipeline::TelemetryPipeline(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs) noexcept :
+TelemetryPipeline::TelemetryPipeline(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, uint32_t maxEventsPerBatch, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs) noexcept :
     m_buffer{ MakeShared<EventBuffer>() },
-    m_uploader{ MakeShared<EventUploader>(std::move(rc), std::move(uploadingEntity), m_buffer, maxWaitTimeInSeconds, pollDelayInMs) }
+    m_uploader{ MakeShared<EventUploader>(std::move(rc), std::move(uploadingEntity), m_buffer, maxEventsPerBatch, maxWaitTimeInSeconds, pollDelayInMs) }
 {
     m_uploader->Start();
 }
 
 // Should we do client side payload validation?
-HRESULT TelemetryPipeline::EmitEvent(const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept
+HRESULT TelemetryPipeline::EmitEvent(SharedPtr<Entity> entity, const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept
 {
-    return m_buffer->Push(eventNamespace, eventName, payloadJson);
+    return m_buffer->Push(std::move(entity), eventNamespace, eventName, payloadJson);
 }
 
-HRESULT EventBuffer::Push(const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept
+HRESULT EventBuffer::Push(SharedPtr<Entity> entity, const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept
 {
     RETURN_HR_INVALIDARG_IF_NULL(eventNamespace);
     RETURN_HR_INVALIDARG_IF_NULL(eventName);
     RETURN_HR_INVALIDARG_IF_NULL(payloadJson);
 
     // Copy event data outside lock scope
-    EventData data{ eventNamespace, eventName, payloadJson, std::time(nullptr) };
+    EventData data{ std::move(entity), eventNamespace, eventName, payloadJson, std::time(nullptr) };
 
     std::lock_guard<std::mutex> lock{ m_mutex };
     m_queue.push(std::move(data));
@@ -90,10 +93,11 @@ bool EventBuffer::PopFront(EventData& eventData) noexcept
     return true;
 }
 
-EventUploader::EventUploader(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, SharedPtr<EventBuffer> buffer, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs) :
+EventUploader::EventUploader(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, SharedPtr<EventBuffer> buffer, uint32_t maxEventsPerBatch, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs) :
     m_rc{ std::move(rc) },
     m_entity{ std::move(uploadingEntity) },
     m_buffer{ std::move(buffer) },
+    m_maxEventsPerBatch{ maxEventsPerBatch },
     m_maxWaitTimeInSeconds{ maxWaitTimeInSeconds },
     m_pollDelayInMs{ pollDelayInMs }
 {
@@ -107,7 +111,7 @@ void EventUploader::Start()
 
 void EventUploader::Run() noexcept
 {
-    // Synchronization shouldn't be needed because the Uploader should never be scheduled to run in parallel
+    std::unique_lock<std::mutex> lock{ m_mutex };
 
     for (bool haveEvents = true; haveEvents; )
     {
@@ -117,6 +121,7 @@ void EventUploader::Run() noexcept
         if (haveEvents)
         {
             Events::EventContents eventContents;
+            eventContents.entity = eventData.entity->EntityKey();
             eventContents.eventNamespace = std::move(eventData.eventNamespace);
             eventContents.name = std::move(eventData.eventName);
             eventContents.payloadJSON = std::move(eventData.payloadJson);
@@ -130,7 +135,7 @@ void EventUploader::Run() noexcept
             m_pendingPayload.push_back(std::move(eventContents));
         }
 
-        if (!m_pendingPayload.empty() && std::time(nullptr) - m_oldestEventTimeStamp >= m_maxWaitTimeInSeconds)
+        if ((!m_pendingPayload.empty() && std::time(nullptr) - m_oldestEventTimeStamp >= m_maxWaitTimeInSeconds) || m_pendingPayload.size() >= m_maxEventsPerBatch)
         {
             Events::WriteEventsRequest request;
             request.events = std::move(m_pendingPayload);
@@ -150,6 +155,9 @@ void EventUploader::Run() noexcept
             });
         }
     }
+
+    // Release lock before scheduling next poll just in case
+    lock.unlock();
 
     // Using a polling model to check EventBuffer again after we've emptied it. This is the same algorithm used by XPlatCpp Event Pipeline.
     m_rc.TaskQueue().SubmitWork(shared_from_this(), m_pollDelayInMs);

@@ -12,14 +12,14 @@ class TelemetryPipeline
 public:
     TelemetryPipeline(PFTitlePlayerHandle uploadingPlayer, XTaskQueueHandle queue) noexcept
     {
-        HRESULT hr = PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, nullptr, nullptr, &m_handle);
+        HRESULT hr = PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, nullptr, nullptr, nullptr, &m_handle);
         assert(SUCCEEDED(hr));
         UNREFERENCED_PARAMETER(hr);
     }
 
-    TelemetryPipeline(PFTitlePlayerHandle uploadingPlayer, XTaskQueueHandle queue, uint32_t maxWaitTimeInSeconds, uint32_t pollTimeInMs) noexcept
+    TelemetryPipeline(PFTitlePlayerHandle uploadingPlayer, XTaskQueueHandle queue, uint32_t maxEventsPerBatch, uint32_t maxWaitTimeInSeconds, uint32_t pollTimeInMs) noexcept
     {
-        HRESULT hr = PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, &maxWaitTimeInSeconds, &pollTimeInMs, &m_handle);
+        HRESULT hr = PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, &maxEventsPerBatch, &maxWaitTimeInSeconds, &pollTimeInMs, &m_handle);
         assert(SUCCEEDED(hr));
         UNREFERENCED_PARAMETER(hr);
     }
@@ -52,9 +52,9 @@ public:
         return m_handle;
     }
 
-    HRESULT EmitEvent(const char* eventNamespace, const char* eventName, const char* eventPayloadJson) const noexcept
+    HRESULT EmitEvent(PFTitlePlayerHandle entity, const char* eventNamespace, const char* eventName, const char* eventPayloadJson) const noexcept
     {
-        return PFTelemetryPipelineEmitEvent(m_handle, eventNamespace, eventName, eventPayloadJson);
+        return PFTelemetryPipelineEmitEvent(m_handle, entity, eventNamespace, eventName, eventPayloadJson);
     }
 
 private:

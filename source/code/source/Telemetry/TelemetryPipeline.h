@@ -11,9 +11,9 @@ class EventUploader;
 class TelemetryPipeline
 {
 public:
-    TelemetryPipeline(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs) noexcept;
+    TelemetryPipeline(RunContext rc, SharedPtr<TitlePlayer> uploadingEntity, uint32_t maxEventsPerBatch, uint32_t maxWaitTimeInSeconds, uint32_t pollDelayInMs) noexcept;
 
-    HRESULT EmitEvent(const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept;
+    HRESULT EmitEvent(SharedPtr<Entity> entity, const char* eventNamespace, const char* eventName, const char* payloadJson) noexcept;
 
 private:
     SharedPtr<EventBuffer> m_buffer;

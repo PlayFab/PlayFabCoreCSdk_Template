@@ -8,6 +8,7 @@ using namespace PlayFab;
 PF_API PFTelemetryPipelineCreateHandle(
     _In_ PFTitlePlayerHandle playerHandle,
     _In_opt_ XTaskQueueHandle queue,
+    _In_opt_ uint32_t* maxEventsPerBatch,
     _In_opt_ uint32_t* maxWaitTimeInSeconds,
     _In_opt_ uint32_t* pollDelayInMs,
     _Out_ PFTelemetryPipelineHandle* handle
@@ -23,6 +24,7 @@ PF_API PFTelemetryPipelineCreateHandle(
         SharedPtr<TelemetryPipeline> pipeline = MakeShared<TelemetryPipeline>(
             state.RunContext().DeriveOnQueue(queue),
             titlePlayer,
+            maxEventsPerBatch ? *maxEventsPerBatch : PFTelemetryMaxEventsPerBatchDefault,
             maxWaitTimeInSeconds ? *maxWaitTimeInSeconds : PFTelemetryMaxWaitTimeInSecondsDefault,
             pollDelayInMs ? *pollDelayInMs : PFTelemetryPollDelayInMsDefault
         );
@@ -59,6 +61,7 @@ PF_API_(void) PFTelemetryPipelineCloseHandle(
 
 PF_API PFTelemetryPipelineEmitEvent(
     _In_ PFTelemetryPipelineHandle handle,
+    _In_ PFTitlePlayerHandle titlePlayerHandle,
     _In_z_ const char* eventNamespace,
     _In_z_ const char* eventName,
     _In_z_ const char* eventPayloadJson
@@ -68,6 +71,10 @@ PF_API PFTelemetryPipelineEmitEvent(
     {
         SharedPtr<TelemetryPipeline> pipeline;
         RETURN_IF_FAILED(state.ClientTelemetryPipelines().FromHandle(handle, pipeline));
-        return pipeline->EmitEvent(eventNamespace, eventName, eventPayloadJson);
+
+        SharedPtr<TitlePlayer> titlePlayer;
+        RETURN_IF_FAILED(state.TitlePlayers().FromHandle(titlePlayerHandle, titlePlayer));
+
+        return pipeline->EmitEvent(titlePlayer, eventNamespace, eventName, eventPayloadJson);
     });
 }
