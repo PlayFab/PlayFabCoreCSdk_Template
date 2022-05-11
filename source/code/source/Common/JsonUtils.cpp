@@ -91,6 +91,11 @@ JsonValue ToJsonTime(time_t value)
     return JsonValue{ TimeTToIso8601String(value).data(), allocator };
 }
 
+JsonValue ToJson(const InputModel& value)
+{
+    return value.ToJson();
+}
+
 void FromJson(const JsonValue& input, String& output)
 {
     output = input.GetString();
@@ -161,14 +166,36 @@ void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, JsonV
     jsonObject.AddMember(name, value, allocator);
 }
 
+void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const JsonValue& value)
+{
+    jsonObject.AddMember(name, JsonValue{}.CopyFrom(value, allocator), allocator);
+}
+
 void ObjectAddMember(JsonValue& jsonObject, JsonValue&& name, JsonValue&& value)
 {
     jsonObject.AddMember(name, value, allocator);
 }
 
+void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const String& value)
+{
+    jsonObject.AddMember(name, ToJson(value), allocator);
+}
+
 void ObjectAddMemberTime(JsonValue& jsonObject, JsonValue::StringRefType name, time_t value)
 {
     ObjectAddMember(jsonObject, name, ToJsonTime(value));
+}
+
+void ObjectAddMemberTime(JsonValue& jsonObject, JsonValue::StringRefType name, const StdExtra::optional<time_t>& value)
+{
+    if (value.has_value())
+    {
+        ObjectAddMember(jsonObject, name, ToJsonTime(*value));
+    }
+    else
+    {
+        ObjectAddMember(jsonObject, name, JsonValue{ rapidjson::kNullType });
+    }
 }
 
 void ObjectAddMemberTime(JsonValue& jsonObject, JsonValue::StringRefType name, const time_t* value)

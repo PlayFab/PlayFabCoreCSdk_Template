@@ -1,6 +1,7 @@
 #pragma once
-
+<% if (!featureGroup.isInternalOnly) { %>
 #include <playfab/cpp/<%- globalPrefix %><%- featureGroup.name %>DataModelWrappers.h><%
+} 
 if (!(featureGroup.name === "Shared")) { %>
 #include <Shared/SharedDataModels.h><%
 } %>
@@ -16,6 +17,9 @@ namespace <%- featureGroup.name %>
 // <%- featureGroup.name %> Classes<%
 for (var typeIndex = 0; typeIndex < featureGroup.sortedClasses.length; typeIndex++) {
     var datatype = featureGroup.sortedClasses[typeIndex]; 
+    if (featureGroup.isInternalOnly) {
+        datatype.isInternalOnly = true;
+    }
     var CModelName = datatype.prefix + datatype.name;
     var propertyVisibility = datatype.isInternalOnly ? "public" : "private";
 
@@ -26,9 +30,14 @@ for (var typeIndex = 0; typeIndex < featureGroup.sortedClasses.length; typeIndex
             baseClasses += (", public InputModel");
         }
         if (datatype.isOutput) {
-            baseClasses += (", public OutputModel<" + CModelName + ">");
+            baseClasses += (", public ServiceOutputModel, public ClientOutputModel<" + CModelName + ">");
         }
+    } else if (datatype.isOutput) {
+        baseClasses += (" : public ServiceOutputModel");
+    } else if (datatype.isInput) {
+        baseClasses += (" : public InputModel")
     }
+
 %>
 class <%- datatype.name %><%- baseClasses %>
 {
@@ -46,9 +55,11 @@ public:<%
 
     if (datatype.isInput) { %>
     // InputModel
-    JsonValue ToJson() const override;
-    static JsonValue ToJson(const <%- CModelName %>& input);
-<%  } // end if
+    JsonValue ToJson() const override;<%
+        if (!datatype.isInternalOnly) { %>
+    static JsonValue ToJson(const <%- CModelName %>& input);<%
+        } // endif
+    } // end if
     if (datatype.isOutput && !datatype.isInternalOnly) { %>
     // OutputModel
     void FromJson(const JsonValue& input) override;
@@ -57,8 +68,7 @@ public:<%
 
     static size_t RequiredBufferSize(const <%- CModelName %>& model);
     static HRESULT Copy(const <%- CModelName %>& input, <%- CModelName %>& output, ModelBuffer& buffer);<%
-    } // end if 
-    if (datatype.isInternalOnly) { %>
+    } else if (datatype.isOutput) { %>
     void FromJson(const JsonValue& input);<%
     } // end if 
 

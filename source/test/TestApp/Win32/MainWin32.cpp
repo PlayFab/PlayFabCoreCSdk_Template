@@ -6,6 +6,6 @@
 // Win32 Entry Point
 int main()
 {
-    PlayFabUnit::TestApp testApp;
+    PlayFab::Test::TestApp testApp;
     return testApp.Main();
 }

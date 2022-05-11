@@ -1,27 +1,20 @@
 #pragma once
 
 #include <httpClient/httpClient.h>
-#include "TaskQueue.h"
 #include "AsyncOp.h"
+#include "RunContext.h"
 
 namespace PlayFab
 {
 class Entity;
-class TitlePlayer;
 
 struct ServiceResponse;
-
-// PlayFab auth header names
-constexpr char kEntityTokenHeaderName[]{ "X-EntityToken" };
-constexpr char kSessionTicketHeaderName[]{ "X-Authorization" };
-constexpr char kSecretKeyHeaderName[]{ "X-SecretKey" };
 
 // An Http client for make PlayFab service requests
 class HttpClient
 {
 public:
-    HttpClient(String titleId);
-    HttpClient(String titleId, String connectionString);
+    HttpClient(String&& connectionString);
     HttpClient(const HttpClient&) = default;
     ~HttpClient() = default;
 
@@ -29,32 +22,23 @@ public:
         const char* path,
         const UnorderedMap<String, String>& headers,
         const JsonValue& requestBody,
-        const TaskQueue& queue
+        RunContext&& runContext
     ) const;
 
-    // Make an Entity API service request, refreshing EntityToken and retrying on auth failure
     AsyncOp<ServiceResponse> MakeEntityRequest(
         SharedPtr<Entity> entity,
         const char* path,
         UnorderedMap<String, String>&& headers,
         JsonValue&& requestBody,
-        const TaskQueue& queue
+        RunContext&& runContext
     ) const;
 
-    // Make an Classic API service request, refreshing SessionTicket and retrying on auth failure
-    AsyncOp<ServiceResponse> MakeClassicRequest(
-        SharedPtr<TitlePlayer> titlePlayer,
-        const char* path,
-        UnorderedMap<String, String>&& headers,
-        JsonValue&& requestBody,
-        const TaskQueue& queue
-    ) const;
+    String const& ConnectionString() const noexcept;
 
 private:
     String GetUrl(const char* path) const;
 
-    String m_titleId;
-    String m_connectionString;
+    String const m_connectionString;
 };
 
 // Wrapper around PlayFab service response.

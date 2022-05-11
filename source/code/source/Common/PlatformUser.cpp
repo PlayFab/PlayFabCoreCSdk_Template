@@ -102,7 +102,7 @@ AsyncOp<TokenAndSignature> XUser::GetTokenAndSignature(
             }
 
             operation->m_asyncBlock.callback = GetTokenAndSignatureComplete;
-            operation->m_asyncBlock.queue = operation->m_queue.GetHandle();
+            operation->m_asyncBlock.queue = operation->m_queue.Handle();
             operation->m_asyncBlock.context = operation.get();
 
             RETURN_IF_FAILED(XUserGetTokenAndSignatureAsync(userHandle, options, httpMethod.data(), url.data(), headers.size(), headers.empty() ? nullptr : headers.data(), requestBodySize, requestBody, &operation->m_asyncBlock));

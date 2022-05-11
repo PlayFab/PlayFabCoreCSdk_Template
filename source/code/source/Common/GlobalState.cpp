@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "GlobalState.h"
 #include "AsyncProvider.h"
-#include "QoS/QoS.h"
 #include <httpClient/httpClient.h>
 
 using namespace PlayFab;
@@ -9,122 +8,245 @@ using namespace PlayFab;
 namespace PlayFab
 {
 
-GlobalState::GlobalState(String&& titleId, _In_opt_z_ const char* secretKey, _In_opt_z_ const char* connectionString, _In_opt_ XTaskQueueHandle backgroundQueue) :
-    m_titleId{ std::move(titleId) },
-    m_httpClient{ connectionString ? MakeShared<PlayFab::HttpClient>(m_titleId, connectionString) : MakeShared<PlayFab::HttpClient>(m_titleId) },
-    m_secretKey{ secretKey ? MakeShared<String>(secretKey) : nullptr },
-    m_qosAPI{ MakeShared<QoS::QoSAPI>() },
-    m_backgroundQueue{ backgroundQueue }
+// Clarify/simplify this pattern
+struct GlobalStateBootstrapper
+{
+    enum class AccessMode
+    {
+        Create,
+        Get,
+        Cleanup
+    };
+
+    struct CreateArgs
+    {
+        XTaskQueueHandle backgroundQueue;
+    };
+
+    static HRESULT StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state) noexcept;
+};
+
+namespace Detail
+{
+
+// Choose arbitrary but recognizable values for handles
+uintptr_t const kFirstServiceConfigHandle = 0x10000000;
+uintptr_t const kFirstTitlePlayerHandle = 0x20000000;
+uintptr_t const kFirstTelemetryPipelineHandle = 0x30000000;
+
+}
+
+GlobalState::GlobalState(XTaskQueueHandle backgroundQueue) noexcept :
+    m_runContext{ RunContext::Root(backgroundQueue) },
+    m_serviceConfigs{ Detail::kFirstServiceConfigHandle },
+    m_titlePlayers{ Detail::kFirstTitlePlayerHandle },
+    m_clientTeletryPipelines{ Detail::kFirstTelemetryPipelineHandle }
 {
 }
 
-String const& GlobalState::TitleId() const
+GlobalState::~GlobalState() noexcept
 {
-    return m_titleId;
+    TRACE_VERBOSE(__FUNCTION__);
 }
 
-SharedPtr<HttpClient const> GlobalState::HttpClient() const
+HRESULT GlobalState::Create(XTaskQueueHandle backgroundQueue) noexcept
 {
-    return m_httpClient;
+    HCTraceInit();
+    RETURN_IF_FAILED(HCInitialize(nullptr));
+
+    GlobalStateBootstrapper::CreateArgs args{ backgroundQueue };
+    SharedPtr<GlobalState> state;
+    return GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Create, &args, state);
 }
 
-SharedPtr<String const> GlobalState::SecretKey() const
+HRESULT GlobalState::Get(SharedPtr<GlobalState>& state) noexcept
 {
-    return m_secretKey;
+    return GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Get, nullptr, state);
 }
 
-SharedPtr<QoS::QoSAPI const> GlobalState::QoSAPI() const
+struct CleanupContext
 {
-    return m_qosAPI;
+    XAsyncBlock lhcCleanupAsync{};
+    XAsyncBlock* cleanupAsync{};
+};
+
+HRESULT GlobalState::CleanupAsync(XAsyncBlock* async) noexcept
+{
+    try
+    {
+        UniquePtr<CleanupContext> context = MakeUnique<CleanupContext>();
+        RETURN_IF_FAILED(XAsyncBegin(async, context.get(), __FUNCTION__, __FUNCTION__, CleanupAsyncProvider));
+        context.release();
+        return S_OK;
+    }
+    catch (...)
+    {
+        return CurrentExceptionToHR();
+    }
+}
+
+HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderData const* data)
+{
+    CleanupContext* context{ static_cast<CleanupContext*>(data->context) };
+
+    switch (op)
+    {
+    case XAsyncOp::Begin:
+    try
+    {
+        SharedPtr<GlobalState> state;
+        RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, state));
+        context->cleanupAsync = data->async;
+
+        state->m_runContext.Terminate(std::move(state), context);
+        return S_OK;
+    }
+    catch (...)
+    {
+        return CurrentExceptionToHR();
+    }
+    default:
+    {
+        return S_OK;
+    }
+    }
+}
+
+void CALLBACK HCCleanupComplete(XAsyncBlock* async)
+{
+    TRACE_VERBOSE(__FUNCTION__);
+
+    // This is the last step of cleanup, so reclaim the context
+    UniquePtr<CleanupContext> context{ static_cast<CleanupContext*>(async->context) };
+
+    HRESULT hr = XAsyncGetStatus(async, false);
+    assert(hr != E_PENDING);
+
+    if (hr == E_HC_INTERNAL_STILLINUSE)
+    {
+        // If something else is still referencing libHttpClient, complete with success
+        hr = S_OK;
+    }
+
+    // Free context before completing the XAsyncBlock because there isn't a guarantee that Provider::Cleanup is called
+    // before the client's callback.
+    XAsyncBlock* cleanupAsync{ context->cleanupAsync };
+    context.reset();
+
+    HCTraceCleanup();
+
+    XAsyncComplete(cleanupAsync, hr, 0);
+}
+
+void GlobalState::OnTerminated(SharedPtr<ITerminationListener>&& self, void* c) noexcept
+{
+    TRACE_VERBOSE(__FUNCTION__);
+
+    CleanupContext* context{ static_cast<CleanupContext*>(c) };
+
+    // Free GlobalState before calling HCCleanup - 'this' will be destroyed here
+    self.reset();
+
+    context->lhcCleanupAsync.callback = HCCleanupComplete;
+    context->lhcCleanupAsync.queue = context->cleanupAsync->queue; // Should use derived queue
+    context->lhcCleanupAsync.context = context;
+
+    HCCleanupAsync(&context->lhcCleanupAsync);
+}
+
+RunContext GlobalState::RunContext() const noexcept
+{
+    return m_runContext;
+}
+
+ServiceConfigHandleTable& GlobalState::ServiceConfigs() noexcept
+{
+    return m_serviceConfigs;
+}
+
+TitlePlayerHandleTable& GlobalState::TitlePlayers() noexcept
+{
+    return m_titlePlayers;
+}
+
+TelemetryPipelineHandleTable& GlobalState::ClientTelemetryPipelines() noexcept
+{
+    return m_clientTeletryPipelines;
+}
+
+TokenExpiredHandler GlobalState::TokenExpiredHandler() const noexcept
+{
+    return m_tokenExpiredHandler;
+}
+
+HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* createArgs, SharedPtr<GlobalState>& state) noexcept
+{
+    struct StateHolder
+    {
+        SharedPtr<GlobalState> state;
+    };
+
+    // function scope static members so initialization order is defined
+    static std::mutex s_mutex;
+    static StateHolder* s_stateHolder{ nullptr }; // intentional non-owning pointer
+
+    try
+    {
+        std::lock_guard<std::mutex> lock{ s_mutex };
+
+        switch (mode)
+        {
+        case AccessMode::Create:
+        {
+            // Assuming for now initialization is not ref counted - there should be exactly one call to create
+            // and exactly one call to cleanup
+            if (s_stateHolder)
+            {
+                return E_PF_ALREADY_INITIALIZED;
+            }
+
+            assert(createArgs);
+            state = SharedPtr<GlobalState>{ new (Allocator<GlobalState>{}.allocate(1)) GlobalState{ createArgs->backgroundQueue }, Deleter<GlobalState>() };
+            s_stateHolder = MakeUnique<StateHolder>().release(); // will be reclaimed in cleanup
+            s_stateHolder->state = std::move(state);
+
+            return S_OK;
+        }
+        case AccessMode::Get:
+        {
+            if (!s_stateHolder)
+            {
+                return E_PF_NOT_INITIALIZED;
+            }
+            assert(s_stateHolder->state);
+            state = s_stateHolder->state;
+
+            return S_OK;
+        }
+        case AccessMode::Cleanup:
+        {
+            if (!s_stateHolder)
+            {
+                return E_PF_NOT_INITIALIZED;
+            }
+
+            UniquePtr<StateHolder> stateHolder{ s_stateHolder };
+            s_stateHolder = nullptr;
+            state = stateHolder->state; // state is the only remaining reference to the GlobalState
+
+            return S_OK;
+        }
+        default:
+        {
+            assert(false);
+            return E_UNEXPECTED;
+        }
+        }
+    }
+    catch (...)
+    {
+        return CurrentExceptionToHR();
+    }
 }
 
 } // namespace PlayFab
-
-PFGlobalState::PFGlobalState(_In_z_ const char* titleId, _In_opt_z_ const char* secretKey, _In_opt_z_ const char* connectionString, _In_opt_ XTaskQueueHandle backgroundQueue) :
-    state{ MakeShared<GlobalState>(titleId, secretKey, connectionString, backgroundQueue) }
-{
-}
-
-HRESULT PFGlobalState::Create(
-    _In_z_ const char* titleId,
-    _In_opt_z_ const char* secretKey,
-    _In_opt_z_ const char* connectionString,
-    _In_opt_ XTaskQueueHandle backgroundQueue,
-    _Outptr_ PFStateHandle* stateHandle
-)
-{
-    RETURN_HR_INVALIDARG_IF_NULL(titleId);
-    RETURN_IF_FAILED(HCInitialize(nullptr));
-
-    Allocator<PFGlobalState> a{};
-    *stateHandle = UniquePtr<PFGlobalState>(new (a.allocate(1)) PFGlobalState(titleId, secretKey, connectionString, backgroundQueue)).release();
-    return S_OK;
-}
-
-HRESULT PFGlobalState::CleanupAsync(XAsyncBlock* async)
-{
-    struct CleanupProvider : public Provider
-    {
-        CleanupProvider(XAsyncBlock* async, PFStateHandle handle) :
-            Provider{ async },
-            stateHandle{ handle }
-        {
-        }
-
-        HRESULT Begin(TaskQueue&& queue) override
-        {
-            if (stateHandle->state.use_count() > 1)
-            {
-                // Need to decide if it is client's responsibility to wait for any pending API calls to complete before
-                // calling cleanup or if we should wait here
-                return E_FAIL;
-            }
-            else
-            {
-                // stateHandle->state is the only remaining reference. GlobalState will be destroyed on this thread before
-                // control returns to client
-                UniquePtr<PFGlobalState> reclaim{ stateHandle };
-
-                // Cleanup libHttpClient
-                hcCleanupQueue = queue.DeriveWorkerQueue();
-                hcCleanupAsync.queue = hcCleanupQueue.GetHandle();
-                hcCleanupAsync.callback = HCCleanupComplete;
-                hcCleanupAsync.context = this;
-
-                RETURN_IF_FAILED(HCCleanupAsync(&hcCleanupAsync));
-
-                return E_PENDING;
-            }
-        }
-
-        static void CALLBACK HCCleanupComplete(XAsyncBlock* async)
-        {
-            CleanupProvider* self = static_cast<CleanupProvider*>(async->context);
-            assert(self);
-
-            HRESULT hr = XAsyncGetStatus(async, false);
-            assert(hr != E_PENDING);
-
-            if (hr == E_HC_INTERNAL_STILLINUSE)
-            {
-                // If something else is still referencing libHttpClient, we do not care
-                self->Complete(0);
-                return;
-            }
-            else if (FAILED(hr))
-            {
-                // Pass along HCCleanup error. Note that state is still destroyed
-                self->Fail(hr);
-                return;
-            }
-
-            self->Complete(0);
-        }
-
-        XAsyncBlock hcCleanupAsync{};
-        TaskQueue hcCleanupQueue;
-        PFStateHandle stateHandle;
-    };
-
-    return Provider::Run(UniquePtr<Provider>{ MakeUnique<CleanupProvider>(async, this).release() });
-}

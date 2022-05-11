@@ -1,6 +1,6 @@
-#include "pch.h"
+#include "stdafx.h"
+#include "TestIncludes.h"
 #include "AsyncOp.h"
-#include <thread>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -42,7 +42,7 @@ TEST_CLASS(AsyncOpTests)
 public:
     TEST_METHOD(BasicContinuation)
     {
-        TestContext tc;
+        AsyncTestContext tc;
         const std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
         AsyncSleep(100).Finally([start, &tc](Result<void> result) mutable
@@ -57,7 +57,7 @@ public:
 
     TEST_METHOD(ChanedOperation)
     {
-        TestContext tc;
+        AsyncTestContext tc;
 
         AsyncIncrement(0).Then([](Result<int> result) -> AsyncOp<int>
         {
@@ -78,7 +78,7 @@ public:
 
     TEST_METHOD(ContinuationException)
     {
-        TestContext tc;
+        AsyncTestContext tc;
 
         AsyncSleep(0).Then([](Result<void>) -> Result<void>
         {

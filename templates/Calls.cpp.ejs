@@ -17,22 +17,7 @@ namespace <%- featureGroup.name %>
 <%
 function validateToken(call) {
     switch (call.auth) {
-        case "EntityToken": { %>
-    auto entityToken{ entity->EntityToken() };
-    if (!entityToken || !entityToken->token) 
-    {
-        return E_PF_NOENTITYTOKEN;
-    }
-<% 
-            break;
-        }
-        case "SessionTicket": { %>
-    auto sessionTicket{ entity->SessionTicket() };
-    if (!sessionTicket || sessionTicket->empty()) 
-    {
-        return E_PF_NOSESSIONTICKET;
-    }
-<%
+        case "EntityToken": {
             break;
         }
         case "SecretKey": { %>
@@ -42,23 +27,6 @@ function validateToken(call) {
         return E_PF_NOSECRETKEY;
     }
 <%
-            break;
-        }
-    }
-}
-
-function addAuthHeader(call) {
-    switch (call.auth) {
-        case "EntityToken": { 
-            %>{ kEntityTokenHeaderName, entityToken->token }<% 
-            break;
-        }
-        case "SessionTicket": {
-            %>{ kSessionTicketHeaderName, *sessionTicket }<%
-            break;
-        }
-        case "SecretKey": {
-            %>{ kSecretKeyHeaderName, *secretKey }<%
             break;
         }
     }
@@ -74,47 +42,39 @@ for (var i = 0; i < featureGroup.calls.length; i++) {
     } else if (call.resultDatatype) {
         resultType = call.resultDatatype.name;
     }
-    var contextParam = "SharedPtr<GlobalState const> state,\n    ";
-    var httpRequestMethod = "state->HttpClient()->MakePostRequest";
+    var contextParam = "SharedPtr<GlobalState const> state,\n    SharedPtr<ServiceConfig const> serviceConfig,\n    ";
+    var httpRequestMethod = "serviceConfig->HttpClient()->MakePostRequest";
     if (call.entityRequired) {
         contextParam = "SharedPtr<" + call.entityRequired + "> entity,\n    ";
-        if (call.entityRequired === "Entity") {
-            httpRequestMethod = "entity->HttpClient()->MakeEntityRequest";
-        } else if (call.entityRequired === "TitlePlayer") {
-            httpRequestMethod = "entity->HttpClient()->MakeClassicRequest";
+        if (call.entityRequired) {
+            httpRequestMethod = "entity->ServiceConfig()->HttpClient()->MakeEntityRequest";
         }
     }
     var requestParam = call.requestDatatype ? "const " + call.requestDatatype.name + "& request,\n    " : ""; 
     var requestBody = call.requestDatatype ? "JsonValue requestBody{ request.ToJson() };" : "JsonValue requestBody{ rapidjson::kNullType };";
     if (call.entityReturned === "TitlePlayer") {
-        // add TitleId for login calls
-        requestBody += "\n    JsonUtils::ObjectAddMember(requestBody, \"TitleId\", state->TitleId());";
+        // add TitleId and PlayerAccountPoolId for auth calls
+        requestBody += "\n    JsonUtils::ObjectAddMember(requestBody, \"TitleId\", serviceConfig->TitleId());";
+        requestBody += "\n    JsonUtils::ObjectAddMember(requestBody, \"PlayerAccountPoolId\", serviceConfig->PlayerAccountPoolId());";
     }
     var entityParam = call.entityRequired ? "entity,\n        " : "";
 
 %>
 AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
-    <%- contextParam %><%- requestParam %>const TaskQueue& queue
+    <%- contextParam %><%- requestParam %>RunContext rc
 )
 {<% validateToken(call); %>
     const char* path{ "<%- call.url %>" };
     <%- requestBody %>
-    UnorderedMap<String, String> headers{<% addAuthHeader(call); %>};
 
     auto requestOp = <%- httpRequestMethod %>(
         <%- entityParam %>path,
-        std::move(headers),
+        UnorderedMap<String, String>{},
         std::move(requestBody),
-        queue
+        rc.Derive()
     );
-<%  if (call.entityReturned) {
-        var loginContext = "";
-        if (call.entityReturned === "TitlePlayer") {
-            loginContext = ", loginContext"; %>
-    // Remember LoginContext so we can refresh tokens
-    auto loginContext = MakeShared<LoginContext>(path, std::move(requestBody), std::move(headers));<%
-        } %>
-    return requestOp.Then([ state<%- loginContext %> ](Result<ServiceResponse> result) -> Result<SharedPtr<<%- call.entityReturned %>>><%
+<%  if (call.entityReturned) { %>
+    return requestOp.Then([ state, serviceConfig ](Result<ServiceResponse> result) -> Result<SharedPtr<<%- call.entityReturned %>>><%
     } else { %>
     return requestOp.Then([](Result<ServiceResponse> result) -> Result<<%- resultType %>><%
     } %>
@@ -128,7 +88,7 @@ AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
             <%- call.resultDatatype.name %> resultModel;
             resultModel.FromJson(serviceResponse.Data);<%
         if (call.entityReturned) { %>
-            return MakeShared<<%- call.entityReturned %>>(state->HttpClient(), state->QoSAPI()<%- loginContext %>, std::move(resultModel));<%
+            return <%- call.entityReturned %>::Make(std::move(resultModel), serviceConfig, state->RunContext(), state->TokenExpiredHandler());<%
         } else { %>
             return resultModel;<%
         }
@@ -147,6 +107,47 @@ AsyncOp<<%- resultType %>> <%- featureGroup.name %>API::<%- call.name %>(
     });
 }
 <%
+    // Add reauthenticate call alongside auth calls
+    if (call.entityReturned === "TitlePlayer") { %>
+AsyncOp<void> <%- featureGroup.name %>API::Re<%- call.name %>(
+    SharedPtr<TitlePlayer> player,
+    <%- requestParam %>RunContext rc)
+{
+    const char* path{ "<%- call.url %>" };
+    JsonValue requestBody{ request.ToJson() };
+    JsonUtils::ObjectAddMember(requestBody, "TitleId", player->ServiceConfig()->TitleId());
+    JsonUtils::ObjectAddMember(requestBody, "PlayerAccountPoolId", player->ServiceConfig()->PlayerAccountPoolId());
+
+    auto requestOp = player->ServiceConfig()->HttpClient()->MakePostRequest(
+        path,
+        UnorderedMap<String, String>{},
+        std::move(requestBody),
+        rc.Derive()
+    );
+
+    return requestOp.Then([ player ](Result<ServiceResponse> result) -> Result<void>
+    {
+        RETURN_IF_FAILED(result.hr);
+
+        auto serviceResponse = result.ExtractPayload();
+        if (serviceResponse.HttpCode == 200)
+        {
+            <%- call.resultDatatype.name %> resultModel;
+            resultModel.FromJson(serviceResponse.Data);
+
+            assert(resultModel.titlePlayerAccount.has_value());
+            RETURN_HR_IF(E_FAIL, !resultModel.titlePlayerAccount.has_value());
+            return player->SetEntityToken(*resultModel.titlePlayerAccount);
+            // TODO update MasterPlayer EntityToken as well
+        }
+        else
+        {
+            return Result<void>{ ServiceErrorToHR(serviceResponse.ErrorCode), std::move(serviceResponse.ErrorMessage) };
+        }
+    });
+}
+<%  } // end if
+
 // Explicitly add LoginWithXUser implementation alongside Client/LoginWithXbox
 if (call.url === "/Client/LoginWithXbox") { %>
 #if HC_PLATFORM == HC_PLATFORM_GDK

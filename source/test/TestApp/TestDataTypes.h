@@ -5,32 +5,37 @@
 #include <string>
 #include <chrono>
 
-namespace PlayFabUnit
+namespace PlayFab
 {
-    struct TestTitleData
-    {
-        std::string titleId;
-        std::string developerSecretKey;
-        std::string userEmail;
-        std::string connectionString;
-    };
+namespace Test
+{
 
-    enum class TestActiveState
-    {
-        PENDING, // Not started
-        ACTIVE, // Currently testing
-        READY, // An answer is sent by the (potentially) alternate thread, but the main thread hasn't finalized the test yet
-        COMPLETE, // Test is finalized and recorded
-        ABORTED // todo
-    };
+struct TestTitleData
+{
+    std::string titleId;
+    std::string playerAccountPoolId;
+    std::string connectionString;
+};
 
-    enum class TestFinishState
-    {
-        PENDING,
-        PASSED,
-        FAILED,
-        SKIPPED,
-        TIMEDOUT
-    };
-    static const char* TestFinishStateToString[] = { "PENDING", "PASSED", "FAILED", "SKIPPED", "TIMEDOUT" };
+enum class TestActiveState
+{
+    PENDING, // Not started
+    ACTIVE, // Currently testing
+    READY, // An answer is sent by the (potentially) alternate thread, but the main thread hasn't finalized the test yet
+    COMPLETE, // Test is finalized and recorded
+    ABORTED // todo
+};
+
+enum class TestFinishState
+{
+    PENDING,
+    PASSED,
+    FAILED,
+    SKIPPED,
+    TIMEDOUT
+};
+
+static const char* TestFinishStateToString[] = { "PENDING", "PASSED", "FAILED", "SKIPPED", "TIMEDOUT" };
+
+}
 }

@@ -4,7 +4,7 @@
 #pragma once
 
 #include <XAsyncProvider.h>
-#include "TaskQueue.h"
+#include "RunContext.h"
 #include "AsyncOp.h"
 
 namespace PlayFab
@@ -30,11 +30,11 @@ public:
 
 protected:
     // Create a Provider from a client provided XAsyncBlock
-    Provider(_In_ XAsyncBlock* async) noexcept;
+    Provider(_In_ RunContext&& runContext, _In_ XAsyncBlock* async) noexcept;
 
     // Create a Provider from a client provided XAsyncBlock with the specified identityName
     template<size_t n>
-    Provider(_In_ XAsyncBlock* async, const char(&_identityName)[n]) noexcept : identityName{ _identityName }, m_async{ async } {}
+    Provider(_In_ RunContext&& runContext, _In_ XAsyncBlock* async, const char(&_identityName)[n]) noexcept : identityName{ _identityName }, m_runContext{ std::move(runContext) }, m_async{ async } {}
 
     // Provider Operations to be overriden.
 
@@ -42,13 +42,13 @@ protected:
     // another asynchronous API. Begin will be invoked synchronously by Run(), so this operation should never block.
     //
     // Default implementation will call Schedule with no delay.
-    virtual HRESULT Begin(TaskQueue&& queue);
+    virtual HRESULT Begin(RunContext runContext);
 
     // Perform any long running work. This method is invoked is guaranteed always be invoked on the thread dictated by the Provider's
     // XAsync task queue.
     //
     // Default implementation will return E_FAIL, marking the operation as completed with no result payload.
-    virtual HRESULT DoWork(TaskQueue&& queue);
+    virtual HRESULT DoWork(RunContext runContext);
 
     // The GetResult operation should copy the result payload into a client provided buffer. GetResult will be called
     // synchronously when the client calls the appropriate get result API.
@@ -57,12 +57,6 @@ protected:
     // Default implementation will assert and return E_UNEXPECTED (it will never be invoked for XAsync APIs with
     // no result payload).
     virtual HRESULT GetResult(void* buffer, size_t bufferSize);
-
-    // Called when the async operation is cancelled by the client. If the operation can be canceled, Complete should be called
-    // with E_ABORT when the operation has been cancelled.
-    //
-    // Default implementation returns S_OK (operation will continue running until it completes).
-    virtual HRESULT Cancel(TaskQueue&& queue);
 
     // Schedule DoWork operation to the TaskQueue. Can be called multiple times.
     virtual HRESULT Schedule(uint32_t delay) const;
@@ -83,6 +77,7 @@ protected:
 
 private:
     static HRESULT CALLBACK XAsyncProvider(_In_ XAsyncOp op, _Inout_ const XAsyncProviderData* data) noexcept;
+    RunContext m_runContext;
     XAsyncBlock* m_async{ nullptr };
 };
 

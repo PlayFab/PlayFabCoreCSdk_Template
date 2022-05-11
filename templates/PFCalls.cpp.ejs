@@ -9,15 +9,12 @@ using namespace PlayFab;
 using namespace PlayFab::<%- featureGroup.name %>;
 <% var apiMemberName = featureGroup.name.charAt(0).toLowerCase() + featureGroup.name.slice(1) + "API";
 
-// There are many Login methods for both Client and Server, but we only want to define a single GetLoginResult method for each
-var getClientLoginResultDefined = false;
-var getServerLoginResultDefined = false;
-
 for (var i = 0; i < featureGroup.calls.length; i++) {
     var call = featureGroup.calls[i]; 
-    var contextHandleParam = globalPrefix + "StateHandle contextHandle";
-    var contextBinder = "contextHandle->state";
+    var contextHandleParam = globalPrefix + "ServiceConfigHandle contextHandle";
+    var contextBinder = "std::move(serviceConfig)";
     if (call.entityRequired) {
+        continue; // only defining auth calls for now
         if (call.entityRequired === "TitlePlayer") {
             contextHandleParam = globalPrefix + "TitlePlayerHandle contextHandle";
             contextBinder = "contextHandle->titlePlayer";
@@ -29,7 +26,7 @@ for (var i = 0; i < featureGroup.calls.length; i++) {
     var requestParam = call.requestDatatype ? "_In_ const " + call.requestDatatype.prefix + call.requestDatatype.name + "* request,\n    " : "";
     var makeProvider = call.entityReturned ? "MakeAuthProvider" : "MakeProvider";
     var requestBinder = call.requestDatatype ? "*request, " : ""; %>
-HRESULT <%- prefix %><%- call.name %>Async(
+PF_API <%- prefix %><%- call.name %>Async(
     _In_ <%- contextHandleParam %>,
     <%- requestParam %>_In_ XAsyncBlock* async
 ) noexcept
@@ -39,57 +36,21 @@ HRESULT <%- prefix %><%- call.name %>Async(
     RETURN_HR_INVALIDARG_IF_NULL(request);<%
     } %>
 
-    auto provider = <%- makeProvider %>(async, __FUNCTION__, std::bind(&<%- featureGroup.name %>API::<%- call.name %>, <%- contextBinder %>, <%- requestBinder%>std::placeholders::_1));
+    SharedPtr<GlobalState> state{ nullptr };
+    RETURN_IF_FAILED(GlobalState::Get(state));
+
+    SharedPtr<ServiceConfig> serviceConfig;
+    RETURN_IF_FAILED(state->ServiceConfigs().FromHandle(contextHandle, serviceConfig));
+
+    auto provider = <%- makeProvider %>(std::move(state), async, __FUNCTION__, std::bind(&<%- featureGroup.name %>API::<%- call.name %>, std::placeholders::_1, <%- contextBinder %>, <%- requestBinder%>std::placeholders::_2));
     return Provider::Run(UniquePtr<Provider>(provider.release()));
 }
 <%  
-    // Explicitly add XUser login API alongside generated LoginWithXbox API
-    if (call.name === "ClientLoginWithXbox") { %>
-#if HC_PLATFORM == HC_PLATFORM_GDK
-HRESULT <%- globalPrefix %>AuthenticationLoginWithXUserAsync(
-    _In_ <%- globalPrefix %>StateHandle contextHandle,
-    _In_ const <%- globalPrefix %>AuthenticationLoginWithXUserRequest* request,
-    _Inout_ XAsyncBlock* async
-) noexcept
-{
-    RETURN_HR_INVALIDARG_IF_NULL(contextHandle);
-    RETURN_HR_INVALIDARG_IF_NULL(request);
-
-    auto provider = MakeAuthProvider(async, __FUNCTION__, std::bind(&AuthenticationAPI::LoginWithXUser, contextHandle->state, *request, std::placeholders::_1));
-    return Provider::Run(UniquePtr<Provider>(provider.release()));
-}
-#endif
-<%  } // end if
-
     if (!call.resultDatatype) { 
         // No Get Result method needed
-    } else if (call.resultDatatype.name === "LoginResult") {
-        // Custom logic for Client Login Result
-        if (!getClientLoginResultDefined) { 
-            getClientLoginResultDefined = true; %>
-HRESULT <%- prefix %>ClientLoginGetResult(
-    _In_ XAsyncBlock* async,
-    _Out_ <%- globalPrefix %>TitlePlayerHandle* titlePlayerHandle
-) noexcept
-{
-    return XAsyncGetResult(async, nullptr, sizeof(<%- globalPrefix %>TitlePlayerHandle), titlePlayerHandle, nullptr);
-}
-<%      } // end if
-    } else if (call.resultDatatype.name === "ServerLoginResult") {
-        // Custom logic for Server Login result
-        if (!getServerLoginResultDefined) {
-            getServerLoginResultDefined = true; %>
-HRESULT <%- prefix %>ServerLoginGetResult(
-    _In_ XAsyncBlock* async,
-    _Out_ <%- globalPrefix %>TitlePlayerHandle* titlePlayerHandle
-) noexcept
-{
-    return XAsyncGetResult(async, nullptr, sizeof(<%- globalPrefix %>TitlePlayerHandle), titlePlayerHandle, nullptr);
-}            
-<%      } // end if
     } else if (call.entityReturned) {
         /* Custom logic for all other calls that result in an Entity object*/ %>
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _In_ XAsyncBlock* async,
     _Out_ <%- globalPrefix %><%- call.entityReturned %>Handle* entityHandle
 ) noexcept
@@ -97,7 +58,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
     return XAsyncGetResult(async, nullptr, sizeof(<%- globalPrefix %><%- call.entityReturned %>Handle), entityHandle, nullptr);
 }
 <%  } else if (isFixedSize(call.resultDatatype)) { %>
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _In_ XAsyncBlock* async,
     _Out_ <%- call.resultDatatype.prefix %><%- call.resultDatatype.name %>* result
 ) noexcept
@@ -105,7 +66,7 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
     return XAsyncGetResult(async, nullptr, sizeof(<%- call.resultDatatype.prefix %><%- call.resultDatatype.name %>), result, nullptr);
 }
 <%  } else { %>
-HRESULT <%- prefix %><%- call.name %>GetResultSize(
+PF_API <%- prefix %><%- call.name %>GetResultSize(
     _In_ XAsyncBlock* async,
     _Out_ size_t* bufferSize
 ) noexcept
@@ -113,7 +74,7 @@ HRESULT <%- prefix %><%- call.name %>GetResultSize(
     return XAsyncGetResultSize(async, bufferSize);
 }
 
-HRESULT <%- prefix %><%- call.name %>GetResult(
+PF_API <%- prefix %><%- call.name %>GetResult(
     _In_ XAsyncBlock* async,
     _In_ size_t bufferSize,
     _Out_writes_bytes_to_(bufferSize, *bufferUsed) void* buffer,
@@ -129,4 +90,24 @@ HRESULT <%- prefix %><%- call.name %>GetResult(
     return S_OK;
 }
 <%  } // end if
+
+    if (call.entityReturned === "TitlePlayer") { %>
+PF_API <%- prefix %>Re<%- call.name %>Async(
+    _In_ PFTitlePlayerHandle titlePlayerHandle,
+    <%- requestParam %>_Inout_ XAsyncBlock* async
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(titlePlayerHandle);
+    RETURN_HR_INVALIDARG_IF_NULL(request);
+
+    SharedPtr<GlobalState> state{ nullptr };
+    RETURN_IF_FAILED(GlobalState::Get(state));
+
+    SharedPtr<TitlePlayer> titlePlayer;
+    RETURN_IF_FAILED(state->TitlePlayers().FromHandle(titlePlayerHandle, titlePlayer));
+
+    auto provider = MakeProvider(state->RunContext().DeriveOnQueue(async->queue), async, __FUNCTION__, std::bind(&<%- featureGroup.name %>API::Re<%- call.name %>, std::move(titlePlayer), *request, std::placeholders::_1));
+    return Provider::Run(UniquePtr<Provider>(provider.release()));
+}
+<% } // end if
 } // end for %>

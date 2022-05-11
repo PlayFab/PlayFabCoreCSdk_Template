@@ -1,54 +1,51 @@
 #pragma once
 
 #include <playfab/PFGlobal.h>
-#include "HttpClient.h"
+#include <playfab/PFServiceConfig.h>
+#include <playfab/PFTitlePlayer.h>
+#include <playfab/PFTelemetry.h>
+#include "ServiceConfig.h"
+#include "TitlePlayer.h"
+#include "Telemetry/TelemetryPipeline.h"
+#include "HandleTable.h"
+#include "TokenExpiredHandler.h"
 
 namespace PlayFab
 {
 
-namespace QoS
-{
-class QoSAPI;
-}
+using ServiceConfigHandleTable = HandleTable<PFServiceConfigHandle, ServiceConfig>;
+using TitlePlayerHandleTable = HandleTable<PFTitlePlayerHandle, TitlePlayer>;
+using TelemetryPipelineHandleTable = HandleTable<PFTelemetryPipelineHandle, TelemetryPipeline>;
 
-class GlobalState
+// GlobalState singleton
+class GlobalState : public ITerminationListener
 {
 public:
-    GlobalState(String&& titleId, _In_opt_z_ const char* secretKey, _In_opt_z_ const char* connectionString, _In_opt_ XTaskQueueHandle backgroundQueue);
-    virtual ~GlobalState() = default;
+    ~GlobalState() noexcept;
 
-public:
-    String const& TitleId() const;
-    SharedPtr<HttpClient const> HttpClient() const;
-    SharedPtr<String const> SecretKey() const;
+    static HRESULT Create(XTaskQueueHandle backgroundQueue) noexcept;
+    static HRESULT Get(SharedPtr<GlobalState>& state) noexcept;
+    static HRESULT CleanupAsync(XAsyncBlock* async) noexcept;
 
-    // Shared QoSAPI instance. Using a shared instance because QoSAPI caches title-wide state
-    SharedPtr<QoS::QoSAPI const> QoSAPI() const;
+    RunContext RunContext() const noexcept;
+    ServiceConfigHandleTable& ServiceConfigs() noexcept;
+    TitlePlayerHandleTable& TitlePlayers() noexcept;
+    TelemetryPipelineHandleTable& ClientTelemetryPipelines() noexcept;
+    TokenExpiredHandler TokenExpiredHandler() const noexcept;
 
 private:
-    String const m_titleId;
-    SharedPtr<PlayFab::HttpClient> m_httpClient;
-    SharedPtr<String> m_secretKey;
-    SharedPtr<QoS::QoSAPI> m_qosAPI;
-    TaskQueue m_backgroundQueue;
+    GlobalState(XTaskQueueHandle backgroundQueue) noexcept;
+
+    void OnTerminated(SharedPtr<ITerminationListener>&& self, void* context) noexcept override;
+    static HRESULT CALLBACK CleanupAsyncProvider(XAsyncOp op, XAsyncProviderData const* data);
+
+    PlayFab::RunContext m_runContext;
+    ServiceConfigHandleTable m_serviceConfigs;
+    TitlePlayerHandleTable m_titlePlayers;
+    TelemetryPipelineHandleTable m_clientTeletryPipelines;
+    PlayFab::TokenExpiredHandler m_tokenExpiredHandler;
+
+    friend struct GlobalStateBootstrapper;
 };
 
 }
-
-struct PFGlobalState
-{
-    PlayFab::SharedPtr<PlayFab::GlobalState> state;
-
-    static HRESULT Create(
-        _In_z_ const char* titleId,
-        _In_opt_z_ const char* secretKey,
-        _In_opt_z_ const char* connectionString,
-        _In_opt_ XTaskQueueHandle backgroundQueue,
-        _Outptr_ PFStateHandle* stateHandle
-    );
-
-    HRESULT CleanupAsync(XAsyncBlock* async);
-
-private:
-    PFGlobalState(_In_z_ const char* titleId, _In_opt_z_ const char* secretKey, _In_opt_z_ const char* connectionString, _In_opt_ XTaskQueueHandle backgroundQueue);
-};

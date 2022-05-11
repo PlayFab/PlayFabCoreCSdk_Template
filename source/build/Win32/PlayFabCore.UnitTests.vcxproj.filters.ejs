@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source"/>
+    <Filter Include="Source\Tests"/>
+    <Filter Include="Source\Support"/>
+    <Filter Include="Source\Mocks"/>
+    <Filter Include="Source\Wrappers"/>
+    <Filter Include="Source\PlayFabCore"/><%
+for(var i = 0; i < projectFiles.filters.length; i++) {
+    var filter = projectFiles.filters[i]; %>
+    <Filter Include="Source\PlayFabCore\<%- filter %>" /><% 
+}
+for(var featureGroupName in SDKFeatureGroups) { %>
+    <Filter Include="Source\PlayFabCore\Source\<%- featureGroupName %>" /><%
+} %>
+  </ItemGroup>
+  <ItemGroup><%
+for (var file in projectFiles.includeFiles) { 
+    var filter = projectFiles.includeFiles[file]; %>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\<%- file %>">
+      <Filter>Source\PlayFabCore\<%- filter %></Filter>
+    </ClInclude><% 
+} 
+for (var file in projectFiles.sourceFiles) { 
+    var filter = projectFiles.sourceFiles[file];
+    var header = file.endsWith(".h"); 
+    if (header) { %>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\<%- file %>" >
+      <Filter>Source\PlayFabCore\<%- filter %></Filter>
+    </ClInclude><%
+    } else { %>
+    <ClCompile Include="$(PlayFabCoreSourceDir)\<%- file %>" >
+      <Filter>Source\PlayFabCore\<%- filter %></Filter>
+    </ClCompile><%
+    }
+} 
+for(var featureGroupName in SDKFeatureGroups) { %>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>DataModels.h">
+      <Filter>Source\PlayFabCore\C Public Includes\playfab</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\cpp\<%- prefix + featureGroupName %>DataModelWrappers.h">
+      <Filter>Source\PlayFabCore\C Public Includes\playfab\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.h">
+      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
+    </ClInclude>
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.cpp">
+      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
+    </ClCompile><%
+    if (!(featureGroupName === "Shared")) { %>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.h">
+      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
+    </ClInclude>
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.cpp">
+      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
+    </ClCompile>
+    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>.h">
+      <Filter>Source\PlayFabCore\C Public Includes\playfab</Filter>
+    </ClInclude>
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- prefix + featureGroupName %>.cpp">
+      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
+    </ClCompile><%
+    }
+} %>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\test\UnitTests\Support\AsyncTestContext.cpp">
+      <Filter>Source\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Support\Event.cpp">
+      <Filter>Source\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Mocks\HttpMock.cpp">
+      <Filter>Source\Mocks</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\TokenRefreshTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\TelemetryPipelineTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\AsyncOpTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\CancellationTokenTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\GlobalStateTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\test\UnitTests\Tests\RunContextTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\test\UnitTests\Support\AsyncTestContext.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\UnitTests\Support\Event.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\UnitTests\Support\TestMacros.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\UnitTests\Mocks\HttpMock.h">
+      <Filter>Source\Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\Wrappers\PlayFabSession.h">
+      <Filter>Source\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\Wrappers\ServiceConfig.h">
+      <Filter>Source\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\Wrappers\TitlePlayer.h">
+      <Filter>Source\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\Wrappers\TelemetryPipeline.h">
+      <Filter>Source\Wrappers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\UnitTests\Mocks\MockResponses.h">
+      <Filter>Source\Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\UnitTests\Support\TestIncludes.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -3,33 +3,36 @@
 #include "TestAppPch.h"
 #include "TestUtils.h"
 
-namespace PlayFabUnit
+namespace PlayFab
 {
-    const char* ToString(TestActiveState state)
-    {
-        switch (state)
-        {
-            case TestActiveState::PENDING: return "PENDING";
-            case TestActiveState::ACTIVE: return "ACTIVE";
-            case TestActiveState::READY: return "READY";
-            case TestActiveState::COMPLETE: return "COMPLETE";
-            case TestActiveState::ABORTED: return "ABORTED";
-            default: return "UNKNOWN";
-        }
-    }
+namespace Test
+{
 
-    const char* ToString(TestFinishState state)
+const char* ToString(TestActiveState state)
+{
+    switch (state)
     {
-        switch (state)
-        {
-            case TestFinishState::PENDING: return "PENDING";
-            case TestFinishState::PASSED: return "PASSED";
-            case TestFinishState::FAILED: return "FAILED";
-            case TestFinishState::SKIPPED: return "SKIPPED";
-            case TestFinishState::TIMEDOUT: return "TIMEDOUT";
-            default: return "UNKNOWN";
-        }
+    case TestActiveState::PENDING: return "PENDING";
+    case TestActiveState::ACTIVE: return "ACTIVE";
+    case TestActiveState::READY: return "READY";
+    case TestActiveState::COMPLETE: return "COMPLETE";
+    case TestActiveState::ABORTED: return "ABORTED";
+    default: return "UNKNOWN";
     }
+}
 
-    PlayFab::JsonAllocator s_jsonAllocator{};
+const char* ToString(TestFinishState state)
+{
+    switch (state)
+    {
+    case TestFinishState::PENDING: return "PENDING";
+    case TestFinishState::PASSED: return "PASSED";
+    case TestFinishState::FAILED: return "FAILED";
+    case TestFinishState::SKIPPED: return "SKIPPED";
+    case TestFinishState::TIMEDOUT: return "TIMEDOUT";
+    default: return "UNKNOWN";
+    }
+}
+
+}
 }

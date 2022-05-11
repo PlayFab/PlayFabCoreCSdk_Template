@@ -28,9 +28,11 @@ JsonValue ToJson(const PFJsonObject& jsonObject);
 
 JsonValue ToJsonTime(time_t value);
 
-// Specialization for InputModels
+// Specializations for InputModels
 template <typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<InputModel, InternalModelWrapperT>>* = 0>
 JsonValue ToJson(const typename InternalModelWrapperT::ModelType& value);
+
+JsonValue ToJson(const InputModel& value);
 
 // Specialization for fundamental types
 template <typename FundamentalT, typename std::enable_if_t<std::is_fundamental_v<FundamentalT>>* = 0>
@@ -68,7 +70,7 @@ void FromJsonTime(const JsonValue& input, time_t& output);
 
 void FromJson(const JsonValue& input, JsonObject& output);
 
-template<typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<OutputModel<typename InternalModelWrapperT::ModelType>, InternalModelWrapperT>>* = 0>
+template<typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<ServiceOutputModel, InternalModelWrapperT>>* = 0>
 void FromJson(const JsonValue& input, InternalModelWrapperT& output);
 
 template <typename EnumT, typename std::enable_if_t<std::is_enum_v<EnumT>>* = 0>
@@ -84,10 +86,17 @@ void FromJson(const JsonValue& input, JsonValue& output);
 
 void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, JsonValue&& value);
 
+void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const JsonValue& value);
+
 void ObjectAddMember(JsonValue& jsonObject, JsonValue&& name, JsonValue&& value);
+
+void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const String& value);
 
 template <typename T, typename std::enable_if_t<!std::is_pointer_v<T> || std::is_same_v<T, const char*>>* = 0>
 void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const T& value);
+
+template <typename T>
+void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const StdExtra::optional<T>& value);
 
 template <typename PtrT, typename std::enable_if_t<std::is_pointer_v<PtrT> && !std::is_same_v<PtrT, const char*>>* = 0>
 void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const PtrT value);
@@ -96,10 +105,16 @@ template <typename InternalModelWrapperT, typename std::enable_if_t<std::is_base
 void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const typename InternalModelWrapperT::ModelType* value);
 
 template <typename T>
+void ObjectAddMemberArray(JsonValue& jsonObject, JsonValue::StringRefType name, const Vector<T>& array);
+
+template <typename T>
 void ObjectAddMemberArray(JsonValue& jsonObject, JsonValue::StringRefType name, const T* array, uint32_t arrayCount);
 
 template <typename InternalModelWrapperT>
 void ObjectAddMemberArray(JsonValue& jsonObject, JsonValue::StringRefType name, const typename InternalModelWrapperT::ModelType* const* array, uint32_t arrayCount);
+
+template <typename ValueT>
+void ObjectAddMemberDictionary(JsonValue& jsonObject, JsonValue::StringRefType name, const Map<String, ValueT>& map);
 
 template <typename EntryT, typename std::enable_if_t<Detail::IsDictionaryEntry<EntryT>::value>* = 0>
 void ObjectAddMemberDictionary(JsonValue& jsonObject, JsonValue::StringRefType name, const EntryT* associativeArray, uint32_t arrayCount);
@@ -108,6 +123,8 @@ template <typename InternalModelWrapperT, typename std::enable_if_t<std::is_base
 void ObjectAddMemberDictionary(JsonValue& jsonObject, JsonValue::StringRefType name, const typename InternalModelWrapperT::DictionaryEntryType* associativeArray, uint32_t arrayCount);
 
 void ObjectAddMemberTime(JsonValue& jsonObject, JsonValue::StringRefType name, time_t value);
+
+void ObjectAddMemberTime(JsonValue& jsonObject, JsonValue::StringRefType name, const StdExtra::optional<time_t>& value);
 
 void ObjectAddMemberTime(JsonValue& jsonObject, JsonValue::StringRefType name, const time_t* value);
 
@@ -140,7 +157,7 @@ void ObjectGetMember(const JsonValue& jsonObject, const char* name, String& outp
 template <typename T>
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, Vector<T>& output);
 
-template <typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<OutputModel<typename InternalModelWrapperT::ModelType>, InternalModelWrapperT>>* = 0>
+template <typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<ServiceOutputModel, InternalModelWrapperT>>* = 0>
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, ModelVector<InternalModelWrapperT>& output);
 
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, CStringVector& output);
@@ -148,7 +165,7 @@ void ObjectGetMember(const JsonValue& jsonObject, const char* name, CStringVecto
 template<class EntryT>
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, DictionaryEntryVector<EntryT>& output);
 
-template<class InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<OutputModel<typename InternalModelWrapperT::ModelType>, InternalModelWrapperT>>* = 0>
+template<class InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<ServiceOutputModel, InternalModelWrapperT>>* = 0>
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, ModelDictionaryEntryVector<InternalModelWrapperT>& output);
 
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, StringDictionaryEntryVector& output);
@@ -183,7 +200,7 @@ inline JsonValue ToJson(EnumT value)
     return JsonValue{ EnumName<EnumT>(value), allocator };
 }
 
-template<typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<OutputModel<typename InternalModelWrapperT::ModelType>, InternalModelWrapperT>>*>
+template<typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<ServiceOutputModel, InternalModelWrapperT>>*>
 void FromJson(const JsonValue& input, InternalModelWrapperT& output)
 {
     output.FromJson(input);
@@ -205,6 +222,19 @@ template <typename T>
 void ObjectAddMember(JsonValue& jsonObject, JsonValue&& name, const T& value)
 {
     ObjectAddMember(jsonObject, std::move(name), ToJson(value));
+}
+
+template <typename T>
+void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const StdExtra::optional<T>& value)
+{
+    if (value.has_value())
+    {
+        return ObjectAddMember(jsonObject, name, *value);
+    }
+    else
+    {
+        return ObjectAddMember(jsonObject, name, JsonValue{ rapidjson::kNullType });
+    }
 }
 
 template <typename PtrT, typename std::enable_if_t<std::is_pointer_v<PtrT> && !std::is_same_v<PtrT, const char*>>*>
@@ -234,6 +264,17 @@ void ObjectAddMember(JsonValue& jsonObject, JsonValue::StringRefType name, const
 }
 
 template <typename T>
+void ObjectAddMemberArray(JsonValue& jsonObject, JsonValue::StringRefType name, const Vector<T>& array)
+{
+    JsonValue member{ rapidjson::kArrayType };
+    for (auto& item : array)
+    {
+        member.PushBack(ToJson(item), allocator);
+    }
+    ObjectAddMember(jsonObject, name, std::move(member));
+}
+
+template <typename T>
 void ObjectAddMemberArray(JsonValue& jsonObject, JsonValue::StringRefType name, const T* array, uint32_t arrayCount)
 {
     JsonValue member{ rapidjson::kArrayType };
@@ -251,6 +292,17 @@ void ObjectAddMemberArray(JsonValue& jsonObject, JsonValue::StringRefType name, 
     for (auto i = 0u; i < arrayCount; ++i)
     {
         member.PushBack(ToJson<InternalModelWrapperT>(*array[i]), allocator);
+    }
+    ObjectAddMember(jsonObject, name, std::move(member));
+}
+
+template <typename ValueT>
+void ObjectAddMemberDictionary(JsonValue& jsonObject, JsonValue::StringRefType name, const Map<String, ValueT>& map)
+{
+    JsonValue member{ rapidjson::kObjectType };
+    for (auto& pair : map)
+    {
+        ObjectAddMember(member, ToJson(pair.first), ToJson(pair.second));
     }
     ObjectAddMember(jsonObject, name, std::move(member));
 }
@@ -320,7 +372,7 @@ void ObjectGetMember(const JsonValue& jsonObject, const char* name, Vector<T>& o
     }
 }
 
-template <typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<OutputModel<typename InternalModelWrapperT::ModelType>, InternalModelWrapperT>>*>
+template <typename InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<ServiceOutputModel, InternalModelWrapperT>>*>
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, ModelVector<InternalModelWrapperT>& output)
 {
     output.clear();
@@ -366,7 +418,7 @@ void ObjectGetMember(const JsonValue& jsonObject, const char* name, DictionaryEn
     }
 }
 
-template<class InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<OutputModel<typename InternalModelWrapperT::ModelType>, InternalModelWrapperT>>*>
+template<class InternalModelWrapperT, typename std::enable_if_t<std::is_base_of_v<ServiceOutputModel, InternalModelWrapperT>>*>
 void ObjectGetMember(const JsonValue& jsonObject, const char* name, ModelDictionaryEntryVector<InternalModelWrapperT>& output)
 {
     output.clear();

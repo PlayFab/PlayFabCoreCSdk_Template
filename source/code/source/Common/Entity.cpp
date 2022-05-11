@@ -1,25 +1,278 @@
 #include "stdafx.h"
 #include "Entity.h"
 
+#if HC_PLATFORM == HC_PLATFORM_GDK
+#include <XGameRuntimeFeature.h>
+#include <XNetworking.h>
+#include <appnotify.h>
+#endif
+
 namespace PlayFab
 {
 
 using Wrappers::SafeString;
 
-Entity::Entity(SharedPtr<PlayFab::HttpClient const> httpClient, SharedPtr<QoS::QoSAPI const> qosAPI, Authentication::EntityTokenResponse&& result) :
-    m_httpClient{ std::move(httpClient) },
-    m_qosAPI{ std::move(qosAPI) },
-    m_entityToken{ MakeShared<PlayFab::EntityToken>(result) },
-    m_key{ result.Model().entity ? *result.Model().entity : PlayFab::EntityKey{} }
+class TokenRefreshWorker : public ITaskQueueWork, public ICancellationListener, public std::enable_shared_from_this<TokenRefreshWorker>
+{
+public:
+    static SharedPtr<TokenRefreshWorker> MakeAndStart(SharedPtr<Entity> const& entity, RunContext&& rc, TokenExpiredHandler tokenExpiredHandler);
+
+    ~TokenRefreshWorker();
+
+private:
+    TokenRefreshWorker(SharedPtr<Entity> const& entity, RunContext&& rc, TokenExpiredHandler tokenExpiredHandler);
+
+    // ITaskQueueWork
+    void Run() override;
+
+    // ICancellationListener
+    void OnCancellation() override;
+
+    void GetToken(SharedPtr<Entity>&& entity) noexcept;
+    void RefreshToken(SharedPtr<Entity>&& entity) noexcept;
+
+    static bool CheckRefreshRequired(EntityToken const& token) noexcept;
+
+    WeakPtr<Entity> m_weakEntity;
+    PlayFab::RunContext m_rc;
+    TokenExpiredHandler m_tokenExpiredHandler;
+
+#if HC_PLATFORM == HC_PLATFORM_GDK
+    static void CALLBACK NetworkConnectivityChangedCallback(void* context, const XNetworkingConnectivityHint* hint);
+    static void CALLBACK AppStateChangedCallback(BOOLEAN isSuspended, void* context);
+
+    std::mutex m_mutex;
+    bool m_networkInitialized{ false };
+    bool m_isSuspended{ false };
+
+    XTaskQueueRegistrationToken m_networkConnectivityChangedToken{};
+    PAPPSTATE_REGISTRATION m_appStateChangedToken{ nullptr };
+#endif
+
+    static constexpr uint32_t s_interval{ 1000 * 60 * 30 }; // 30 Minuntes
+};
+
+TokenRefreshWorker::TokenRefreshWorker(SharedPtr<Entity> const& entity, PlayFab::RunContext&& rc, TokenExpiredHandler tokenExpiredHandler) :
+    m_weakEntity{ entity },
+    m_rc{ std::move(rc) },
+    m_tokenExpiredHandler{ std::move(tokenExpiredHandler) }
+{
+#if HC_PLATFORM == HC_PLATFORM_GDK
+    HRESULT hr = XNetworkingRegisterConnectivityHintChanged(m_rc.TaskQueue().Handle(), this, TokenRefreshWorker::NetworkConnectivityChangedCallback, &m_networkConnectivityChangedToken);
+    if (FAILED(hr))
+    {
+        TRACE_ERROR_HR(hr, "Failed to register for connectivity changed notifications");
+    }
+
+    hr = HRESULT_FROM_WIN32(RegisterAppStateChangeNotification(TokenRefreshWorker::AppStateChangedCallback, this, &m_appStateChangedToken));
+    if (FAILED(hr))
+    {
+        TRACE_ERROR_HR(hr, "Failed to register for app state change notifications");
+    }
+#endif
+}
+
+TokenRefreshWorker::~TokenRefreshWorker()
+{
+    m_rc.CancellationToken().UnregisterForNotificationAndCheck(*this);
+    m_rc.Terminate(nullptr, nullptr);
+
+#if HC_PLATFORM == HC_PLATFORM_GDK
+    if (m_appStateChangedToken)
+    {
+        UnregisterAppStateChangeNotification(m_appStateChangedToken);
+    }
+
+    if (m_networkConnectivityChangedToken.token)
+    {
+        XNetworkingUnregisterConnectivityHintChanged(m_networkConnectivityChangedToken, true);
+    }
+#endif
+}
+
+SharedPtr<TokenRefreshWorker> TokenRefreshWorker::MakeAndStart(SharedPtr<Entity> const& entity, RunContext&& rc, TokenExpiredHandler tokenExpiredHandler)
+{
+    Allocator<TokenRefreshWorker> a;
+    SharedPtr<TokenRefreshWorker> worker{ new (a.allocate(1)) TokenRefreshWorker{ entity, std::move(rc), std::move(tokenExpiredHandler) } };
+
+    if (!worker->m_rc.CancellationToken().RegisterForNotificationAndCheck(*worker))
+    {
+        worker->m_rc.TaskQueue().SubmitWork(worker);
+    }
+
+    return worker;
+}
+
+void TokenRefreshWorker::Run()
+{
+    SharedPtr<Entity> entity{ m_weakEntity.lock() };
+    if (entity)
+    {
+        GetToken(std::move(entity));
+
+        // Reschedule ourselves.
+        // Note that with this implementation the TokenExpiredHandler will be invoked every s_interval until the token is restored.
+        // This may be fine, but we could include some additional logic to avoid that if desired.
+
+        // TODO we will also need some logic to ensure this isn't overscheduled (ex. during suspend/resume when it is explicitly scheduled
+        // without awaiting the normal interval)
+        m_rc.TaskQueue().SubmitWork(shared_from_this());
+    }
+}
+
+void TokenRefreshWorker::OnCancellation()
+{
+    m_rc.Terminate(nullptr, nullptr);
+}
+
+void TokenRefreshWorker::GetToken(SharedPtr<Entity>&& entity) noexcept
+{
+    entity->GetEntityToken(false, m_rc.Derive()).Finally(
+        [
+            self{ shared_from_this() },
+            entity
+        ]
+    (Result<EntityToken> getTokenResult) mutable
+    {
+        if (FAILED(getTokenResult.hr))
+        {
+            // If we are able to get an entity token for the Entity, invoke the TokenExpired handler.
+            TRACE_INFORMATION("TokenCheckTask unable to get EntityToken (hr = 0x%08x)");
+
+            self->m_tokenExpiredHandler.Invoke(entity->EntityKey().Model().id);
+        }
+        else if (CheckRefreshRequired(getTokenResult.Payload()))
+        {
+            self->RefreshToken(std::move(entity));
+        }
+    });
+}
+
+void TokenRefreshWorker::RefreshToken(SharedPtr<Entity>&& entity) noexcept
+{
+    Entity::RefreshToken(entity, m_rc.Derive()).Finally(
+        [
+            self{ shared_from_this() },
+            entity
+        ]
+    (Result<Authentication::EntityTokenResponse> result)
+    {
+        if (FAILED(result.hr))
+        {
+            self->m_tokenExpiredHandler.Invoke(entity->EntityKey().Model().id);
+        }
+        else
+        {
+            entity->SetEntityToken(result.Payload());
+        }
+    });
+}
+
+bool TokenRefreshWorker::CheckRefreshRequired(EntityToken const& token) noexcept
+{
+    // This was just a first crack at a refresh heuristic. We may want to refine this and sync with the
+    // service team about recommended refresh policy.
+    time_t const* expiration{ token.expiration };
+    if (expiration && (int64_t)(expiration - time(nullptr)) < 60 * 60)
+    {
+        return true;
+    }
+    return false;
+}
+
+#if HC_PLATFORM == HC_PLATFORM_GDK
+
+void TokenRefreshWorker::NetworkConnectivityChangedCallback(void* context, const XNetworkingConnectivityHint* /*hint*/)
+{
+    assert(context);
+    auto worker = static_cast<TokenRefreshWorker*>(context);
+
+    std::lock_guard<std::mutex> lock{ worker->m_mutex };
+
+    // Ignore network connectivity changes if we are suspended
+    if (!worker->m_isSuspended)
+    {
+        // Always requery the latest network connectivity hint rather than relying on the passed parameter in case this is a stale notification
+        XNetworkingConnectivityHint hint{};
+        HRESULT hr = XNetworkingGetConnectivityHint(&hint);
+        if (SUCCEEDED(hr))
+        {
+            TRACE_VERBOSE("NetworkConnectivityChangedCallback, hint.networkInitialized=%d", hint.networkInitialized);
+            worker->m_networkInitialized = hint.networkInitialized;
+        }
+        else
+        {
+            TRACE_VERBOSE("Unable to get NetworkConnectivityHint, setting m_networkInitialized=false");
+            worker->m_networkInitialized = false;
+        }
+    }
+}
+
+void CALLBACK TokenRefreshWorker::AppStateChangedCallback(BOOLEAN isSuspended, void* context)
+{
+    assert(context);
+    auto worker = static_cast<TokenRefreshWorker*>(context);
+
+    std::unique_lock<std::mutex> lock{ worker->m_mutex };
+
+    if (!isSuspended)
+    {
+        assert(worker->m_isSuspended);
+        worker->m_isSuspended = false;
+
+        lock.unlock();
+
+        // Force a query of network state since we've ignored notifications during suspend
+        NetworkConnectivityChangedCallback(worker, nullptr);
+    }
+}
+#endif
+
+Result<SharedPtr<Entity>> Entity::Make(
+    Authentication::EntityTokenResponse&& entityTokenResponse,
+    SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
+    RunContext&& tokenRefreshContext,
+    TokenExpiredHandler tokenExpiredHandler
+) noexcept
+{
+    Allocator<Entity> a{};
+    SharedPtr<Entity> entity{
+        new (a.allocate(1)) Entity{
+            std::move(entityTokenResponse),
+            serviceConfig,
+            tokenRefreshContext.Derive(),
+            tokenExpiredHandler
+        }, Deleter<Entity>()
+    };
+
+    entity->StartTokenRefreshWorker();
+
+    return entity;
+}
+
+Entity::Entity(
+    Authentication::EntityTokenResponse&& response,
+    SharedPtr<PlayFab::ServiceConfig const> serviceConfig,
+    RunContext&& tokenRefreshContext,
+    TokenExpiredHandler tokenExpiredHandler
+) noexcept :
+    m_key{ *response.entity },
+    m_entityToken{ response },
+    m_serviceConfig{ std::move(serviceConfig) },
+    m_runContext{ std::move(tokenRefreshContext) },
+    m_tokenExpiredHandler{ std::move(tokenExpiredHandler) }
 {
 }
 
-Entity::Entity(SharedPtr<PlayFab::HttpClient const> httpClient, SharedPtr<QoS::QoSAPI const> qosAPI, Authentication::GetEntityTokenResponse&& result) :
-    m_httpClient{ std::move(httpClient) },
-    m_qosAPI{ std::move(qosAPI) },
-    m_entityToken{ MakeShared<PlayFab::EntityToken>(result) },
-    m_key{ result.entity ? *result.entity : PlayFab::EntityKey{} }
+Entity::~Entity() noexcept
 {
+    // Cancel TokenRefreshWorker
+    m_runContext.CancellationToken().Cancel();
+}
+
+SharedPtr<PlayFab::ServiceConfig const> Entity::ServiceConfig() const
+{
+    return m_serviceConfig;
 }
 
 PlayFab::EntityKey const& Entity::EntityKey() const
@@ -27,92 +280,81 @@ PlayFab::EntityKey const& Entity::EntityKey() const
     return m_key;
 }
 
-SharedPtr<PlayFab::EntityToken const> Entity::EntityToken() const
+AsyncOp<EntityToken> Entity::GetEntityToken(bool forceRefresh, RunContext runContext)
 {
-    return m_entityToken;
-}
+    std::unique_lock<std::mutex> lock{ m_mutex };
 
-SharedPtr<PlayFab::HttpClient const> Entity::HttpClient() const
-{
-    return m_httpClient;
-}
-
-SharedPtr<QoS::QoSAPI const> Entity::QoSAPI() const
-{
-    return m_qosAPI;
-}
-
-AsyncOp<void> Entity::RefreshToken(const TaskQueue& queue)
-{
-    // GetEntityToken for 'this' entity
-    PFAuthenticationGetEntityTokenRequest request;
-    return GetEntityToken(request, queue).Then([](Result<SharedPtr<Entity>> result)
+    if (forceRefresh) // Is there a need for forceRefresh?
     {
-        return Result<void>{result.hr, String{ result.errorMessage }};
-    });
+        SharedPtr<Entity> self{ shared_from_this() };
+        return Entity::RefreshToken(self, std::move(runContext)).Then([self](Result<Authentication::EntityTokenResponse> result) -> Result<EntityToken>
+        {
+            RETURN_IF_FAILED(result.hr);
+
+            std::unique_lock<std::mutex> lock{ self->m_mutex };
+            auto& response{ result.Payload() };
+
+            assert(response.entity.has_value());
+            assert(!std::strcmp(response.entity->Model().id, self->m_key.Model().id));
+
+            self->m_entityToken = EntityToken{ response };
+
+            return EntityToken{ response };
+        });
+    }
+    else if (m_entityToken.expiration && *m_entityToken.expiration < GetTimeTNow())
+    {
+        return E_PF_NOENTITYTOKEN;
+    }
+    else
+    {
+        return Result<EntityToken>{ EntityToken{ m_entityToken } };
+    }
 }
 
-AsyncOp<SharedPtr<Entity>> Entity::GetEntityToken(
-    const Authentication::GetEntityTokenRequest& request,
-    const TaskQueue& queue
-)
+HRESULT Entity::SetEntityToken(Authentication::EntityTokenResponse const& entityTokenResponse)
 {
-    if (!m_entityToken)
+    std::unique_lock<std::mutex> lock{ m_mutex };
+
+    RETURN_HR_IF(E_FAIL, !entityTokenResponse.entity.has_value());
+
+    if (std::strcmp(entityTokenResponse.entity->Model().id, m_key.Model().id))
     {
-        // Entity token should never be null
-        assert(false);
-        return E_UNEXPECTED;
+        TRACE_ERROR("%s: attempting to set EntityToken with mismatched entityKey", __FUNCTION__);
+        return E_FAIL;
     }
 
-    UnorderedMap<String, String> headers;
-    headers.emplace("X-EntityToken", m_entityToken->token);
+    m_entityToken = EntityToken{ entityTokenResponse };
 
-    return m_httpClient->MakePostRequest(
-        "/Authentication/GetEntityToken",
-        headers,
-        request.ToJson(),
-        queue
-    ).Then([ sharedThis{ shared_from_this() } ](Result<ServiceResponse> result) mutable -> Result<SharedPtr<Entity>>
+    return S_OK;
+}
+
+AsyncOp<Authentication::EntityTokenResponse> Entity::RefreshToken(SharedPtr<Entity> entity, RunContext&& rc)
+{
+    auto requestOp = entity->m_serviceConfig->HttpClient()->MakeEntityRequest(entity, "/TokenRefreshMockPath", UnorderedMap<String, String>{}, JsonValue{ rapidjson::kNullType }, std::move(rc));
+
+    return requestOp.Then([](Result<ServiceResponse> result) -> Result<Authentication::EntityTokenResponse>
     {
         RETURN_IF_FAILED(result.hr);
 
         auto serviceResponse = result.ExtractPayload();
         if (serviceResponse.HttpCode == 200)
         {
-            Authentication::GetEntityTokenResponse resultModel;
-            resultModel.FromJson(serviceResponse.Data);
-
-            if (std::strcmp(SafeString(sharedThis->m_key.Model().id), SafeString(resultModel.entity->Model().id)) == 0)
-            {
-                // If we requested an EntityToken for ourselves, update m_authTokens and return "this"
-                assert(std::strcmp(SafeString(sharedThis->m_key.Model().type), SafeString(resultModel.entity->Model().type)) == 0);
-                sharedThis->m_entityToken = MakeShared<PlayFab::EntityToken>(resultModel);
-                sharedThis->TokenRefreshedCallbacks.Invoke(sharedThis->m_entityToken);
-                return Result<SharedPtr<Entity>>{ std::move(sharedThis) };
-            }
-            else
-            {
-                // Otherwise create and return a new Entity object
-                return MakeShared<Entity>(sharedThis->m_httpClient, sharedThis->m_qosAPI, std::move(resultModel));
-            }
+            return S_OK;
         }
         else
         {
-            return Result<SharedPtr<Entity>>{ ServiceErrorToHR(serviceResponse.ErrorCode), std::move(serviceResponse.ErrorMessage) };
+            return Result<Authentication::EntityTokenResponse>{ ServiceErrorToHR(serviceResponse.ErrorCode), std::move(serviceResponse.ErrorMessage) };
         }
     });
 }
 
-EntityToken::EntityToken(const Authentication::EntityTokenResponse& tokenResponse) :
-    PFEntityToken{},
-    m_token{ SafeString(tokenResponse.Model().entityToken) },
-    m_expiration{ tokenResponse.Model().tokenExpiration ? *tokenResponse.Model().tokenExpiration : StdExtra::optional<time_t>{} }
+void Entity::StartTokenRefreshWorker() noexcept
 {
-    token = m_token.empty() ? nullptr : m_token.data();
-    expiration = m_expiration ? m_expiration.operator->() : nullptr;
+    TokenRefreshWorker::MakeAndStart(shared_from_this(), m_runContext.Derive(), m_tokenExpiredHandler);
 }
 
-EntityToken::EntityToken(const Authentication::GetEntityTokenResponse& tokenResponse) :
+EntityToken::EntityToken(const Authentication::EntityTokenResponse& tokenResponse) :
     PFEntityToken{},
     m_token{ tokenResponse.entityToken },
     m_expiration{ tokenResponse.tokenExpiration }
@@ -135,6 +377,28 @@ EntityToken::EntityToken(EntityToken&& src) :
     m_expiration{ src.m_expiration }
 {
     expiration = m_expiration ? m_expiration.operator->() : nullptr;
+}
+
+EntityToken& EntityToken::operator=(const EntityToken& src)
+{
+    m_token = src.m_token;
+    token = m_token.empty() ? nullptr : m_token.data();
+
+    m_expiration = src.m_expiration;
+    expiration = m_expiration ? m_expiration.operator->() : nullptr;
+
+    return *this;
+}
+
+EntityToken& EntityToken::operator=(EntityToken&& src)
+{
+    m_token = std::move(src.m_token);
+    token = m_token.empty() ? nullptr : m_token.data();
+
+    m_expiration = src.m_expiration;
+    expiration = m_expiration ? m_expiration.operator->() : nullptr;
+
+    return *this;
 }
 
 size_t EntityToken::RequiredBufferSize() const

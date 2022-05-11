@@ -172,15 +172,7 @@ for (var file in projectFiles.TestClientAppFiles) {
     <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\StringUtil.cpp" />
     <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\TextConsole.cpp" />
     <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\DeviceResources.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\TestAppGDK.cpp" /><%
-for(var featureGroupName in SDKFeatureGroups) { 
-    if ([ "Groups", "Data", "SharedGroups", "Profiles", "Friends", "Events", "PlayerDataManagement", "AccountManagement" ].includes(featureGroupName)) {  %>
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>Tests.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>ResultHolders.h" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>TestData.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>TestLog.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\AutoGenTests\AutoGen<%- featureGroupName %>Tests.cpp" /> <%
-} } %>
+    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\TestAppGDK.cpp" />
     <ClInclude Include="$(PlayFabTestDir)\TestApp\TestAppPch.h" />
     <ClCompile Include="$(PlayFabTestDir)\TestApp\TestAppPch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -259,7 +251,7 @@ for(var featureGroupName in SDKFeatureGroups) {
   </ImportGroup>
   <ItemDefinitionGroup>
     <PostBuildEvent>
-      <Command>xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Assets\*.*" "$(TargetDir)Assets" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\*.*" "$(TargetDir)Media" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\Fonts\*.*" "$(TargetDir)" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\Textures\*.*" "$(TargetDir)"</Command>
+      <Command>xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Assets\*.*" "$(TargetDir)Assets" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\*.*" "$(TargetDir)Media" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\Fonts\*.*" "$(TargetDir)" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\Textures\*.*" "$(TargetDir)" &amp; xcopy /Y /I /E "$(SolutionDir)\$(Platform)\$(Configuration)\$(PlayFabProjectName)\$(PlayFabProjectName).dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
 </Project>
