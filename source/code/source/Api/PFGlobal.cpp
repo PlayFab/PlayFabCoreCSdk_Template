@@ -2,6 +2,7 @@
 #include "GlobalState.h"
 #include "BaseModel.h"
 #include "ServiceConfig.h"
+#include "Trace.h"
 #include <httpClient/httpClient.h>
 
 using namespace PlayFab;
@@ -46,6 +47,22 @@ PF_API PFMemGetFunctions(
     auto& hooks = PlayFab::Detail::GetMemoryHooks();
     *memAllocFunc = hooks.alloc;
     *memFreeFunc = hooks.free;
+
+    return S_OK;
+}
+
+PF_API PFTraceEnableTraceToFile(
+    _In_z_ const char* traceFileDirectory
+) noexcept
+{
+    SharedPtr<GlobalState> state;
+    GlobalState::Get(state);
+    RETURN_HR_IF(E_PF_ALREADY_INITIALIZED, state);
+
+    auto& settings = GetTraceSettings();
+    settings.enableTraceToFile = true;
+    assert(std::strlen(traceFileDirectory)+1 < sizeof(settings.traceFileDirectory));
+    std::strcpy(settings.traceFileDirectory, traceFileDirectory);
 
     return S_OK;
 }

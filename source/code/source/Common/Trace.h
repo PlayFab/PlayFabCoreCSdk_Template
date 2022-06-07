@@ -19,4 +19,30 @@ namespace PlayFab
 
 #define TRACE_VERBOSE(msg, ...)         HC_TRACE_VERBOSE(PlayFab, msg, ##__VA_ARGS__)
 
+struct TraceSettings
+{
+    bool enableTraceToFile{ false };
+    char traceFileDirectory[MAX_PATH]{ 0 };
+};
+
+TraceSettings& GetTraceSettings();
+
+struct TraceOutput
+{
+    virtual ~TraceOutput() = default;
+    virtual void TraceMessage(const char* message) = 0;
+};
+
+struct TraceFileOutput : public TraceOutput
+{
+public:
+    TraceFileOutput(String traceFileDirectory);
+    ~TraceFileOutput();
+
+    void TraceMessage(const char* message) override;
+
+private:
+    std::ofstream m_file;
+};
+
 }
