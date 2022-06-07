@@ -292,6 +292,11 @@ TraceState::TraceState()
 
 TraceState::~TraceState()
 {
+    for (auto& output : m_traceOutputs)
+    {
+        assert(!output);
+    }
+
     HCTraceSetClientCallback(nullptr);
     HCTraceCleanup();
 }
