@@ -77,6 +77,15 @@ PF_API PFMemGetFunctions(
 ) noexcept;
 
 /// <summary>
+/// Enables redirection of PlayFab tracing to a local file. Must be called before PFInitialize.
+/// </summary>
+/// <param name="traceFileDirectory">Directory where trace file should be stored</param>
+/// <returns>HRESULT return code for this API operation.</returns>
+PF_API PFTraceEnableTraceToFile(
+    _In_z_ const char* traceFileDirectory
+) noexcept;
+
+/// <summary>
 /// Create PlayFab global state.
 /// </summary>
 /// <param name="backgroundQueue">An XTaskQueue that should be used for background work. If no queue is a default (threadpool) queue will be used.</param>
