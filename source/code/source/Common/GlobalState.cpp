@@ -1,39 +1,13 @@
 #include "stdafx.h"
 #include "GlobalState.h"
 #include "AsyncProvider.h"
+#include "Trace.h"
 #include <httpClient/httpClient.h>
 
 using namespace PlayFab;
 
 namespace PlayFab
 {
-
-class TraceState
-{
-public:
-    static TraceState& Get();
-
-    TraceState(const TraceState&) = delete;
-    TraceState& operator=(TraceState) = delete;
-    ~TraceState();
-
-    void AddTraceOutput(UniquePtr<TraceOutput> output);
-    void ClearTraceOutputs();
-
-private:
-    TraceState();
-
-    static void CALLBACK TraceCallback(
-        _In_z_ const char* areaName,
-        _In_ HCTraceLevel level,
-        _In_ uint64_t threadId,
-        _In_ uint64_t timestamp,
-        _In_z_ const char* message
-    ) noexcept;
-
-    static constexpr size_t kMaxTraceOutputs{ 3 };
-    std::array<UniquePtr<TraceOutput>, kMaxTraceOutputs> m_traceOutputs;
-};
 
 // Clarify/simplify this pattern
 struct GlobalStateBootstrapper
@@ -78,13 +52,10 @@ GlobalState::~GlobalState() noexcept
 
 HRESULT GlobalState::Create(XTaskQueueHandle backgroundQueue) noexcept
 {
-    // Add trace outputs before anything else so that tracing works during initialization
-    auto& traceSettings = GetTraceSettings();
-    if (traceSettings.enableTraceToFile)
-    {
-        auto traceFileOutput = MakeUnique<TraceFileOutput>(traceSettings.traceFileDirectory);
-        TraceState::Get().AddTraceOutput(UniquePtr<TraceOutput>{ traceFileOutput.release() });
-    }
+    // Set up tracing before doing anything else
+    // LocalStorage not needed anywhere else currently so create an instance just for TraceState. If
+    // it is needed elsewhere, there should be a single shared instance hanging off of GlobalState
+    RETURN_IF_FAILED(TraceState::Create(RunContext::Root(backgroundQueue), LocalStorage()));
 
     RETURN_IF_FAILED(HCInitialize(nullptr));
 
@@ -98,10 +69,11 @@ HRESULT GlobalState::Get(SharedPtr<GlobalState>& state) noexcept
     return GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Get, nullptr, state);
 }
 
-struct CleanupContext
+struct CleanupContext 
 {
-    XAsyncBlock lhcCleanupAsync{};
-    XAsyncBlock* cleanupAsync{};
+    XAsyncBlock lhcCleanupAsyncBlock{};
+    XAsyncBlock traceStateCleanupAsyncBlock{};
+    XAsyncBlock* clientAsyncBlock{};
 };
 
 HRESULT GlobalState::CleanupAsync(XAsyncBlock* async) noexcept
@@ -130,9 +102,10 @@ HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderDa
     {
         SharedPtr<GlobalState> state;
         RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, state));
-        context->cleanupAsync = data->async;
+        context->clientAsyncBlock = data->async;
 
-        state->m_runContext.Terminate(std::move(state), context);
+        PlayFab::RunContext& rc = state->m_runContext; // we are about to move state
+        rc.Terminate(std::move(state), context);
         return S_OK;
     }
     catch (...)
@@ -146,47 +119,98 @@ HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderDa
     }
 }
 
+void CALLBACK TraceStateCleanupComplete(XAsyncBlock* async)
+{
+    // This is the last step of cleanup, so reclaim the context
+    UniquePtr<CleanupContext> context{ static_cast<CleanupContext*>(async->context) };
+    XAsyncBlock* asyncBlock{ context->clientAsyncBlock }; // Keep copy of asyncBlock pointer to complete after cleaning up context
+
+    HRESULT hr = XAsyncGetStatus(async, true);
+
+    // Free CleanupContext
+    context.reset();
+
+    // GlobalState::Cleanup complete!
+    XAsyncComplete(asyncBlock, hr, 0);
+}
+
 void CALLBACK HCCleanupComplete(XAsyncBlock* async)
 {
     TRACE_VERBOSE(__FUNCTION__);
 
-    // This is the last step of cleanup, so reclaim the context
     UniquePtr<CleanupContext> context{ static_cast<CleanupContext*>(async->context) };
+    XAsyncBlock* asyncBlock{ context->clientAsyncBlock }; // Keep copy of asyncBlock pointer to complete after cleaning up context
 
-    HRESULT hr = XAsyncGetStatus(async, false);
-    assert(hr != E_PENDING);
-
+    HRESULT hr = XAsyncGetStatus(async, true);
     if (hr == E_HC_INTERNAL_STILLINUSE)
     {
-        // If something else is still referencing libHttpClient, complete with success
+        // If something else is still referencing libHttpClient we don't care
         hr = S_OK;
     }
 
-    // Free context before completing the XAsyncBlock because there isn't a guarantee that Provider::Cleanup is called
-    // before the client's callback.
-    XAsyncBlock* cleanupAsync{ context->cleanupAsync };
-    context.reset();
+    if (FAILED(hr))
+    {
+        TRACE_ERROR_HR(hr, "HCCleanupAsync Failed unexpectedly!");
 
-    // Cleanup TraceOutputs
-    TraceState::Get().ClearTraceOutputs();
+        // Free CleanupContext 
+        context.reset();
 
-    XAsyncComplete(cleanupAsync, hr, 0);
+        // Complete GlobalState::Cleanup with failure
+        XAsyncComplete(asyncBlock, hr, 0);
+
+        return;
+    }
+
+    context->traceStateCleanupAsyncBlock.callback = TraceStateCleanupComplete;
+    context->traceStateCleanupAsyncBlock.queue = context->clientAsyncBlock->queue; // Should use derived queue
+    context->traceStateCleanupAsyncBlock.context = context.get();
+
+    hr = TraceState::CleanupAsync(&context->traceStateCleanupAsyncBlock);
+    if (FAILED(hr))
+    {
+        assert(false);
+
+        // Free CleanupContext 
+        context.reset();
+
+        // Complete GlobalState::Cleanup with failure
+        XAsyncComplete(asyncBlock, hr, 0);
+
+        return;
+    }
+
+    context.release();
 }
 
-void GlobalState::OnTerminated(SharedPtr<ITerminationListener>&& self, void* c) noexcept
+void GlobalState::OnTerminated(SharedPtr<ITerminationListener>&& globalState, void* c) noexcept
 {
     TRACE_VERBOSE(__FUNCTION__);
 
-    CleanupContext* context{ static_cast<CleanupContext*>(c) };
+    UniquePtr<CleanupContext> context{ static_cast<CleanupContext*>(c) };
+    XAsyncBlock* asyncBlock{ context->clientAsyncBlock }; // Keep copy of asyncBlock pointer to complete after cleaning up context
 
     // Free GlobalState before calling HCCleanup - 'this' will be destroyed here
-    self.reset();
+    globalState.reset();
 
-    context->lhcCleanupAsync.callback = HCCleanupComplete;
-    context->lhcCleanupAsync.queue = context->cleanupAsync->queue; // Should use derived queue
-    context->lhcCleanupAsync.context = context;
+    context->lhcCleanupAsyncBlock.callback = HCCleanupComplete;
+    context->lhcCleanupAsyncBlock.queue = context->clientAsyncBlock->queue; // Should use derived queue
+    context->lhcCleanupAsyncBlock.context = context.get();
 
-    HCCleanupAsync(&context->lhcCleanupAsync);
+    HRESULT hr = HCCleanupAsync(&context->lhcCleanupAsyncBlock);
+    if (FAILED(hr))
+    {
+        assert(false);
+
+        // Free CleanupContext 
+        context.reset();
+
+        // Complete GlobalState::Cleanup with failure
+        XAsyncComplete(asyncBlock, hr, 0);
+
+        return;
+    }
+
+    context.release();
 }
 
 RunContext GlobalState::RunContext() const noexcept
@@ -281,144 +305,6 @@ HRESULT GlobalStateBootstrapper::StateAccess(AccessMode mode, CreateArgs* create
     catch (...)
     {
         return CurrentExceptionToHR();
-    }
-}
-
-TraceState::TraceState()
-{
-    HCTraceInit();
-    HCTraceSetClientCallback(TraceState::TraceCallback);
-}
-
-TraceState::~TraceState()
-{
-    for (auto& output : m_traceOutputs)
-    {
-        assert(!output);
-    }
-
-    HCTraceSetClientCallback(nullptr);
-    HCTraceCleanup();
-}
-
-TraceState& TraceState::Get()
-{
-    static TraceState s_state;
-    return s_state;
-}
-
-void TraceState::AddTraceOutput(UniquePtr<TraceOutput> newOutput)
-{
-    for (auto& output : m_traceOutputs)
-    {
-        if (!output)
-        {
-            output = std::move(newOutput);
-        }
-    }
-}
-
-void TraceState::ClearTraceOutputs()
-{
-    for (auto& output : m_traceOutputs)
-    {
-        output.reset();
-    }
-}
-
-template<size_t SIZE>
-int stprintf_s(char(&buffer)[SIZE], _Printf_format_string_ char const* format ...) noexcept
-{
-    va_list varArgs{};
-    va_start(varArgs, format);
-    auto result = vsnprintf(buffer, SIZE, format, varArgs);
-    va_end(varArgs);
-    return result;
-}
-
-int stprintf_s(char* buffer, size_t size, _Printf_format_string_ char const* format ...) noexcept
-{
-    va_list varArgs{};
-    va_start(varArgs, format);
-    auto result = vsnprintf(buffer, size, format, varArgs);
-    va_end(varArgs);
-    return result;
-}
-
-template<size_t SIZE>
-int vstprintf_s(char(&buffer)[SIZE], _Printf_format_string_ char const* format, va_list varArgs) noexcept
-{
-    return vsnprintf(buffer, SIZE, format, varArgs);
-}
-
-void CALLBACK TraceState::TraceCallback(
-    _In_z_ const char* areaName,
-    _In_ HCTraceLevel level,
-    _In_ uint64_t threadId,
-    _In_ uint64_t timestamp,
-    _In_z_ const char* message
-) noexcept
-{
-    TraceState& state = TraceState::Get();
-
-    // Needs to match the HCTraceLevel enum
-    static char const* traceLevelNames[] =
-    {
-        "Off",
-        "E",
-        "W",
-        "P",
-        "I",
-        "V",
-    };
-
-    static size_t const BUFFER_SIZE = 4096;
-
-    std::time_t timeTInSec = static_cast<std::time_t>(timestamp / 1000);
-    uint32_t fractionMSec = static_cast<uint32_t>(timestamp % 1000);
-    std::tm fmtTime = {};
-
-#if HC_PLATFORM_IS_MICROSOFT
-    localtime_s(&fmtTime, &timeTInSec);
-#else
-    localtime_r(&timeTInSec, &fmtTime);
-#endif
-
-    char formattedMessage[BUFFER_SIZE] = {};
-    // [threadId][level][time][area] message
-    auto written = stprintf_s(formattedMessage, "[%04llX][%s][%02d:%02d:%02d.%03u][%s] %s",
-        threadId,
-        traceLevelNames[static_cast<size_t>(level)],
-        fmtTime.tm_hour,
-        fmtTime.tm_min,
-        fmtTime.tm_sec,
-        fractionMSec,
-        areaName,
-        message
-    );
-
-    if (written <= 0)
-    {
-        return;
-    }
-
-    // Make sure there is room for the \r \n and \0
-    written = std::min(written, static_cast<int>(BUFFER_SIZE - 3));
-    auto remaining = BUFFER_SIZE - written;
-
-    // Print new line
-    auto written2 = stprintf_s(formattedMessage + written, remaining, "\r\n");
-    if (written2 <= 0)
-    {
-        return;
-    }
-
-    for (auto& output : state.m_traceOutputs)
-    {
-        if (output)
-        {
-            output->TraceMessage(formattedMessage);
-        }
     }
 }
 

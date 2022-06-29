@@ -90,6 +90,9 @@ public:
     template<typename Func>
     void Finally(Func&& continuationFunc) noexcept;
 
+    // Block and wait for the AsyncOp to complete, returning the result
+    ResultT Wait() noexcept;
+
 private:
     SharedPtr<AsyncOpContext<T>> m_context;
 };
@@ -214,6 +217,32 @@ void AsyncOp<T>::Finally(Func&& continuationFunc) noexcept
 
     auto continuation = MakeShared<Continuation<Func, ResultT>>(std::move(continuationFunc));
     m_context->SetContinuation(continuation);
+}
+
+template<typename T>
+typename AsyncOp<T>::ResultT AsyncOp<T>::Wait() noexcept
+{
+    std::mutex mutex;
+    std::condition_variable waitCondition;
+    bool operationComplete{ false };
+    StdExtra::optional<ResultT> asyncResult;
+
+    this->Finally([&](ResultT&& result)
+    {
+        std::lock_guard<std::mutex> lock{ mutex };
+        asyncResult.emplace(std::move(result));
+        operationComplete = true;
+        waitCondition.notify_one();
+    });
+
+    std::unique_lock<std::mutex> lock{ mutex };
+    if (!operationComplete)
+    {
+        waitCondition.wait(lock, [&operationComplete] { return operationComplete; });
+    }
+
+    assert(asyncResult.has_value());
+    return std::move(*asyncResult);
 }
 
 // AsyncOpContext<T> Implementation
