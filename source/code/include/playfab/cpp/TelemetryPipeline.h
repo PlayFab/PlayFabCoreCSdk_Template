@@ -1,5 +1,5 @@
 #include <playfab/PFTelemetry.h>
-#include <assert.h>
+#include "PlayFabException.h"
 #include <algorithm>
 
 namespace PlayFab
@@ -10,25 +10,19 @@ namespace Wrappers
 class TelemetryPipeline
 {
 public:
-    TelemetryPipeline(PFTitlePlayerHandle uploadingPlayer, XTaskQueueHandle queue) noexcept
+    TelemetryPipeline(PFTitlePlayerHandle uploadingPlayer, XTaskQueueHandle queue)
     {
-        HRESULT hr = PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, nullptr, nullptr, nullptr, &m_handle);
-        assert(SUCCEEDED(hr));
-        UNREFERENCED_PARAMETER(hr);
+        THROW_IF_FAILED(PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, nullptr, nullptr, nullptr, &m_handle));
     }
 
-    TelemetryPipeline(PFTitlePlayerHandle uploadingPlayer, XTaskQueueHandle queue, uint32_t maxEventsPerBatch, uint32_t maxWaitTimeInSeconds, uint32_t pollTimeInMs) noexcept
+    TelemetryPipeline(PFTitlePlayerHandle uploadingPlayer, XTaskQueueHandle queue, uint32_t maxEventsPerBatch, uint32_t maxWaitTimeInSeconds, uint32_t pollTimeInMs)
     {
-        HRESULT hr = PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, &maxEventsPerBatch, &maxWaitTimeInSeconds, &pollTimeInMs, &m_handle);
-        assert(SUCCEEDED(hr));
-        UNREFERENCED_PARAMETER(hr);
+        THROW_IF_FAILED(PFTelemetryPipelineCreateHandle(uploadingPlayer, queue, &maxEventsPerBatch, &maxWaitTimeInSeconds, &pollTimeInMs, &m_handle));
     }
 
     TelemetryPipeline(TelemetryPipeline const& other)
     {
-        HRESULT hr = PFTelemetryPipelineDuplicateHandle(other.m_handle, &m_handle);
-        assert(SUCCEEDED(hr));
-        UNREFERENCED_PARAMETER(hr);
+        THROW_IF_FAILED(PFTelemetryPipelineDuplicateHandle(other.m_handle, &m_handle));
     }
 
     TelemetryPipeline(TelemetryPipeline&& other)
