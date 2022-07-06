@@ -2,7 +2,7 @@
 #include "GlobalState.h"
 #include "BaseModel.h"
 #include "ServiceConfig.h"
-#include "Trace.h"
+#include "TraceState.h"
 #include <httpClient/httpClient.h>
 
 using namespace PlayFab;
@@ -16,7 +16,7 @@ PF_API PFMemSetFunctions(
     GlobalState::Get(state);
     RETURN_HR_IF(E_PF_ALREADY_INITIALIZED, state);
 
-    RETURN_IF_FAILED(PlayFab::Detail::SetMemoryHooks(memAllocFunc, memFreeFunc));
+    RETURN_IF_FAILED(PlayFab::SetMemoryHooks(memAllocFunc, memFreeFunc));
 
     // Try to set the memory hooks for libHttpClient as well. If it has already be initialized, there is nothing we can do
     HRESULT hr = HCMemSetFunctions([](size_t size, HCMemoryType)
@@ -44,7 +44,7 @@ PF_API PFMemGetFunctions(
     RETURN_HR_INVALIDARG_IF_NULL(memAllocFunc);
     RETURN_HR_INVALIDARG_IF_NULL(memFreeFunc);
 
-    auto& hooks = PlayFab::Detail::GetMemoryHooks();
+    auto& hooks = PlayFab::GetMemoryHooks();
     *memAllocFunc = hooks.alloc;
     *memFreeFunc = hooks.free;
 
@@ -61,8 +61,7 @@ PF_API PFTraceEnableTraceToFile(
 
     auto& settings = GetTraceSettings();
     settings.enableTraceToFile = true;
-    assert(std::strlen(traceFileDirectory)+1 < sizeof(settings.traceFileDirectory));
-    std::strcpy(settings.traceFileDirectory, traceFileDirectory);
+    strcpy_s(settings.traceFileDirectory, traceFileDirectory);
 
     return S_OK;
 }

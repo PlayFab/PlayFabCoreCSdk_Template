@@ -6,18 +6,28 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PropertySheets", "PropertyS
 	ProjectSection(SolutionItems) = preProject
 		..\..\external\libHttpClient\libHttpClient.props = ..\..\external\libHttpClient\libHttpClient.props
 		..\..\external\libHttpClient\platform_select.props = ..\..\external\libHttpClient\platform_select.props
-		..\PlayFabCore.internal.props = ..\PlayFabCore.internal.props
+		..\PlayFabCore.build.props = ..\PlayFabCore.build.props
+		..\PlayFabCore.consume.props = ..\PlayFabCore.consume.props
 		..\PlayFabCore.paths.props = ..\PlayFabCore.paths.props
-		..\PlayFabCore.props = ..\PlayFabCore.props
+		..\PlayFabSharedInternal.build.props = ..\PlayFabSharedInternal.build.props
+		..\PlayFabSharedInternal.consume.props = ..\PlayFabSharedInternal.consume.props
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libHttpClient.141.Win32.C", "..\..\external\libHttpClient\Build\libHttpClient.141.Win32.C\libHttpClient.141.Win32.C.vcxproj", "{9164C6C9-3872-4922-A3E3-3822622D3E71}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClientApp", "TestClientApp.vcxproj", "{3E4DF9A7-08A4-4188-9C86-B60605F3710B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{92F6EC5F-B66C-4572-A74D-79329AFF3129} = {92F6EC5F-B66C-4572-A74D-79329AFF3129}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlayFabCore.Win32", "PlayFabCore.Win32.vcxproj", "{92F6EC5F-B66C-4572-A74D-79329AFF3129}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlayFabCore.UnitTests", "PlayFabCore.UnitTests.vcxproj", "{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlayFabSharedInternal.Win32", "PlayFabSharedInternal.Win32.vcxproj", "{6B07F56F-DA26-4EEF-AB60-924556F565E3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9164C6C9-3872-4922-A3E3-3822622D3E71} = {9164C6C9-3872-4922-A3E3-3822622D3E71}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -77,6 +87,18 @@ Global
 		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Release|x64.Build.0 = Release|x64
 		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Release|x86.ActiveCfg = Release|Win32
 		{57C8ECA2-6486-46A7-B7C7-1D0291F079FA}.Release|x86.Build.0 = Release|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Debug|Win32.Build.0 = Debug|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Debug|x64.ActiveCfg = Debug|x64
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Debug|x64.Build.0 = Debug|x64
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Debug|x86.ActiveCfg = Debug|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Debug|x86.Build.0 = Debug|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Release|Win32.ActiveCfg = Release|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Release|Win32.Build.0 = Release|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Release|x64.ActiveCfg = Release|x64
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Release|x64.Build.0 = Release|x64
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Release|x86.ActiveCfg = Release|Win32
+		{6B07F56F-DA26-4EEF-AB60-924556F565E3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

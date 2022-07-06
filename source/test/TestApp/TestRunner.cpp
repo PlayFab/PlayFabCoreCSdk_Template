@@ -2,7 +2,6 @@
 
 #include "TestAppPch.h"
 #include <thread>
-#include <SdkVersion.h>
 #include "TestCase.h"
 #include "TestContext.h"
 #include "TestRunner.h"
@@ -12,12 +11,12 @@ namespace PlayFab
 {
 namespace Test
 {
-static const int64_t TEST_TIMEOUT_MILLISECONDS = 15000;
+static const int64_t TEST_TIMEOUT_MILLISECONDS = 150000;
 
 TestRunner::TestRunner() :
     suiteState(TestActiveState::PENDING),
     suiteTestCase(nullptr),
-    suiteTestReport(PlayFab::buildIdentifier)
+    suiteTestReport("PlayFabTestTemp")
 {
 }
 
@@ -48,7 +47,7 @@ void TestRunner::Run()
         ManageTestCase(test->testCase, suiteTestCase);
 
         // Start the test.
-        test->startTime = PlayFab::GetMilliTicks();
+        test->startTime = GetMilliTicks();
         test->activeState = TestActiveState::ACTIVE;
         suiteTestReport.TestStarted();
 
@@ -61,7 +60,7 @@ void TestRunner::Run()
         // Tick the test.
         while (TestActiveState::ACTIVE == test->activeState)
         {
-            int64_t timeNow = PlayFab::GetMilliTicks();
+            int64_t timeNow = GetMilliTicks();
             bool timeExpired = (timeNow - test->startTime) > TEST_TIMEOUT_MILLISECONDS;
 
             if ((TestActiveState::READY != test->activeState) && !timeExpired) // Not finished & not timed out
@@ -83,7 +82,7 @@ void TestRunner::Run()
         }
 
         // Tear down the test.
-        test->endTime = PlayFab::GetMilliTicks();
+        test->endTime = GetMilliTicks();
         test->testCase->TearDown(*test);
         test->activeState = TestActiveState::COMPLETE;
         // printf("\n%s\n", suiteTestSummary.c_str()); // If we're debugging EventTests, it's nice to see each test as it happens...
@@ -107,7 +106,7 @@ std::string TestRunner::GenerateTestSummary()
 {
     std::stringstream summaryStream;
 
-    int64_t timeNow = PlayFab::GetMilliTicks();
+    int64_t timeNow = GetMilliTicks();
     int64_t testStartTime, testEndTime;
     size_t testsCount = 0, testsFinishedCount = 0, testsPassedCount = 0, testsFailedCount = 0, testsSkippedCount = 0;
 

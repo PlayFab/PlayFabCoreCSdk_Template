@@ -5,8 +5,8 @@
     <Filter Include="Source\Tests" />
   </ItemGroup>
   <ItemGroup><%
-for (var file in projectFiles.TestClientAppFiles) { 
-    var filter = projectFiles.TestClientAppFiles[file];
+for (var file in projectFiles.TestClientApp) { 
+    var filter = projectFiles.TestClientApp[file];
     var header = file.endsWith(".h"); 
     if (header) { %>
     <ClInclude Include="$(PlayFabCoreTestDir)\<%- file %>" >

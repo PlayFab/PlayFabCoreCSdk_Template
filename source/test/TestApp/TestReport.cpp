@@ -15,7 +15,7 @@ namespace Test
 TestReport::TestReport(const std::string& className)
 {
     internalReport.name = className;
-    internalReport.timeStamp = PlayFab::GetMilliTicks();
+    internalReport.timeStamp = GetMilliTicks();
     internalReport.tests = 0;
     internalReport.failures = 0;
     internalReport.errors = 0;
@@ -57,7 +57,7 @@ void TestReport::TestComplete(const std::string& testName, TestFinishState testF
 
     // Update overall runtime.
     // TODO: Add hooks for SuiteSetUp and SuiteTearDown, so this can be estimated more accurately
-    internalReport.time = (PlayFab::GetMilliTicks() - internalReport.timeStamp) / 1000.0; // For now, update the duration on every test complete - the last one will be essentially correct
+    internalReport.time = (GetMilliTicks() - internalReport.timeStamp) / 1000.0; // For now, update the duration on every test complete - the last one will be essentially correct
 }
 
 bool TestReport::AllTestsPassed()

@@ -116,7 +116,7 @@ void TokenRefreshWorker::Run()
 
         // TODO we will also need some logic to ensure this isn't overscheduled (ex. during suspend/resume when it is explicitly scheduled
         // without awaiting the normal interval)
-        m_rc.TaskQueue().SubmitWork(shared_from_this());
+        m_rc.TaskQueue().SubmitWork(shared_from_this(), s_interval);
     }
 }
 

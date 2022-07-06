@@ -15,9 +15,6 @@
 #include <assert.h>
 #include <atomic>
 
-#define ENABLE_PLAYFABSERVER_API
-#define ENABLE_PLAYFABADMIN_API
-
 // libHttpClient headers
 #include <httpClient/pal.h>
 #include <httpClient/async.h>
@@ -33,13 +30,15 @@
 #include <rapidjson/error/en.h>
 
 #include <playfab/cpp/StdOptional.h>
-#include "ResultMacros.h"
-#include "InternalMemory.h"
-#include "Types.h"
-#include "Result.h"
-#include "Error.h"
-#include "PlatformUtils.h"
-#include "Trace.h"
-#include "RunContext.h"
+
+// PlayFabSharedInternal
+#include <ResultMacros.h>
+#include <Memory.h>
+#include <Types.h>
+#include <Result.h>
+#include <Error.h>
+#include <PlatformUtils.h>
+#include <Trace.h>
+#include <RunContext.h>
 
 #define UNREFERENCED_PARAMETER(P) (P)

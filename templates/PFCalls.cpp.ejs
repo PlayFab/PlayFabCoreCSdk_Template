@@ -1,7 +1,10 @@
 #include "stdafx.h"
 #include <playfab/PF<%- featureGroup.name %>.h>
 #include "<%- featureGroup.name %>.h"
-#include "ApiAsyncProviders.h"
+#include "ApiXAsyncProvider.h"<%
+if (featureGroup.name === "Authentication") {%>
+#include "AuthXAsyncProvider.h"<%
+} %>
 #include "GlobalState.h"
 #include "Entity.h"
 
@@ -43,7 +46,7 @@ PF_API <%- prefix %><%- call.name %>Async(
     RETURN_IF_FAILED(state->ServiceConfigs().FromHandle(contextHandle, serviceConfig));
 
     auto provider = <%- makeProvider %>(std::move(state), async, __FUNCTION__, std::bind(&<%- featureGroup.name %>API::<%- call.name %>, std::placeholders::_1, <%- contextBinder %>, <%- requestBinder%>std::placeholders::_2));
-    return Provider::Run(UniquePtr<Provider>(provider.release()));
+    return XAsyncProviderBase::Run(std::move(provider));
 }
 <%  
     if (!call.resultDatatype) { 
@@ -107,7 +110,7 @@ PF_API <%- prefix %>Re<%- call.name %>Async(
     RETURN_IF_FAILED(state->TitlePlayers().FromHandle(titlePlayerHandle, titlePlayer));
 
     auto provider = MakeProvider(state->RunContext().DeriveOnQueue(async->queue), async, __FUNCTION__, std::bind(&<%- featureGroup.name %>API::Re<%- call.name %>, std::move(titlePlayer), *request, std::placeholders::_1));
-    return Provider::Run(UniquePtr<Provider>(provider.release()));
+    return XAsyncProviderBase::Run(std::move(provider));
 }
 <% } // end if
 } // end for %>

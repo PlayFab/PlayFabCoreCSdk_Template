@@ -43,7 +43,7 @@ private:
 
             lock.unlock();
 
-            XAsyncOperationBase::Run(std::move(operation));
+            IOperation::Run(std::move(operation));
         }
     }
 
