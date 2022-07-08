@@ -4,6 +4,7 @@
 #include "TestContext.h"
 #include "TestUtils.h"
 
+
 namespace PlayFab
 {
 namespace Test
@@ -13,7 +14,7 @@ void TestContext::EndTest(TestFinishState state, const std::string& resultMsg)
 {
     if (finishState == TestFinishState::PENDING) // This means that we finish successfully
     {
-        endTime = PlayFab::GetMilliTicks();
+        endTime = GetMilliTicks();
         testResultMsg = resultMsg;
         finishState = state;
         activeState = TestActiveState::READY;

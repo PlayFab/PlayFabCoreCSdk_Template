@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "GlobalState.h"
-#include "AsyncProvider.h"
-#include "Trace.h"
+#include "TraceState.h"
 #include <httpClient/httpClient.h>
 
 using namespace PlayFab;
@@ -182,7 +181,7 @@ void CALLBACK HCCleanupComplete(XAsyncBlock* async)
     context.release();
 }
 
-void GlobalState::OnTerminated(SharedPtr<ITerminationListener>&& globalState, void* c) noexcept
+void GlobalState::OnTerminated(SharedPtr<ITerminationListener> globalState, void* c) noexcept
 {
     TRACE_VERBOSE(__FUNCTION__);
 

@@ -66,7 +66,7 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), PlayFabCore.internal.props))\PlayFabCore.internal.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), PlayFabCore.build.props))\PlayFabCore.build.props" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -167,10 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup><%
-for (var file in projectFiles.includeFiles) { %>
-    <ClInclude Include="$(PlayFabCoreSourceDir)\<%- file %>" /><% 
-} 
-for (var file in projectFiles.sourceFiles) { 
+for (var file in projectFiles.PlayFabCore) { 
     var header = file.endsWith(".h"); 
     if (header) { %>
     <ClInclude Include="$(PlayFabCoreSourceDir)\<%- file %>" /><%

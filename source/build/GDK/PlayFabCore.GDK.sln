@@ -7,8 +7,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libHttpClient.141.GDK.C", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PropertySheets", "PropertySheets", "{68049804-E2AC-458D-8C14-5718CE9D2AD0}"
 	ProjectSection(SolutionItems) = preProject
-		..\PlayFabCore.props = ..\PlayFabCore.props
-		..\PlayFabCoreStaticLib.props = ..\PlayFabCoreStaticLib.props
+		..\..\external\libHttpClient\libHttpClient.props = ..\..\external\libHttpClient\libHttpClient.props
+		..\..\..\libHttpClient\platform_select.props = ..\..\..\libHttpClient\platform_select.props
+		..\PlayFab.gdk.bwoi.props = ..\PlayFab.gdk.bwoi.props
+		..\PlayFabCore.build.props = ..\PlayFabCore.build.props
+		..\PlayFabCore.consume.props = ..\PlayFabCore.consume.props
+		..\PlayFabCore.paths.props = ..\PlayFabCore.paths.props
+		..\PlayFabSharedInternal.build.props = ..\PlayFabSharedInternal.build.props
+		..\PlayFabSharedInternal.consume.props = ..\PlayFabSharedInternal.consume.props
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlayFabCore.GDK", "PlayFabCore.GDK.vcxproj", "{92F6EC5F-B66C-4572-A74D-79329AFF3129}"
@@ -16,6 +22,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClientApp", "TestClientApp.vcxproj", "{1FDF7491-E2EE-4564-B265-BF5D099D3479}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTK12", "..\..\external\DirectXTK12\DirectXTK_GDK_2017.vcxproj", "{052C4858-C76F-4CEA-8A1A-E8E5559E67C2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlayFabSharedInternal.GDK", "PlayFabSharedInternal.GDK.vcxproj", "{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -89,6 +97,18 @@ Global
 		{052C4858-C76F-4CEA-8A1A-E8E5559E67C2}.Release|Gaming.Xbox.Scarlett.x64.Build.0 = Release|Gaming.Xbox.Scarlett.x64
 		{052C4858-C76F-4CEA-8A1A-E8E5559E67C2}.Release|Gaming.Xbox.XboxOne.x64.ActiveCfg = Release|Gaming.Xbox.XboxOne.x64
 		{052C4858-C76F-4CEA-8A1A-E8E5559E67C2}.Release|Gaming.Xbox.XboxOne.x64.Build.0 = Release|Gaming.Xbox.XboxOne.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Debug|Gaming.Desktop.x64.ActiveCfg = Debug|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Debug|Gaming.Desktop.x64.Build.0 = Debug|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Debug|Gaming.Xbox.Scarlett.x64.ActiveCfg = Debug|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Debug|Gaming.Xbox.XboxOne.x64.ActiveCfg = Debug|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Profile|Gaming.Desktop.x64.ActiveCfg = Profile|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Profile|Gaming.Desktop.x64.Build.0 = Profile|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Profile|Gaming.Xbox.Scarlett.x64.ActiveCfg = Profile|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Profile|Gaming.Xbox.XboxOne.x64.ActiveCfg = Profile|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Release|Gaming.Desktop.x64.ActiveCfg = Release|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Release|Gaming.Desktop.x64.Build.0 = Release|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Release|Gaming.Xbox.Scarlett.x64.ActiveCfg = Release|Gaming.Desktop.x64
+		{6BD5CCB5-92E1-42D9-AFE0-E45BB2EA1865}.Release|Gaming.Xbox.XboxOne.x64.ActiveCfg = Release|Gaming.Desktop.x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

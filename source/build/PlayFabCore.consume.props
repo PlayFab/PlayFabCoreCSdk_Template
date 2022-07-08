@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--Props file for consumers of PlayFabCore SDK. Sets include path, adds project references, and copies PlayFab binaries to OutDir-->
+
+  <PropertyGroup>
+    <PlayFabCoreImported>true</PlayFabCoreImported>
+  </PropertyGroup>
+
+  <Import Condition="'$(PlayFabCoreRoot)' == ''" Project="$(MSBuildThisFileDirectory)PlayFabCore.paths.props" />
+
+  <!--Add PlayFab include directory to client include path-->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(PlayFabCoreSourceDir)include</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!--Add reference to appropriate PlayFabCore project-->
+  <ItemGroup Label="PlayFab project reference">
+    <ProjectReference Include="$(PlayFabCoreRoot)Build\$(PlayFabPlatform)\$(PlayFabCoreProjectName).vcxproj">
+      <Project>{92F6EC5F-B66C-4572-A74D-79329AFF3129}</Project>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!--LibHttpClient dependency-->
+  <Import Condition="'$(HCProjectName)' == ''" Project="$(PlayFabCoreExternalDir)\libHttpClient\libHttpClient.props" />
+
+  <!--Copy PlayFabCore to OutDir-->
+  <ItemDefinitionGroup Label="CopyDependencies">
+    <PostBuildEvent>
+      <Command>xcopy /Y /I /E "$(PlayFabCoreOutDir)\$(PlayFabCoreProjectName).*" "$(OutDir)"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+
+</Project>

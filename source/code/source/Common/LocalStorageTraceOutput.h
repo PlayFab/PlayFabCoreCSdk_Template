@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Trace.h"
+#include "TraceState.h"
 
 namespace PlayFab
 {

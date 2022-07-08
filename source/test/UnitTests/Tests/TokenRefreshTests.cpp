@@ -13,7 +13,7 @@ TEST_CLASS(TokenRefreshTests)
 public:
     TEST_METHOD(TokenRefreshSimple)
     {
-        Wrappers::Session session;
+        Wrappers::TestSession session;
         Wrappers::ServiceConfig<> serviceConfig{ "mockConnectionString", "mockTitleId", "mockPlayerAccountPoolId" };
 
         // Configure Mocks

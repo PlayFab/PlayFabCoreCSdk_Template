@@ -9,9 +9,9 @@
 #include "TestMacros.h"
 
 // Wrappers
-#include "Wrappers/PlayFabSession.h"
-#include "Wrappers/ServiceConfig.h"
-#include "Wrappers/TitlePlayer.h"
+#include "Support/TestSession.h"
+#include <playfab/cpp/ServiceConfig.h>
+#include <playfab/cpp/TitlePlayer.h>
 
 // Mocks
 #include "Mocks/HttpMock.h"

@@ -5,6 +5,7 @@
 #include <cstdarg>
 #include <functional>
 #include <thread>
+#include <rapidjson/document.h>
 
 #include "TestApp.h"
 #include "TestRunner.h"
@@ -85,7 +86,7 @@ int TestApp::Main()
     return testRunner.AllTestsPassed();
 }
 
-bool TestApp::LoadTitleData(TestTitleData& /*titleData*/)
+bool TestApp::LoadTitleData(TestTitleData& titleData)
 {
     // Load JSON string in a platform-dependent way.
     std::shared_ptr<char*> titleJsonPtr;
@@ -97,30 +98,18 @@ bool TestApp::LoadTitleData(TestTitleData& /*titleData*/)
         return false;
     }
 
-    //// Parse JSON string into output TestTitleData.
-    //JsonDocument titleDataJson;
-    //titleDataJson.Parse(*titleJsonPtr);
+    // Parse JSON string into output TestTitleData.
+    rapidjson::Document titleDataJson;
+    titleDataJson.Parse(*titleJsonPtr);
 
-    //if (!titleDataJson.HasParseError())
-    //{
-    //    titleData.titleId = titleDataJson["titleId"].GetString();
-    //    if (titleDataJson.HasMember("userEmail"))
-    //    {
-    //        titleData.userEmail = titleDataJson["userEmail"].GetString();
-    //    }
-    //    if (titleDataJson.HasMember("developerSecretKey"))
-    //    {
-    //        titleData.developerSecretKey = titleDataJson["developerSecretKey"].GetString();
-    //    }
-    //    if (titleDataJson.HasMember("connectionString"))
-    //    {
-    //        titleData.connectionString = titleDataJson["connectionString"].GetString();
-    //    }
-    //}
+    if (!titleDataJson.HasParseError())
+    {
+        titleData.titleId = titleDataJson["titleId"].GetString();
+        titleData.playerAccountPoolId = titleDataJson["playerAccountPoolId"].GetString();
+        titleData.connectionString = titleDataJson["connectionString"].GetString();
+    }
 
-    //return !titleDataJson.HasParseError();
-
-    return false;
+    return !titleDataJson.HasParseError();
 }
 
 } // namespace Test

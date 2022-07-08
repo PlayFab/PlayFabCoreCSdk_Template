@@ -60,22 +60,28 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), PlayFabCore.props))\PlayFabCore.props" />
+    <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), PlayFabCore.consume.props))\PlayFabCore.consume.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">
     <LibraryPath>$(Console_SdkLibPath);$(LibraryPath)</LibraryPath>
     <IncludePath>$(Console_SdkIncludeRoot);$(IncludePath)</IncludePath>
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(PlayFabCoreBuiltDir)bins\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <IntDir>$(PlayFabCoreBuiltDir)obj\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">
     <LibraryPath>$(Console_SdkLibPath);$(LibraryPath)</LibraryPath>
     <IncludePath>$(Console_SdkIncludeRoot);$(IncludePath)</IncludePath>
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(PlayFabCoreBuiltDir)bins\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <IntDir>$(PlayFabCoreBuiltDir)obj\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">
     <LibraryPath>$(Console_SdkLibPath);$(LibraryPath)</LibraryPath>
     <IncludePath>$(Console_SdkIncludeRoot);$(IncludePath)</IncludePath>
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(PlayFabCoreBuiltDir)bins\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <IntDir>$(PlayFabCoreBuiltDir)obj\$(Platform)\$(Configuration)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">
     <Link>
@@ -97,7 +103,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(PlayFabTestDir)\TestApp\GDK\ATGTK;$(PlayFabExternalDir)\DirectXTK12\Inc;$(PlayFabTestDir)\TestApp\GDK\LiveTK;$(PlayFabTestDir)/TestApp;$(PlayFabTestDir)/TestApp/Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(PlayFabCoreExternalDir)\rapidjson\include;$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK;$(PlayFabCoreExternalDir)\DirectXTK12\Inc;$(PlayFabCoreTestDir)\TestApp\GDK\LiveTK;$(PlayFabCoreTestDir)/TestApp;$(PlayFabCoreTestDir)/TestApp/Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -121,7 +127,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(PlayFabTestDir)\TestApp\GDK\ATGTK;$(PlayFabExternalDir)\DirectXTK12\Inc;$(PlayFabTestDir)\TestApp\GDK\LiveTK;$(PlayFabTestDir)/TestApp;$(PlayFabTestDir)/TestApp/Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(PlayFabCoreExternalDir)\rapidjson\include;$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK;$(PlayFabCoreExternalDir)\DirectXTK12\Inc;$(PlayFabCoreTestDir)\TestApp\GDK\LiveTK;$(PlayFabCoreTestDir)/TestApp;$(PlayFabCoreTestDir)/TestApp/Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -142,39 +148,39 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;__WRL_NO_DEFAULT_LIB__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(PlayFabTestDir)\TestApp\GDK\ATGTK;$(PlayFabExternalDir)\DirectXTK12\Inc;$(PlayFabTestDir)\TestApp\GDK\LiveTK;$(PlayFabTestDir)/TestApp;$(PlayFabTestDir)/TestApp/Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(PlayFabCoreExternalDir)\rapidjson\include;$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK;$(PlayFabCoreExternalDir)\DirectXTK12\Inc;$(PlayFabCoreTestDir)\TestApp\GDK\LiveTK;$(PlayFabCoreTestDir)/TestApp;$(PlayFabCoreTestDir)/TestApp/Tests;$(PlayFabSourceDir)\source;$(PlayFabSourceDir)\source\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup><%
-for (var file in projectFiles.TestClientAppFiles) { 
+for (var file in projectFiles.TestClientApp) { 
     var header = file.endsWith(".h"); 
     if (header) { %>
-    <ClInclude Include="$(PlayFabTestDir)\<%- file %>" /><%
+    <ClInclude Include="$(PlayFabCoreTestDir)\<%- file %>" /><%
     } else { %>
-    <ClCompile Include="$(PlayFabTestDir)\<%- file %>" /><%
+    <ClCompile Include="$(PlayFabCoreTestDir)\<%- file %>" /><%
     }
 } %>
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\ATGColors.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\ControllerFont.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\CSVReader.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\d3dx12.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\FindMedia.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\Json.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\SampleGUI.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\StringUtil.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\TextConsole.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\DeviceResources.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\StepTimer.h" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\GDK\TestAppGDK.h" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\Main.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\SampleGUI.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\StringUtil.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\ATGTK\TextConsole.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\DeviceResources.cpp" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\GDK\TestAppGDK.cpp" />
-    <ClInclude Include="$(PlayFabTestDir)\TestApp\TestAppPch.h" />
-    <ClCompile Include="$(PlayFabTestDir)\TestApp\TestAppPch.cpp">
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\ATGColors.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\ControllerFont.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\CSVReader.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\d3dx12.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\FindMedia.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\Json.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\SampleGUI.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\StringUtil.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\TextConsole.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\DeviceResources.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\StepTimer.h" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\GDK\TestAppGDK.h" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\GDK\Main.cpp" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\SampleGUI.cpp" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\StringUtil.cpp" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\GDK\ATGTK\TextConsole.cpp" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\GDK\DeviceResources.cpp" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\GDK\TestAppGDK.cpp" />
+    <ClInclude Include="$(PlayFabCoreTestDir)\TestApp\TestAppPch.h" />
+    <ClCompile Include="$(PlayFabCoreTestDir)\TestApp\TestAppPch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
@@ -182,59 +188,59 @@ for (var file in projectFiles.TestClientAppFiles) {
     <MGCCompile Include="MicrosoftGame.Config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(PlayFabExternalDir)\DirectXTK12\DirectXTK_GDK_2017.vcxproj">
+    <ProjectReference Include="$(PlayFabCoreExternalDir)\DirectXTK12\DirectXTK_GDK_2017.vcxproj">
       <Project>{052c4858-c76f-4cea-8a1a-e8e5559e67c2}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\ATGConsoleBlack.DDS">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\ATGConsoleBlack.DDS">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\ATGSampleBackground.DDS">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\ATGSampleBackground.DDS">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Logo.png">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\Logo.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Mounted.png">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\Mounted.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Owned.png">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\Owned.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\SmallLogo.png">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\SmallLogo.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\SplashScreen.png">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\SplashScreen.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\StoreLogo.png">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\StoreLogo.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\Unmounted.png">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\Unmounted.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Profile|Gaming.Desktop.x64'">true</DeploymentContent>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="$(PlayFabTestDir)\TestApp\GDK\Assets\SampleUI.csv">
+    <CopyFileToFolders Include="$(PlayFabCoreTestDir)\TestApp\GDK\Assets\SampleUI.csv">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Gaming.Desktop.x64'">true</DeploymentContent>
       <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Gaming.Desktop.x64'">true</DeploymentContent>
@@ -242,7 +248,7 @@ for (var file in projectFiles.TestClientAppFiles) {
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="$(PlayFabRoot)\testTitleData.json">
+    <CopyFileToFolders Include="$(PlayFabCoreRoot)\testTitleData.json">
       <DeploymentContent>true</DeploymentContent>
     </CopyFileToFolders>
   </ItemGroup>
@@ -251,7 +257,7 @@ for (var file in projectFiles.TestClientAppFiles) {
   </ImportGroup>
   <ItemDefinitionGroup>
     <PostBuildEvent>
-      <Command>xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Assets\*.*" "$(TargetDir)Assets" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\*.*" "$(TargetDir)Media" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\Fonts\*.*" "$(TargetDir)" &amp; xcopy /Y /I /E "$(PlayFabTestDir)\TestApp\GDK\Media\Textures\*.*" "$(TargetDir)" &amp; xcopy /Y /I /E "$(SolutionDir)\$(Platform)\$(Configuration)\$(PlayFabProjectName)\$(PlayFabProjectName).dll" "$(TargetDir)"</Command>
+      <Command>xcopy /Y /I /E "$(PlayFabCoreTestDir)\TestApp\GDK\Assets\*.*" "$(OutDir)Assets" &amp; xcopy /Y /I /E "$(PlayFabCoreTestDir)\TestApp\GDK\Media\*.*" "$(OutDir)Media" &amp; xcopy /Y /I /E "$(PlayFabCoreTestDir)\TestApp\GDK\Media\Fonts\*.*" "$(OutDir)" &amp; xcopy /Y /I /E "$(PlayFabCoreTestDir)\TestApp\GDK\Media\Textures\*.*" "$(OutDir)" &amp; xcopy /Y /I /E "$(PlayFabCoreOutDir)\$(PlayFabCoreProjectName).*" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
 </Project>

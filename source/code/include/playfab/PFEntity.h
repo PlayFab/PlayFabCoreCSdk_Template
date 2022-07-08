@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <httpClient/pal.h>
 #include <httpClient/async.h>
+#include <playfab/PFPal.h>
 
 extern "C"
 {

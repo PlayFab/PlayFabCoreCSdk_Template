@@ -13,7 +13,7 @@ Result<Vector<uint8_t>> DefaultLocalStorageRead(String const& path)
     if (!file.is_open())
     {
         // Assume success with no result payload because file does not exist
-        return S_OK;
+        return Vector<uint8_t>{};
     }
 
     int64_t size = file.tellg();

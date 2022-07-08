@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "TestIncludes.h"
-#include "Wrappers/TelemetryPipeline.h"
+#include <playfab/cpp/TelemetryPipeline.h>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -30,7 +30,7 @@ TEST_CLASS(TelemetryTests)
 public:
     TEST_METHOD(TestSingleEventDefaultSettings)
     {
-        Wrappers::Session session;
+        Wrappers::TestSession session;
         Wrappers::ServiceConfig<> serviceConfig{ "mockConnectionString", "mockTitleId", "mockPlayerAccountPoolId" };
 
         // Configure Mocks
@@ -77,7 +77,7 @@ public:
 
     TEST_METHOD(TestMultipleEvents)
     {
-        Wrappers::Session session;
+        Wrappers::TestSession session;
         Wrappers::ServiceConfig<> serviceConfig{ "mockConnectionString", "mockTitleId", "mockPlayerAccountPoolId" };
 
         // Configure Mocks

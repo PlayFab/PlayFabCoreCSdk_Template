@@ -22,11 +22,7 @@
 #include <array>
 #include <assert.h>
 
-#define ENABLE_PLAYFABADMIN_API
 #include <playfab/PFCore.h>
-
-// Test App still relying on a lot of internal types/APIs, but this should eventually be changed
-#include <stdafx.h>
 
 #if defined (_XBOX_ONE)
 

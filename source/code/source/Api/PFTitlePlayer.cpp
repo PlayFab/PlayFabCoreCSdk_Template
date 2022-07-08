@@ -3,7 +3,7 @@
 #include "GlobalState.h"
 #include "TitlePlayer.h"
 #include "ApiHelpers.h"
-#include "ApiAsyncProviders.h"
+#include "ApiXAsyncProvider.h"
 
 using namespace PlayFab;
 
@@ -85,7 +85,7 @@ PF_API PFTitlePlayerGetEntityTokenAsync(
     return TitlePlayerAsyncApiImpl(async, API_IDENTITY(PFTitlePlayerGetEntityTokenAsync), titlePlayerHandle, [&](SharedPtr<TitlePlayer> titlePlayer, RunContext&& rc)
     {
         auto provider = MakeProvider(std::move(rc), async, API_IDENTITY(PFTitlePlayerGetEntityTokenAsync), std::bind(&TitlePlayer::GetEntityToken, std::move(titlePlayer), false, std::placeholders::_1));
-        return Provider::Run(UniquePtr<Provider>(provider.release()));
+        return XAsyncProviderBase::Run(UniquePtr<XAsyncProviderBase>(provider.release()));
     });
 }
 
@@ -107,7 +107,7 @@ PF_API PFTitlePlayerGetEntityTokenResult(
 {
     RETURN_HR_INVALIDARG_IF_NULL(entityToken);
 
-    HRESULT hr =  XAsyncGetResult(async, API_IDENTITY(PFTitlePlayerGetEntityTokenAsync), bufferSize, buffer, bufferUsed);
+    HRESULT hr =  XAsyncGetResult(async, nullptr, bufferSize, buffer, bufferUsed);
     if (SUCCEEDED(hr))
     {
         *entityToken = static_cast<PFEntityToken*>(buffer);

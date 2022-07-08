@@ -30,24 +30,32 @@ private:
         _In_ size_t dwSize
     )
     {
-        s_allocCalls++;
-        return new char[dwSize];
+        std::lock_guard<std::mutex> lock{ s_mutex };
+        auto ret = new char[dwSize];
+        s_allocMap[ret] = s_allocCalls++;
+        return ret;
     }
 
     static void STDAPIVCALLTYPE MemFreeHook(
         _In_ void* pAddress
     )
     {
+        std::lock_guard<std::mutex> lock{ s_mutex };
         s_freeCalls++;
+        Assert::IsTrue(s_allocMap.erase(pAddress) > 0);
         delete[] pAddress;
     }
 
+    static std::mutex s_mutex;
     static std::atomic<size_t> s_allocCalls;
     static std::atomic<size_t> s_freeCalls;
+    static std::map<void*, size_t> s_allocMap;
 };
 
+std::mutex MemoryManager::s_mutex{};
 std::atomic<size_t> MemoryManager::s_allocCalls{ 0 };
 std::atomic<size_t> MemoryManager::s_freeCalls{ 0 };
+std::map<void*, size_t> MemoryManager::s_allocMap{};
 
 TEST_CLASS(GlobalStateTests)
 {

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TestIncludes.h"
 #include "RunContext.h"
-#include "AsyncProvider.h"
+#include "ApiXAsyncProvider.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -84,17 +84,17 @@ struct RunContextTerminationHelper : public ITerminationListener
 {
     Event terminationComplete;
 
-    void OnTerminated(SharedPtr<ITerminationListener>&& self, void* context) override
+    void OnTerminated(SharedPtr<ITerminationListener> self, void* context) override
     {
         terminationComplete.Set();
     }
 };
 
-class TestProvider : public Provider
+class TestProvider : public XAsyncProviderBase
 {
 public:
     TestProvider(RunContext&& rc, XAsyncBlock* async, uint32_t result) :
-        Provider{ std::move(rc), async },
+        XAsyncProviderBase{ std::move(rc), async },
         m_result{ result }
     {
     }

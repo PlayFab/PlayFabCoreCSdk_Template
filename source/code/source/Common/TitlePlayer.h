@@ -5,7 +5,6 @@
 namespace PlayFab
 {
 
-// TitlePlayer Entity returned from an Authentication API
 class TitlePlayer : public Entity
 {
 public:
