@@ -17,7 +17,7 @@ extern "C"
 {
 
 /// <summary>
-/// Create PlayFab global state. Custom platform hooks must be configured prior to calling PFInitialize.
+/// Initialize PlayFabCore global state. Custom platform hooks must be configured prior to calling PFInitialize.
 /// </summary>
 /// <param name="backgroundQueue">An XTaskQueue that should be used for background work. If no queue is a default (threadpool) queue will be used.</param>
 /// <returns>Result code for this API operation.</returns>

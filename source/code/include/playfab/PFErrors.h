@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <httpClient/pal.h>
+#include <playfab/PFPal.h>
 
 extern "C"
 {
