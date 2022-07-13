@@ -8,7 +8,7 @@
 #pragma once
 
 #include <playfab/PFTitlePlayer.h>
-#include "PFSharedDataModelWrappers.h"
+#include "TypeWrappers.h"
 #include "PlayFabException.h"
 #include <string>
 

@@ -16,12 +16,14 @@ public:
         s_allocCalls = 0;
         s_freeCalls = 0;
 
-        VERIFY_SUCCEEDED(PFMemSetFunctions(&MemAllocHook, &MemFreeHook));
+        PFMemoryHooks hooks{ MemAllocHook, MemFreeHook };
+        VERIFY_SUCCEEDED(PFMemSetFunctions(&hooks));
     }
 
     ~MemoryManager() noexcept
     {
-        VERIFY_SUCCEEDED(PFMemSetFunctions(nullptr, nullptr));
+        PFMemoryHooks hooks{ nullptr, nullptr };
+        VERIFY_SUCCEEDED(PFMemSetFunctions(&hooks));
         Assert::IsTrue(s_allocCalls == s_freeCalls);
     }
 
@@ -74,7 +76,8 @@ public:
     {
         VERIFY_SUCCEEDED(PFInitialize(nullptr));
 
-        Assert::AreEqual(E_PF_ALREADY_INITIALIZED, PFMemSetFunctions(nullptr, nullptr));
+        PFMemoryHooks hooks{ nullptr, nullptr };
+        Assert::AreEqual(E_PF_ALREADY_INITIALIZED, PFMemSetFunctions(&hooks));
 
         XAsyncBlock async{};
         VERIFY_SUCCEEDED(PFUninitializeAsync(&async));

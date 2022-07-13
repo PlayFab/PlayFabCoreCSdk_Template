@@ -9,6 +9,9 @@ if (typeof templatizeTree === "undefined") templatizeTree = function () { };
 // Global prefix for all SDK public symbols
 var globalPrefix = "PF"; 
 
+// Project files to be used by vcxproj templates. Templated source files will be added in makeFeatureGroupFiles
+var projectFiles = parseProjectFiles("project_files.json");
+
 // Calls and datatypes produced based on api.calls & api.datatypes, but rather than being categorized by service API, they are
 // categorized based on feature group. This structure will be used to generate the SDK.
 var SDKFeatureGroups = {};
@@ -72,11 +75,15 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
     // Configure test prerequisites
     setPrerequisiteAndCleanupCalls(apis);
 
+    for (var featureGroupName in SDKFeatureGroups) {
+        makeFeatureGroupFiles(SDKFeatureGroups[featureGroupName], sourceDir, apiOutputDir);
+    }
+
     var locals = {
         apis: apis,
         prefix: globalPrefix,
         SDKFeatureGroups: SDKFeatureGroups,
-        projectFiles: parseProjectFiles("project_files.json"),
+        projectFiles: projectFiles,
         buildIdentifier: sdkGlobals.buildIdentifier,
         sdkVersion: sdkGlobals.sdkVersion,
         sdkDate: sdkGlobals.sdkVersion.split(".")[2],
@@ -91,9 +98,6 @@ exports.makeCombinedAPI = function (apis, sourceDir, apiOutputDir) {
 
     templatizeTree(locals, path.resolve(sourceDir, "source"), apiOutputDir);
     templatizeTree(locals, path.resolve(sourceDir, "utilities"), path.resolve(apiOutputDir, "utilities"));
-    for (var featureGroupName in SDKFeatureGroups) {
-        makeFeatureGroupFiles(SDKFeatureGroups[featureGroupName], sourceDir, apiOutputDir);
-    }
 
     var testXMLRefDocsJsonTemplate = getCompiledTemplate(path.resolve(sourceDir, "templates/XMLRefDocs.json.ejs"));
     writeFile(path.resolve(apiOutputDir, "test/", "XMLRefDocs.json.autogen"), testXMLRefDocsJsonTemplate(locals));
@@ -114,8 +118,11 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
     if (featureGroup.name === "Shared") {
         // Use just globalPrefix for shared datatypes
         var prefix = globalPrefix;
+        // Don't include Shared in filenames
+        var partialFilename = "";
     } else {
         prefix = globalPrefix + featureGroup.name;
+        partialFilename = featureGroup.name;
     }
 
     var locals = {
@@ -143,38 +150,66 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
         getDictionaryEntryType: getDictionaryEntryType
     };
 
+    // Generate templated files and add them to projectFiles
+
+    var sourcePath = ""; // relative path from $(PlayFabCoreSourceDir)
+    var filename = "";
+    var playFabCoreProjectFiles = projectFiles["PlayFabCore"];
+
     // DataModels
     if (!featureGroup.isInternalOnly) {
+        sourcePath = "Include\\playfab";
+        filename = prefix + "Types.h";
         var publicDataModelsHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/PFDataModels.h.ejs"));
-        writeFile(path.resolve(apiOutputDir, "code/include/playFab", globalPrefix + featureGroup.name + "DataModels.h"), publicDataModelsHeader(locals));
+        writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), publicDataModelsHeader(locals));
+        playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
 
+        sourcePath = "Include\\playfab\\cpp";
+        filename = partialFilename + "TypeWrappers.h";
         var publicDataModelWrappers = getCompiledTemplate(path.resolve(sourceDir, "templates/PFDataModelWrappers.h.ejs"));
-        writeFile(path.resolve(apiOutputDir, "code/include/playFab/cpp", globalPrefix + featureGroup.name + "DataModelWrappers.h"), publicDataModelWrappers(locals));
+        writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), publicDataModelWrappers(locals));
+        playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
     }
 
+    sourcePath = "Source\\" + (featureGroup.name === "Shared" ? "Common" : featureGroup.name);
+    filename = partialFilename + "Types.h";
     var internalDataModelsHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/DataModels.h.ejs"));
-    writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, featureGroup.name + "DataModels.h"), internalDataModelsHeader(locals));
+    writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), internalDataModelsHeader(locals));
+    playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
 
+    filename = partialFilename + "Types.cpp";
     var internalDataModels = getCompiledTemplate(path.resolve(sourceDir, "templates/DataModels.cpp.ejs"));
-    writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, featureGroup.name + "DataModels.cpp"), internalDataModels(locals));
+    writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), internalDataModels(locals));
+    playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
 
     // Currently don't need anything except data models for Shared API
     if (featureGroup.name !== "Shared") {
 
         // Internal APIs
+        sourcePath = "Source\\" + featureGroup.name;
+        filename = partialFilename + ".h";
         var internalApisHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/Calls.h.ejs"));
-        writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, featureGroup.name + ".h"), internalApisHeader(locals));
+        writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), internalApisHeader(locals));
+        playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
 
+        filename = partialFilename + ".cpp";
         var internalApis = getCompiledTemplate(path.resolve(sourceDir, "templates/Calls.cpp.ejs"));
-        writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, featureGroup.name + ".cpp"), internalApis(locals));
+        writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), internalApis(locals));
+        playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
 
         if (!featureGroup.isInternalOnly) {
             // Public APIs
+            sourcePath = "Include\\playfab";
+            filename = prefix + ".h";
             var publicApisHeader = getCompiledTemplate(path.resolve(sourceDir, "templates/PFCalls.h.ejs"));
-            writeFile(path.resolve(apiOutputDir, "code/include/playfab", globalPrefix + featureGroup.name + ".h"), publicApisHeader(locals));
+            writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), publicApisHeader(locals));
+            playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
 
+            sourcePath = "Source\\Api";
+            filename = prefix + ".cpp";
             var publicApis = getCompiledTemplate(path.resolve(sourceDir, "templates/PFCalls.cpp.ejs"));
-            writeFile(path.resolve(apiOutputDir, "code/source/" + featureGroup.name, globalPrefix + featureGroup.name + ".cpp"), publicApis(locals));
+            writeFile(path.resolve(apiOutputDir, "code\\" + sourcePath, filename), publicApis(locals));
+            playFabCoreProjectFiles[sourcePath + "\\" + filename] = sourcePath;
         }
     }
 }
@@ -183,16 +218,17 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
 function parseProjectFiles(filename) {
     var fullPath = path.resolve(__dirname, filename);
     console.log("Begin reading File: " + fullPath);
-    var projectFiles = null;
+    var tempProjectFiles = null;
     try {
-        projectFiles = require(fullPath);
+        tempProjectFiles = require(fullPath);
     }
     catch (err) {
         console.log(" ***** Failed to Load: " + fullPath);
         throw err;
     }
     console.log("Finished reading: " + fullPath);
-    return projectFiles;
+
+    return tempProjectFiles;
 }
 
 function jsonEscape(str)

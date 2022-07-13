@@ -1,6 +1,5 @@
 #pragma once
 
-#include <playfab/PFGlobal.h>
 #include <playfab/PFServiceConfig.h>
 #include <playfab/PFTitlePlayer.h>
 #include <playfab/PFTelemetry.h>

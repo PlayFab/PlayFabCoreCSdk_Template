@@ -1,9 +1,7 @@
 #pragma once
-<% if (!featureGroup.isInternalOnly) { %>
-#include <playfab/cpp/<%- globalPrefix %><%- featureGroup.name %>DataModelWrappers.h><%
-} 
-if (!(featureGroup.name === "Shared")) { %>
-#include <Shared/SharedDataModels.h><%
+<% if (!featureGroup.isInternalOnly) { 
+    var partialFilename = featureGroup.name === "Shared" ? "" : featureGroup.name; %>
+#include <playfab/cpp/<%- partialFilename %>TypeWrappers.h><%
 } %>
 #include "BaseModel.h"
 

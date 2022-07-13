@@ -7,7 +7,7 @@
 
 #pragma once
 <% if (featureGroup.name !== "Shared") { %>
-#include <playfab/PFSharedDataModels.h>
+#include <playfab/PFTypes.h>
 <% } 
 if (featureGroup.name === "Authentication") { %>
 #if HC_PLATFORM == HC_PLATFORM_GDK

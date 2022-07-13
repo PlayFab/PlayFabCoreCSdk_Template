@@ -2,7 +2,7 @@
 
 #include <playfab/PFEntity.h>
 #include "ServiceConfig.h"
-#include "Authentication/AuthenticationDataModels.h"
+#include "Authentication/AuthenticationTypes.h"
 #include "TokenExpiredHandler.h"
 
 namespace PlayFab

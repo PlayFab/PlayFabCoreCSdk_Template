@@ -43,6 +43,12 @@ typedef void CALLBACK PFEntityTokenExpiredEventHandler(
 );
 
 /// <summary>
+/// A token returned when registering a callback to identify the registration. This token is later used 
+/// to unregister the callback.
+/// </summary>
+typedef uint64_t PFRegistrationToken;
+
+/// <summary>
 /// Register a handler for EntityToken expired events.
 /// </summary>
 /// <param name="queue">The async queue the callback should be invoked on.</param>

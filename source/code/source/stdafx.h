@@ -41,4 +41,7 @@
 #include <Trace.h>
 #include <RunContext.h>
 
+// PlayFabCore
+#include "Common/Types.h"
+
 #define UNREFERENCED_PARAMETER(P) (P)

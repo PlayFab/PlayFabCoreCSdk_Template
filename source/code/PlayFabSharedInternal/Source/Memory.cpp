@@ -15,24 +15,23 @@ void DefaultFree(_In_ _Post_invalid_ void* pointer) noexcept
     operator delete(pointer);
 }
 
-MemoryHooks& GetMemoryHooks()
+PFMemoryHooks& GetMemoryHooks()
 {
     // The memory hooks are a function level static so we have guarantees about initialization order. If we make them a
     // global static, the initialization of other globals that require allocation may cause a crash
-    static MemoryHooks s_hooks{ DefaultAlloc, DefaultFree };
+    static PFMemoryHooks s_hooks{ DefaultAlloc, DefaultFree };
     return s_hooks;
 }
 
-HRESULT SetMemoryHooks(PFMemAllocFunction* memAllocFunc, PFMemFreeFunction* memFreeFunc)
+HRESULT SetMemoryHooks(PFMemoryHooks& newHooks)
 {
     auto& hooks = GetMemoryHooks();
 
-    if (memAllocFunc && memFreeFunc)
+    if (newHooks.alloc && newHooks.free)
     {
-        hooks.alloc = memAllocFunc;
-        hooks.free = memFreeFunc;
+        hooks = newHooks;
     }
-    else if (!memAllocFunc && !memFreeFunc)
+    else if (!newHooks.alloc && !newHooks.free)
     {
         hooks.alloc = DefaultAlloc;
         hooks.free = DefaultFree;
