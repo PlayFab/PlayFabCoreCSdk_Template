@@ -7,22 +7,19 @@ namespace PlayFab
 namespace Detail
 {
 
-LocalStorageHandlers& GetLocalStorageHandlers()
+PFLocalStorageHooks& GetLocalStorageHandlers()
 {
-    static LocalStorageHandlers s_handlers{ nullptr, nullptr, DefaultLocalStorageReadAsync, DefaultLocalStorageWriteAsync, DefaultLocalStorageClearAsync};
+    static PFLocalStorageHooks s_handlers{ nullptr, DefaultLocalStorageReadAsync, DefaultLocalStorageWriteAsync, DefaultLocalStorageClearAsync, nullptr };
     return s_handlers;
 }
 
-HRESULT SetLocalStorageHandlers(LocalStorageHandlers& newHandlers)
+HRESULT SetLocalStorageHandlers(PFLocalStorageHooks& newHandlers)
 {
     auto& handlers = GetLocalStorageHandlers();
 
     if (newHandlers.write && newHandlers.read && newHandlers.clear)
     {
-        handlers.write = newHandlers.write;
-        handlers.read = newHandlers.read;
-        handlers.clear = newHandlers.clear;
-        handlers.context = newHandlers.context;
+        handlers = newHandlers;
     }
     else
     {

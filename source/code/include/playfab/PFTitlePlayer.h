@@ -8,7 +8,7 @@
 #pragma once
 
 #include <playfab/PFEntity.h>
-#include <playfab/PFSharedDataModels.h>
+#include <playfab/PFTypes.h>
 
 extern "C"
 {

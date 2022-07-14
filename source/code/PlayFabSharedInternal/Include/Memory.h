@@ -1,6 +1,6 @@
 #pragma once
 
-#include <playfab/PFGlobal.h>
+#include <playfab/PFPlatform.h>
 
 namespace PlayFab
 {
@@ -8,15 +8,8 @@ namespace PlayFab
 //------------------------------------------------------------------------------
 // Memory Hook configuration
 //------------------------------------------------------------------------------
-
-struct MemoryHooks
-{
-    PFMemAllocFunction* alloc;
-    PFMemFreeFunction* free;
-};
-
-MemoryHooks& GetMemoryHooks();
-HRESULT SetMemoryHooks(PFMemAllocFunction* memAllocFunc, PFMemFreeFunction* memFreeFunc);
+PFMemoryHooks& GetMemoryHooks();
+HRESULT SetMemoryHooks(PFMemoryHooks& hooks);
 
 //------------------------------------------------------------------------------
 // Raw allocation and free methods

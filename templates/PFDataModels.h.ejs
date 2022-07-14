@@ -6,8 +6,10 @@
 #endif
 
 #pragma once
+
+#include <playfab/PFPal.h>
 <% if (featureGroup.name !== "Shared") { %>
-#include <playfab/PFSharedDataModels.h>
+#include <playfab/PFTypes.h>
 <% } 
 if (featureGroup.name === "Authentication") { %>
 #if HC_PLATFORM == HC_PLATFORM_GDK
@@ -35,6 +37,12 @@ enum class <%- datatype.prefix %><%- datatype.name %> : uint32_t
 <% } // end for
 
 if (featureGroup.name === "Shared") { %>
+/// <summary>
+/// A token returned when registering a callback to identify the registration. This token is later used 
+/// to unregister the callback.
+/// </summary>
+typedef uint64_t PFRegistrationToken;
+
 /// <summary>
 /// String representation of a Json Object
 /// </summary>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <playfab/cpp/PFModelWrapperHelpers.h>
+#include <playfab/cpp/TypeWrapperHelpers.h>
 
 namespace PlayFab
 {

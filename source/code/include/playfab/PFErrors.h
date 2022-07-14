@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <httpClient/pal.h>
+#include <playfab/PFPal.h>
 
 extern "C"
 {
@@ -39,9 +39,7 @@ extern "C"
 #define E_PF_SERVICEERROR                          MAKE_E_HC(0x541AL) // 0x8923541A
 
 // Client side auth token check errors. Returned when the required auth token is missing from the provided context handle.
-#define E_PF_NOSESSIONTICKET                       MAKE_E_HC(0x5430L) // 0x89235431
 #define E_PF_NOENTITYTOKEN                         MAKE_E_HC(0x5431L) // 0x89235432
-#define E_PF_NOSECRETKEY                           MAKE_E_HC(0x5432L) // 0x89235433
 
 // Errors returned from PlayFabEventMangager APIs.
 #define E_PF_EVENTMANAGERBUFFEROVERFLOW            MAKE_E_HC(0x5440L) // 0x89235440

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <playfab/PFSharedDataModels.h>
+#include <playfab/PFTypes.h>
 #include <vector>
 #include <string>
 #include <type_traits>

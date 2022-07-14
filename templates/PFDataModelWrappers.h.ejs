@@ -6,10 +6,13 @@
 #endif
 
 #pragma once
-
-#include "<%- globalPrefix %>ModelWrapperHelpers.h"
-#include "<%- globalPrefix %>SharedDataModelWrappers.h"
-#include <playfab/PF<%- featureGroup.name %>DataModels.h>
+<% if (featureGroup.name === "Shared") {%>
+#include "TypeWrapperHelpers.h"
+#include <playfab/PFTypes.h><%
+} else { %>
+#include "TypeWrappers.h"
+#include <playfab/PF<%- featureGroup.name %>Types.h><%
+} %>
 
 namespace PlayFab
 {

@@ -5,18 +5,56 @@
 
 using namespace PlayFab;
 
-PF_API PFPlatformLocalStorageSetHandlers(
-    _In_opt_ XTaskQueueHandle queue,
-    _In_opt_ void* context,
-    _In_ PFPlatformLocalStorageReadAsyncHandler* readHandler,
-    _In_ PFPlatformLocalStorageWriteAsyncHandler* writeHandler,
-    _In_ PFPlatformLocalStorageClearAsyncHandler* clearHandler
+PF_API PFMemSetFunctions(
+    _In_ PFMemoryHooks* hooks
 ) noexcept
 {
+    RETURN_HR_INVALIDARG_IF_NULL(hooks);
+
     SharedPtr<GlobalState> state;
     GlobalState::Get(state);
     RETURN_HR_IF(E_PF_ALREADY_INITIALIZED, state);
 
-    Detail::LocalStorageHandlers handlers{ queue, context, readHandler, writeHandler, clearHandler };
-    return PlayFab::Detail::SetLocalStorageHandlers(handlers);
+    RETURN_IF_FAILED(PlayFab::SetMemoryHooks(*hooks));
+
+    // Try to set the memory hooks for libHttpClient as well. If it has already be initialized, there is nothing we can do
+    HRESULT hr = HCMemSetFunctions([](size_t size, HCMemoryType)
+    {
+        return PlayFab::Alloc(size);
+    },
+    [](void* pointer, HCMemoryType)
+    {
+        return PlayFab::Free(pointer);
+    });
+
+    if (FAILED(hr) && hr != E_HC_ALREADY_INITIALISED)
+    {
+        return hr;
+    }
+
+    return S_OK;
+}
+
+PF_API PFMemGetFunctions(
+    _Out_ PFMemoryHooks* hooks
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(hooks);
+
+    *hooks = PlayFab::GetMemoryHooks();
+    return S_OK;
+}
+
+
+PF_API PFPlatformLocalStorageSetHandlers(
+    _In_ PFLocalStorageHooks* hooks
+) noexcept
+{
+    RETURN_HR_INVALIDARG_IF_NULL(hooks);
+
+    SharedPtr<GlobalState> state;
+    GlobalState::Get(state);
+    RETURN_HR_IF(E_PF_ALREADY_INITIALIZED, state);
+
+    return PlayFab::Detail::SetLocalStorageHandlers(*hooks);
 }

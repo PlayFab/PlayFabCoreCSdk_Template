@@ -1,5 +1,6 @@
-#include "stdafx.h"
-#include "<%- featureGroup.name %>DataModels.h"
+#include "stdafx.h"<%
+var partialFilename = featureGroup.name === "Shared" ? "" : featureGroup.name; %>
+#include "<%- partialFilename %>Types.h"
 #include "JsonUtils.h"
 
 namespace PlayFab

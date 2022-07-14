@@ -1,7 +1,7 @@
 #pragma once
 
-#include <playfab/PFSharedDataModels.h>
-#include <playfab/cpp/PFModelWrapperHelpers.h>
+#include <playfab/PFTypes.h>
+#include <playfab/cpp/TypeWrapperHelpers.h>
 #include "EnumTraits.h"
 #include "BaseModel.h"
 

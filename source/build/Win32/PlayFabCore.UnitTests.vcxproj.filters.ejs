@@ -15,9 +15,6 @@ for(var file in projectFiles.PlayFabCore) {
 }
 for (var filter of filters) { %>
     <Filter Include="Source\PlayFabCore\<%- filter %>" /><% 
-}
-for(var featureGroupName in SDKFeatureGroups) { %>
-    <Filter Include="Source\PlayFabCore\Source\<%- featureGroupName %>" /><%
 } %>
   </ItemGroup>
   <ItemGroup><%
@@ -31,34 +28,6 @@ for (var file in projectFiles.PlayFabCore) {
     } else { %>
     <ClCompile Include="$(PlayFabCoreSourceDir)\<%- file %>" >
       <Filter>Source\PlayFabCore\<%- filter %></Filter>
-    </ClCompile><%
-    }
-} 
-for(var featureGroupName in SDKFeatureGroups) { %>
-    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>DataModels.h">
-      <Filter>Source\PlayFabCore\Include\playfab</Filter>
-    </ClInclude>
-    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\cpp\<%- prefix + featureGroupName %>DataModelWrappers.h">
-      <Filter>Source\PlayFabCore\Include\playfab\cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.h">
-      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
-    </ClInclude>
-    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>DataModels.cpp">
-      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
-    </ClCompile><%
-    if (!(featureGroupName === "Shared")) { %>
-    <ClInclude Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.h">
-      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
-    </ClInclude>
-    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- featureGroupName %>.cpp">
-      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
-    </ClCompile>
-    <ClInclude Include="$(PlayFabCoreSourceDir)\include\playfab\<%- prefix + featureGroupName %>.h">
-      <Filter>Source\PlayFabCore\Include\playfab</Filter>
-    </ClInclude>
-    <ClCompile Include="$(PlayFabCoreSourceDir)\source\<%- featureGroupName %>\<%- prefix + featureGroupName %>.cpp">
-      <Filter>Source\PlayFabCore\Source\<%- featureGroupName %></Filter>
     </ClCompile><%
     }
 } %>
