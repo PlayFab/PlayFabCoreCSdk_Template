@@ -43,7 +43,7 @@ private:
 
     void OnCancellation() noexcept override
     {
-        m_rc.Terminate(nullptr, nullptr);
+        m_rc.TaskQueue().Terminate(nullptr, nullptr);
     }
 
     RunContext m_rc;

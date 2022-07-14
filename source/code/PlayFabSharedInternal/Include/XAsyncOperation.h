@@ -122,7 +122,8 @@ Result<T> XAsyncOperation<T>::GetResult(XAsyncBlock* asyncBlock) noexcept
 template<typename T>
 void XAsyncOperation<T>::OnFailed(HRESULT hr) noexcept
 {
-    // Submit synchronous failures to TaskQueue so that completion runs on the correct port
+    // Submit synchronous failures to TaskQueue so that completion runs on the correct port.
+    // Overriding ITaskQueueWork::WorkCancelled to complete the AsyncOp even if the TaskQueue is terminated
     struct AsyncCompletion : public ITaskQueueWork
     {
         SharedPtr<AsyncOpContext<T>> asyncContext;
