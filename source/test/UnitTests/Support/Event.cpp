@@ -24,7 +24,7 @@ void Event::Set() noexcept
     UNREFERENCED_PARAMETER(result);
 }
 
-bool Event::Wait(DWORD timeoutMs) noexcept
+bool Event::Wait(DWORD timeoutMs) const noexcept
 {
     DWORD result = WaitForSingleObject(m_handle, timeoutMs);
     return result == WAIT_OBJECT_0;

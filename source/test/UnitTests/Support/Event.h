@@ -18,7 +18,7 @@ public:
     Event& operator=(Event other) = delete;
 
     void Set() noexcept;
-    bool Wait(DWORD timeoutMs) noexcept;
+    bool Wait(DWORD timeoutMs = INFINITE) const noexcept;
 
 private:
     HANDLE m_handle{ nullptr };
