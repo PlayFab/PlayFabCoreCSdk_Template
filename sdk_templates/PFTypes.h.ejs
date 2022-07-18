@@ -1,0 +1,178 @@
+// Copyright (c) Microsoft Corporation
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#if !defined(__cplusplus)
+#error C++11 required
+#endif
+
+#pragma once
+
+#include <playfab/core/PFPal.h>
+<% if (featureGroup.name !== "Shared") { %>
+#include <playfab/core/PFTypes.h>
+<% } 
+if (featureGroup.name === "Authentication") { %>
+#if HC_PLATFORM == HC_PLATFORM_GDK
+#include <XUser.h>
+#endif
+<% } %>
+extern "C"
+{
+
+#pragma push_macro("IN")
+#undef IN
+<% for (var typeKey in featureGroup.datatypes) {
+    var datatype = featureGroup.datatypes[typeKey];
+    if (!datatype.isenum) {
+        continue;
+    } %>
+/// <summary>
+/// <%- datatype.name %> enum.
+/// </summary>
+enum class <%- datatype.prefix %><%- datatype.name %> : uint32_t
+{
+    <% for(var i=0; i < datatype.enumvalues.length-1; i++) { var enumval = datatype.enumvalues[i]; %><%- enumval.name %>,
+    <% } %><%- datatype.enumvalues[datatype.enumvalues.length-1].name %>
+};
+<% } // end for
+
+if (featureGroup.name === "Shared") { %>
+/// <summary>
+/// A token returned when registering a callback to identify the registration. This token is later used 
+/// to unregister the callback.
+/// </summary>
+typedef uint64_t PFRegistrationToken;
+
+/// <summary>
+/// String representation of a Json Object
+/// </summary>
+typedef struct <%- globalPrefix %>JsonObject
+{
+    _Maybenull_ _Null_terminated_ const char* stringValue;
+} <%- globalPrefix %>JsonObject;
+<% }
+
+for (var typeIndex = 0; typeIndex < featureGroup.sortedClasses.length; typeIndex++) { 
+    var datatype = featureGroup.sortedClasses[typeIndex];
+    if (datatype.isInternalOnly) {
+        continue;
+    } 
+    if (datatype.name === "EntityKey") { %>
+#ifndef PF_ENTITY_KEY_DEFINED
+#define PF_ENTITY_KEY_DEFINED<%
+    } // end if %>
+/// <summary>
+<%- getFormattedDatatypeDescription(datatype) %>
+/// </summary>
+typedef struct <%- datatype.prefix %><%- datatype.name %>
+{<%
+for (var propertyIndex = 0; propertyIndex < datatype.properties.length; propertyIndex++) { var property = datatype.properties[propertyIndex];
+%><%- getPropertyDefinition(datatype, property, false) %><% } %>
+} <%- datatype.prefix %><%- datatype.name %>;
+<% 
+    if (datatype.name === "EntityKey") { 
+%>#endif // PF_ENTITY_KEY_DEFINED
+<%  } else if (datatype.name === "ClientLoginWithXboxRequest") { 
+        // Explicitly add LoginWithXUserRequest type alongside LoginWithXboxRequest %>
+#if HC_PLATFORM == HC_PLATFORM_GDK
+/// <summary>
+/// <%- prefix %>LoginWithXUserRequest data model. If this is the first time a user has signed in with
+/// the Xbox Live account and CreateAccount is set to true, a new PlayFab account will be created and
+/// linked to the Xbox Live account. In this case, no email or username will be associated with the PlayFab
+/// account. Otherwise, if no PlayFab account is linked to the Xbox Live account, an error indicating
+/// this will be returned, so that the title can guide the user through creation of a PlayFab account.
+/// Request object for <%- prefix %>LoginWithXUserAsync.
+/// </summary>
+typedef struct <%- prefix %>LoginWithXUserRequest
+{
+    /// <summary>
+    /// Automatically create a PlayFab account if one is not currently linked to this ID.
+    /// </summary>
+    bool createAccount;
+
+    /// <summary>
+    /// (Optional) The optional custom tags associated with the request (e.g. build number, external
+    /// trace identifiers, etc.).
+    /// </summary>
+    _Maybenull_ _Field_size_(customTagsCount) struct <%- globalPrefix %>StringDictionaryEntry const* customTags;
+
+    /// <summary>
+    /// Count of customTags
+    /// </summary>
+    uint32_t customTagsCount;
+
+    /// <summary>
+    /// (Optional) Flags for which pieces of info to return for the user.
+    /// </summary>
+    _Maybenull_ <%- globalPrefix %>GetPlayerCombinedInfoRequestParams const* infoRequestParameters;
+
+    /// <summary>
+    /// (Optional) Player secret that is used to verify API request signatures (Enterprise Only).
+    /// </summary>
+    _Maybenull_ _Null_terminated_ const char* playerSecret;
+
+    /// <summary>
+    /// XUserHandle returned from XUserAddAsync or XUserAddByIdWithUiAsync.
+    /// </summary>
+    XUserHandle userHandle;
+
+} <%- prefix %>LoginWithXUserRequest;
+#endif
+<%  } // end if
+} // end for
+
+if (featureGroup.name === "Shared") { %>
+/// <summary>
+/// Dictionary entry for an associative array with string values.
+/// </summary>
+typedef struct <%- globalPrefix %>StringDictionaryEntry
+{
+    _Null_terminated_ const char* key;
+    _Null_terminated_ const char* value;
+} <%- globalPrefix %>StringDictionaryEntry;
+
+/// <summary>
+/// Dictionary entry for an associative array with int32_t values.
+/// </summary>
+typedef struct <%- globalPrefix %>Int32DictionaryEntry
+{
+    _Null_terminated_ const char* key;
+    int32_t value;
+} <%- globalPrefix %>Int32DictionaryEntry;
+
+/// <summary>
+/// Dictionary entry for an associative array with uint32_t values.
+/// </summary>
+typedef struct <%- globalPrefix %>Uint32DictionaryEntry
+{
+    _Null_terminated_ const char* key;
+    uint32_t value;
+} <%- globalPrefix %>Uint32DictionaryEntry;
+
+/// <summary>
+/// Dictionary entry for an associative array with time_t values.
+/// </summary>
+typedef struct <%- globalPrefix %>DateTimeDictionaryEntry
+{
+    _Null_terminated_ const char* key;
+    time_t value;
+} <%- globalPrefix %>DateTimeDictionaryEntry;
+<% } // end if
+
+for (var typeKey in featureGroup.dictionaryEntryTypes) { 
+    var datatype = featureGroup.dictionaryEntryTypes[typeKey]; %>
+/// <summary>
+/// Dictionary entry for an associative array with <%- prefix %><%- datatype.name %> values.
+/// </summary>
+typedef struct <%- datatype.prefix %><%- datatype.name %>DictionaryEntry
+{
+    _Null_terminated_ const char* key;<%
+if (datatype.isenum) { %>
+    <%- datatype.prefix %><%- datatype.name %> value;
+<% } else { %>
+    <%- datatype.prefix %><%- datatype.name %> const* value;<% } %>
+} <%- datatype.prefix %><%- datatype.name %>DictionaryEntry;
+<% } %>
+#pragma pop_macro("IN")
+
+}

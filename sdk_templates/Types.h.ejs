@@ -1,0 +1,97 @@
+#pragma once
+<% if (!featureGroup.isInternalOnly) { 
+    var partialFilename = featureGroup.name === "Shared" ? "" : featureGroup.name; %>
+#include <playfab/core/cpp/<%- partialFilename %>TypeWrappers.h><%
+} %>
+#include "BaseModel.h"
+
+namespace PlayFab
+{<%
+if (!(featureGroup.name === "Shared")) { %>
+namespace <%- featureGroup.name %>
+{<%
+} %>
+
+// <%- featureGroup.name %> Classes<%
+for (var typeIndex = 0; typeIndex < featureGroup.sortedClasses.length; typeIndex++) {
+    var datatype = featureGroup.sortedClasses[typeIndex]; 
+    if (featureGroup.isInternalOnly) {
+        datatype.isInternalOnly = true;
+    }
+    var CModelName = datatype.prefix + datatype.name;
+    var propertyVisibility = datatype.isInternalOnly ? "public" : "private";
+
+    var baseClasses = "";
+    if (!datatype.isInternalOnly) {
+        baseClasses = " : public Wrappers::" + CModelName + "Wrapper<Allocator>";
+        if (datatype.isInput) {
+            baseClasses += (", public InputModel");
+        }
+        if (datatype.isOutput) {
+            baseClasses += (", public ServiceOutputModel, public ClientOutputModel<" + CModelName + ">");
+        }
+    } else if (datatype.isOutput) {
+        baseClasses += (" : public ServiceOutputModel");
+    } else if (datatype.isInput) {
+        baseClasses += (" : public InputModel")
+    }
+
+%>
+class <%- datatype.name %><%- baseClasses %>
+{
+public:<%
+    if (!datatype.isInternalOnly) { %>
+    using ModelWrapperType = typename Wrappers::<%- CModelName %>Wrapper<Allocator>;
+    using ModelWrapperType::ModelType;<%
+        if (featureGroup.dictionaryEntryTypes.hasOwnProperty(datatype.name)) { %>
+    using DictionaryEntryType = ModelWrapperType::DictionaryEntryType;<%
+        } %>
+
+    // Constructors
+    using ModelWrapperType::ModelWrapperType;
+<%  } // end if 
+
+    if (datatype.isInput) { %>
+    // InputModel
+    JsonValue ToJson() const override;<%
+        if (!datatype.isInternalOnly) { %>
+    static JsonValue ToJson(const <%- CModelName %>& input);<%
+        } // endif
+    } // end if
+    if (datatype.isOutput && !datatype.isInternalOnly) { %>
+    // OutputModel
+    void FromJson(const JsonValue& input) override;
+    size_t RequiredBufferSize() const override;
+    Result<<%- CModelName %> const*> Copy(ModelBuffer& buffer) const override;
+
+    static size_t RequiredBufferSize(const <%- CModelName %>& model);
+    static HRESULT Copy(const <%- CModelName %>& input, <%- CModelName %>& output, ModelBuffer& buffer);<%
+    } else if (datatype.isOutput) { %>
+    void FromJson(const JsonValue& input);<%
+    } // end if 
+
+    if (datatype.isInternalOnly) { %>
+<%      for (var propertyIndex = 0; propertyIndex < datatype.properties.length; propertyIndex++) {
+            var property = datatype.properties[propertyIndex];
+%><%- getPropertyDefinition(datatype, property, true) %><%
+        } // end for
+    } // endif %>
+};
+<% } // end for 
+
+if (!(featureGroup.name === "Shared")) { %>
+} // namespace <%- featureGroup.name %><%
+} %>
+// EnumRange definitions used for Enum (de)serialization<%
+for (var typeIndex = 0; typeIndex < featureGroup.datatypes.length; typeIndex++) { 
+    var datatype = featureGroup.datatypes[typeIndex];
+    if (!datatype.isenum) {
+        continue;
+    }
+    var maxval = datatype.enumvalues[enumtype.enumvalues.length-1]; %>
+template<> struct EnumRange<<%- datatype.prefix %><%- datatype.name %>>
+{
+    static constexpr <%- datatype.prefix %><%- datatype.name %> maxValue = <%- datatype.prefix %><%- datatype.name %>::<%- maxval.name %>;
+};
+<% } // end for %>
+} // namespace PlayFab
