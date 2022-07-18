@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--Sets up PlayFabCore path properties to be used by PlayFabCore SDK projects as well as consumers of the SDK.-->
+
+  <PropertyGroup Label="Paths">
+    <PlayFabCoreRoot>$(MSBuildThisFileDirectory)..\</PlayFabCoreRoot>
+    <PlayFabCoreExternalDir>$(PlayFabCoreRoot)external\</PlayFabCoreExternalDir>
+    <PlayFabCoreSourceDir>$(PlayFabCoreRoot)source\PlayFabCore\</PlayFabCoreSourceDir>
+    <PlayFabSharedInternalSourceDir>$(PlayFabCoreRoot)source\PlayFabSharedInternal\</PlayFabSharedInternalSourceDir>
+    <PlayFabCoreTestDir>$(PlayFabCoreRoot)source\Test\</PlayFabCoreTestDir>
+    <PlayFabCoreOutDirRoot>$(PlayFabCoreRoot)output\</PlayFabCoreOutDirRoot>
+    <PlayFabCoreIntDirRoot>$(PlayFabCoreRoot)output_int\</PlayFabCoreIntDirRoot>
+  </PropertyGroup>
+
+  <!--Reuse libHttpClient platform detection logic-->
+  <Import Condition="'$(HCPlatform)' == ''" Project="$(PlayFabCoreExternalDir)\libHttpClient\platform_select.props" />
+  <PropertyGroup>
+    <PlayFabPlatform>$(HCPlatform)</PlayFabPlatform>
+    <PlayFabCoreProjectName>PlayFabCore.$(PlayFabPlatform)</PlayFabCoreProjectName>
+  </PropertyGroup>
+
+  <PropertyGroup Label="BinPaths">
+    <PlayFabCoreOutDir>$(PlayFabCoreOutDirRoot)$(Platform)\$(Configuration)\$(PlayFabCoreProjectName)\</PlayFabCoreOutDir>
+    <PlayFabCoreIntDir>$(PlayFabCoreIntDirRoot)$(Platform)\$(Configuration)\$(PlayFabCoreProjectName)\</PlayFabCoreIntDir>
+  </PropertyGroup>
+
+</Project>
