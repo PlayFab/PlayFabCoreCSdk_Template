@@ -28,8 +28,8 @@ private:
     // ICancellationListener
     void OnCancellation() override;
 
-    void GetToken(SharedPtr<Entity>&& entity) noexcept;
-    void RefreshToken(SharedPtr<Entity>&& entity) noexcept;
+    void GetToken(SharedPtr<Entity> entity) noexcept;
+    void RefreshToken(SharedPtr<Entity> entity) noexcept;
 
     static bool CheckRefreshRequired(EntityToken const& token) noexcept;
 
@@ -74,9 +74,6 @@ TokenRefreshWorker::TokenRefreshWorker(SharedPtr<Entity> const& entity, PlayFab:
 
 TokenRefreshWorker::~TokenRefreshWorker()
 {
-    m_rc.CancellationToken().UnregisterForNotificationAndCheck(*this);
-    m_rc.Terminate(nullptr, nullptr);
-
 #if HC_PLATFORM == HC_PLATFORM_GDK
     if (m_appStateChangedToken)
     {
@@ -95,11 +92,7 @@ SharedPtr<TokenRefreshWorker> TokenRefreshWorker::MakeAndStart(SharedPtr<Entity>
     Allocator<TokenRefreshWorker> a;
     SharedPtr<TokenRefreshWorker> worker{ new (a.allocate(1)) TokenRefreshWorker{ entity, std::move(rc), std::move(tokenExpiredHandler) } };
 
-    if (!worker->m_rc.CancellationToken().RegisterForNotificationAndCheck(*worker))
-    {
-        worker->m_rc.TaskQueue().SubmitWork(worker);
-    }
-
+    worker->m_rc.TaskQueue().SubmitWork(worker);
     return worker;
 }
 
@@ -122,10 +115,17 @@ void TokenRefreshWorker::Run()
 
 void TokenRefreshWorker::OnCancellation()
 {
-    m_rc.Terminate(nullptr, nullptr);
+    // XTaskQueues don't support cancelling individual callbacks submitted to them so we have two options here
+    //  1.  Let the TaskQueue callback run as normal (we'd then check for cancellation during the callback and do nothing
+    //      if the work was cancelled. If the callback is still pending during cleanup the queue will be terminated and
+    //      the ITaskQueueWork::Run will not be called.
+    //  2.  Terminate the TaskQueue, which cancels all callbacks submitted to it. This is fine in this case since nothing
+    //      besides the TokenRefreshWorker will ever be submitted to this TaskQueue.
+
+    m_rc.TaskQueue().Terminate(nullptr, nullptr);
 }
 
-void TokenRefreshWorker::GetToken(SharedPtr<Entity>&& entity) noexcept
+void TokenRefreshWorker::GetToken(SharedPtr<Entity> entity) noexcept
 {
     entity->GetEntityToken(false, m_rc.Derive()).Finally(
         [
@@ -148,7 +148,7 @@ void TokenRefreshWorker::GetToken(SharedPtr<Entity>&& entity) noexcept
     });
 }
 
-void TokenRefreshWorker::RefreshToken(SharedPtr<Entity>&& entity) noexcept
+void TokenRefreshWorker::RefreshToken(SharedPtr<Entity> entity) noexcept
 {
     Entity::RefreshToken(entity, m_rc.Derive()).Finally(
         [

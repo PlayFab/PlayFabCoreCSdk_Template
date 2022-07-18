@@ -26,13 +26,10 @@ public:
     ~State();
 
     XTaskQueueHandle Handle() const noexcept;
-    void SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept;
-    void SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept;
+    void SubmitCallback(XTaskQueuePort port, SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept;
     void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
 
 private:
-    void SubmitCallback(XTaskQueuePort port, SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept;
-
     static void CALLBACK TaskQueueCallback(void* context, bool cancelled) noexcept;
     static void CALLBACK TaskQueueTerminated(void* context) noexcept;
 
@@ -140,16 +137,6 @@ void TaskQueue::State::SubmitCallback(XTaskQueuePort port, SharedPtr<ITaskQueueW
     }
 }
 
-void TaskQueue::State::SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept
-{
-    SubmitCallback(XTaskQueuePort::Work, std::move(work), delayInMs);
-}
-
-void TaskQueue::State::SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept
-{
-    SubmitCallback(XTaskQueuePort::Completion, std::move(completion), 0);
-}
-
 struct XTaskQueueTerminateContext
 {
     SharedPtr<ITerminationListener> listener;
@@ -163,10 +150,15 @@ void CALLBACK TaskQueue::State::TaskQueueTerminated(void* ctx) noexcept
 
     TRACE_VERBOSE("TaskQueue[id=%p] terminated", context->handle);
 
-    if (context->listener)
+    // Move listener & listenerContext onto the stack so we can free context before invoking termination listener callback
+    SharedPtr<ITerminationListener> listener{ std::move(context->listener) };
+    void* listenerContext{ context->listenerContext };
+    context.reset();
+
+    if (listener)
     {
-        ITerminationListener& listener{ *context->listener }; // we are about to move context->listener
-        listener.OnTerminated(std::move(context->listener), context->listenerContext);
+        ITerminationListener& ref{ *listener }; // we are about to move context->listener
+        ref.OnTerminated(std::move(listener), listenerContext);
     }
 }
 
@@ -177,7 +169,7 @@ void TaskQueue::State::Terminate(_In_opt_ SharedPtr<ITerminationListener> listen
     assert(m_handle);
 
     Allocator<XTaskQueueTerminateContext> a;
-    UniquePtr<XTaskQueueTerminateContext> context{ new (a.allocate(1)) XTaskQueueTerminateContext{std::move(listener), listenerContext, m_handle} };
+    UniquePtr<XTaskQueueTerminateContext> context{ new (a.allocate(1)) XTaskQueueTerminateContext{ std::move(listener), listenerContext, m_handle} };
 
     HRESULT hr = XTaskQueueTerminate(m_handle, false, context.get(), TaskQueueTerminated);
     if (FAILED(hr))
@@ -220,12 +212,12 @@ XTaskQueueHandle TaskQueue::Handle() const noexcept
 
 void TaskQueue::SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs) const noexcept
 {
-    return m_state->SubmitWork(std::move(work), delayInMs);
+    return m_state->SubmitCallback(XTaskQueuePort::Work, std::move(work), delayInMs);
 }
 
 void TaskQueue::SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept
 {
-    return m_state->SubmitCompletion(std::move(completion));
+    return m_state->SubmitCallback(XTaskQueuePort::Completion, std::move(completion), 0);
 }
 
 void TaskQueue::Terminate(SharedPtr<ITerminationListener> listener, void* context)
@@ -255,7 +247,7 @@ public:
     PlayFab::TaskQueue TaskQueue() const noexcept;
     PlayFab::CancellationToken CancellationToken() const noexcept;
 
-    void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
+    void Terminate(_In_ SharedPtr<ITerminationListener> listener, _In_opt_ void* context) override;
 
 private:
     void OnTerminated(SharedPtr<ITerminationListener> self, void* context) override;
@@ -264,19 +256,11 @@ private:
     PlayFab::CancellationToken m_cancellationToken;
 
     std::mutex m_mutex;
-
-    enum class Status
-    {
-        Active,
-        Terminating,
-        Terminated
-    };
-
     Vector<WeakPtr<ITerminable>> m_terminables;
     size_t m_pendingTerminations{ 0 };
-    Vector<std::pair<SharedPtr<ITerminationListener>, void*>> m_terminationListeners;
+    SharedPtr<ITerminationListener> m_terminationListener;
+    void* m_terminationListenerContext;
     SharedPtr<State> m_parent;
-    Status m_status{ Status::Active };
 
     // For debugging purposes only
     uint32_t m_id;
@@ -331,73 +315,41 @@ PlayFab::CancellationToken RunContext::State::CancellationToken() const noexcept
     return m_cancellationToken;
 }
 
-void RunContext::State::Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context)
+void RunContext::State::Terminate(_In_ SharedPtr<ITerminationListener> listener, _In_opt_ void* context)
 {
     std::unique_lock<std::mutex> lock{ m_mutex };
 
-    // We only needed to keep m_parent for recursive termination. Once we are terminated we can release it
+    // Terminate should be called exactly once during PFCleanup. Allowing multiple termination listeners prevents 
+    // the RunContext from guaranteeing that it has completely cleaning up its state prior to each listener being notified.
+    assert(listener && !m_terminationListener);
+    m_terminationListener = std::move(listener);
+    m_terminationListenerContext = context;
+
+    // We only needed to keep m_parent alive so we'd be recursively terminated. Safe to release it now that we've been
+    // terminated.
     m_parent.reset();
 
-    switch (m_status)
+    // Terminate our queue and each of our child terminables
+    Vector<SharedPtr<ITerminable>> terminables;
+    for (auto& weakTerminable : m_terminables)
     {
-    case Status::Active:
-    {
-        m_status = Status::Terminating;
-        if (listener)
+        if (auto sharedTerminable = weakTerminable.lock())
         {
-            m_terminationListeners.emplace_back(std::move(listener), context);
+            terminables.emplace_back(sharedTerminable);
         }
-
-        Vector<SharedPtr<ITerminable>> terminables;
-        for (auto& weakTerminable : m_terminables)
-        {
-            if (auto sharedTerminable = weakTerminable.lock())
-            {
-                terminables.emplace_back(sharedTerminable);
-            }
-        }
-
-        assert(!m_pendingTerminations);
-        m_pendingTerminations = 1 + terminables.size();
-
-        TRACE_VERBOSE("RunContext[id=%u] terminating with %u child terminables", m_id, m_pendingTerminations);
-
-        lock.unlock();
-
-        m_queue.Terminate(shared_from_this(), nullptr);
-        for (auto& terminable : terminables)
-        {
-            terminable->Terminate(shared_from_this(), nullptr);
-        }
-
-        break;
     }
-    case Status::Terminating:
-    {
-        TRACE_VERBOSE("RunContext[id=%u] terminated while termination was already in progress", m_id);
 
-        if (listener)
-        {
-            m_terminationListeners.emplace_back(std::move(listener), context);
-        }
-        break;
-    }
-    case Status::Terminated:
-    {
-        TRACE_VERBOSE("RunContext[id=%u] already terminated", m_id);
+    assert(!m_pendingTerminations);
+    m_pendingTerminations = 1 + terminables.size();
 
-        lock.unlock();
-        if (listener)
-        {
-            ITerminationListener& listenerRef{ *listener }; // we are about to move listener
-            listenerRef.OnTerminated(std::move(listener), context);
-        }
-        break;
-    }
-    default:
+    TRACE_VERBOSE("RunContext[id=%u] terminating with %u child terminables", m_id, m_pendingTerminations);
+
+    lock.unlock();
+
+    m_queue.Terminate(shared_from_this(), nullptr);
+    for (auto& terminable : terminables)
     {
-        assert(false);
-    }
+        terminable->Terminate(shared_from_this(), nullptr);
     }
 }
 
@@ -410,21 +362,17 @@ void RunContext::State::OnTerminated(SharedPtr<ITerminationListener> self, void*
 
     if (!m_pendingTerminations)
     {
-        m_status = Status::Terminated;
-
-        Vector<std::pair<SharedPtr<ITerminationListener>, void*>> terminationListeners;
-        std::swap(m_terminationListeners, terminationListeners);
+        // Move terminationListener and terminationListenerContext to the stack before releasing self
+        SharedPtr<ITerminationListener> terminationListener{ std::move(m_terminationListener) };
+        void* terminationListenerContext{ m_terminationListenerContext };
 
         lock.unlock();
 
         // Release the reference that was held during termination
         self.reset();
 
-        for (auto& pair : terminationListeners)
-        {
-            ITerminationListener& terminationListener{ *pair.first }; // we are about to move listener
-            terminationListener.OnTerminated(std::move(pair.first), pair.second);
-        }
+        ITerminationListener& ref{ *terminationListener }; // we are about to move terminationListener
+        ref.OnTerminated(std::move(terminationListener), terminationListenerContext);
     }
 }
 
@@ -460,7 +408,7 @@ CancellationToken RunContext::CancellationToken() const noexcept
 
 void RunContext::Terminate(SharedPtr<ITerminationListener> listener, void* context) noexcept
 {
-    return m_state->Terminate(std::move(listener), context);
+    m_state->Terminate(std::move(listener), context);
 }
 
 } // namespace PlayFab
