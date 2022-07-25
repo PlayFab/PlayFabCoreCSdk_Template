@@ -17,9 +17,14 @@ XAsyncProviderBase::XAsyncProviderBase(_In_ RunContext&& runContext, _In_ XAsync
 {
 }
 
+XAsyncProviderBase::~XAsyncProviderBase() noexcept
+{
+    m_runContext.UnregisterTerminableAndCheck(*this);
+}
+
 HRESULT XAsyncProviderBase::Run(_In_ UniquePtr<XAsyncProviderBase> provider) noexcept
 {
-    RETURN_HR_INVALIDARG_IF_NULL(provider->m_async);
+    RETURN_HR_IF(E_ABORT, provider->m_runContext.RegisterTerminableAndCheck(*provider));
     RETURN_IF_FAILED(XAsyncBegin(provider->m_async, provider.get(), nullptr, provider->identityName, XAsyncProvider));
     provider.release();
     return S_OK;
@@ -54,6 +59,16 @@ void XAsyncProviderBase::Complete(size_t resultSize)
 void XAsyncProviderBase::Fail(HRESULT hr)
 {
     XAsyncComplete(m_async, hr, 0);
+}
+
+
+void XAsyncProviderBase::Terminate(ITerminationListener& listener, void* context) noexcept
+{
+    TRACE_WARNING("XAsyncProvider terminated before completion. PFUninitialize may be blocked until result payload is retreived.");
+
+    assert(!m_terminationListener);
+    m_terminationListener = &listener;
+    m_terminationListenerContext = context;
 }
 
 HRESULT CALLBACK XAsyncProviderBase::XAsyncProvider(_In_ XAsyncOp op, _Inout_ const XAsyncProviderData* data) noexcept
@@ -108,8 +123,19 @@ HRESULT CALLBACK XAsyncProviderBase::XAsyncProvider(_In_ XAsyncOp op, _Inout_ co
         // Cleanup should only fail in catostrophic cases. Can't pass result to client 
         // at this point so die with exception.
 
-        // Re-take ownership of provider, it will be destroyed here
-        UniquePtr<XAsyncProviderBase>{ provider };
+        // Copy the ITerminationListener locally before destroying the provider
+        ITerminationListener* terminationListener = provider->m_terminationListener;
+        void* terminationListenerContext = provider->m_terminationListenerContext;
+
+        // Cleanup provider
+        UniquePtr<XAsyncProviderBase>{ provider }.reset();
+
+        // Notify listener if needed
+        if (terminationListener)
+        {
+            terminationListener->OnTerminated(terminationListenerContext);
+        }
+
         return S_OK;
     }
     default:

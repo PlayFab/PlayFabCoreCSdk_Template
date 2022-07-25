@@ -35,7 +35,7 @@ public:
 private:
     GlobalState(XTaskQueueHandle backgroundQueue) noexcept;
 
-    void OnTerminated(SharedPtr<ITerminationListener> self, void* context) noexcept override;
+    void OnTerminated(void* context) noexcept override;
     static HRESULT CALLBACK CleanupAsyncProvider(XAsyncOp op, XAsyncProviderData const* data);
 
     PlayFab::RunContext m_runContext;

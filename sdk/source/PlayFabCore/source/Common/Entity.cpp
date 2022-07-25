@@ -92,7 +92,7 @@ SharedPtr<TokenRefreshWorker> TokenRefreshWorker::MakeAndStart(SharedPtr<Entity>
     Allocator<TokenRefreshWorker> a;
     SharedPtr<TokenRefreshWorker> worker{ new (a.allocate(1)) TokenRefreshWorker{ entity, std::move(rc), std::move(tokenExpiredHandler) } };
 
-    worker->m_rc.TaskQueue().SubmitWork(worker);
+    worker->m_rc.TaskQueueSubmitWork(worker);
     return worker;
 }
 
@@ -109,7 +109,7 @@ void TokenRefreshWorker::Run()
 
         // TODO we will also need some logic to ensure this isn't overscheduled (ex. during suspend/resume when it is explicitly scheduled
         // without awaiting the normal interval)
-        m_rc.TaskQueue().SubmitWork(shared_from_this(), s_interval);
+        m_rc.TaskQueueSubmitWork(shared_from_this(), s_interval);
     }
 }
 
@@ -122,7 +122,7 @@ void TokenRefreshWorker::OnCancellation()
     //  2.  Terminate the TaskQueue, which cancels all callbacks submitted to it. This is fine in this case since nothing
     //      besides the TokenRefreshWorker will ever be submitted to this TaskQueue.
 
-    m_rc.TaskQueue().Terminate(nullptr, nullptr);
+    m_rc.TaskQueueTerminate();
 }
 
 void TokenRefreshWorker::GetToken(SharedPtr<Entity> entity) noexcept

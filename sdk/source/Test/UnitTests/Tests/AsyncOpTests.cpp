@@ -55,7 +55,7 @@ public:
         tc.AwaitResult();
     }
 
-    TEST_METHOD(ChanedOperation)
+    TEST_METHOD(ChainedOperation)
     {
         AsyncTestContext tc;
 

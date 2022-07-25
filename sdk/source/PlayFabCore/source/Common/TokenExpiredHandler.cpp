@@ -123,7 +123,7 @@ void TokenExpiredHandler::SharedState::Invoke(String&& entityId) const noexcept
     {
         auto handler = pair.second;
 
-        handler->RunContext().TaskQueue().SubmitWork([this, handler, entityId]()
+        handler->RunContext().TaskQueueSubmitWork([this, handler, entityId]()
         {
             std::unique_lock<std::recursive_mutex> lock{ m_mutex }; // lock to avoid races with unregistering the handler
 

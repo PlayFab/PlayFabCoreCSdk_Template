@@ -143,7 +143,7 @@ void XAsyncOperation<T>::OnFailed(HRESULT hr) noexcept
     completion->asyncContext = m_asyncContext;
     completion->hr = hr;
 
-    RunContext().TaskQueue().SubmitCompletion(completion);
+    RunContext().TaskQueueSubmitCompletion(completion);
 }
 
 template<typename T>

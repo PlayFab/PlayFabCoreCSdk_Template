@@ -184,8 +184,7 @@ HRESULT CALLBACK TraceState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderDat
         }
 
         // Forcibily terminate any remaining work
-        RunContext& rc = context->traceState->m_runContext; // we are about to move traceState
-        rc.Terminate(std::move(context->traceState), context);
+        context->traceState->m_runContext.Terminate(*context->traceState, context);
         return E_PENDING;
     }
     default:
@@ -195,16 +194,12 @@ HRESULT CALLBACK TraceState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderDat
     }
 }
 
-void TraceState::OnTerminated(SharedPtr<ITerminationListener> traceState, void* c) noexcept
+void TraceState::OnTerminated(void* c) noexcept
 {
     UniquePtr<CleanupContext> context{ static_cast<CleanupContext*>(c) };
     XAsyncBlock* asyncBlock{ context->asyncBlock }; // Keep copy of asyncBlock pointer to complete after cleaning up context
 
-    // Cleanup TraceState
-    assert(!context->traceState);
-    traceState.reset(); 
-
-    // Cleanup context
+    // Cleanup context. TraceState will be destroyed here
     context.reset();
 
     // TraceState fully cleaned up!

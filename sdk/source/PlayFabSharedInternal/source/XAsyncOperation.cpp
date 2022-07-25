@@ -20,7 +20,7 @@ RunContext IOperation::RunContext() const noexcept
 
 XAsyncOperationBase::XAsyncOperationBase(PlayFab::RunContext&& runContext) noexcept :
     IOperation{ std::move(runContext) },
-    m_asyncBlock{ RunContext().TaskQueue().Handle(), this, XAsyncCompletionCallback, 0 }
+    m_asyncBlock{ RunContext().TaskQueueHandle(), this, XAsyncCompletionCallback, 0 }
 {
 }
 

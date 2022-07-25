@@ -106,7 +106,7 @@ EventUploader::EventUploader(RunContext rc, SharedPtr<TitlePlayer> uploadingEnti
 void EventUploader::Start()
 {
     // Should never be called twice. Make clearer from interface
-    m_rc.TaskQueue().SubmitWork(shared_from_this(), 0);
+    m_rc.TaskQueueSubmitWork(shared_from_this(), 0);
 }
 
 void EventUploader::Run() noexcept
@@ -160,7 +160,7 @@ void EventUploader::Run() noexcept
     lock.unlock();
 
     // Using a polling model to check EventBuffer again after we've emptied it. This is the same algorithm used by XPlatCpp Event Pipeline.
-    m_rc.TaskQueue().SubmitWork(shared_from_this(), m_pollDelayInMs);
+    m_rc.TaskQueueSubmitWork(shared_from_this(), m_pollDelayInMs);
 }
 
 }

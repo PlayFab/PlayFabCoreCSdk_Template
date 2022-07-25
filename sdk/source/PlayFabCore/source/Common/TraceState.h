@@ -48,7 +48,7 @@ private:
     ) noexcept;
 
     // ITerminationListener
-    void OnTerminated(SharedPtr<ITerminationListener> traceState, void* context) noexcept override;
+    void OnTerminated(void* context) noexcept override;
 
     RunContext m_runContext;
     Vector<UniquePtr<TraceOutput>> const m_outputs;
