@@ -15,12 +15,12 @@ namespace PlayFab
 // 
 // Each XAsync API should use a derived provider class and override the relevant operations: Begin, DoWork,
 // and GetResult.
-class XAsyncProviderBase
+class XAsyncProviderBase : public ITerminable
 {
 public:
     XAsyncProviderBase(const XAsyncProviderBase&) = delete;
     XAsyncProviderBase& operator=(const XAsyncProviderBase&) = delete;
-    virtual ~XAsyncProviderBase() noexcept = default;
+    virtual ~XAsyncProviderBase() noexcept;
 
     // Runs an XAsync Provider. After calling Run, the provider operations Begin, DoWork, and GetResult will 
     // be called by the XAsync framework. The lifetime of the provider will be managed by the Provider
@@ -76,9 +76,16 @@ protected:
     const char* const identityName;
 
 private:
+    // ITerminable
+    void Terminate(ITerminationListener& listener, void* context) noexcept override;
+
     static HRESULT CALLBACK XAsyncProvider(_In_ XAsyncOp op, _Inout_ const XAsyncProviderData* data) noexcept;
+
     RunContext m_runContext;
     XAsyncBlock* m_async{ nullptr };
+
+    ITerminationListener* m_terminationListener{ nullptr };
+    void* m_terminationListenerContext{ nullptr };
 };
 
 } // namespace PlayFab

@@ -33,67 +33,63 @@ for (var file in projectFiles.PlayFabCore) {
 } %>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\test\UnitTests\Support\AsyncTestContext.cpp">
+    <ClInclude Include="$(PlayFabCoreSourceDir)\source\stdafx.h" />
+    <ClInclude Include="..\..\source\Test\UnitTests\Support\TestSession.h">
       <Filter>Source\Support</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Support\Event.cpp">
+    </ClInclude>
+    <ClInclude Include="..\..\source\Test\UnitTests\Support\TestMacros.h">
       <Filter>Source\Support</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Mocks\HttpMock.cpp">
+    </ClInclude>
+    <ClInclude Include="..\..\source\Test\UnitTests\Support\TestIncludes.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\Test\UnitTests\Support\AsyncTestContext.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\Test\UnitTests\Support\Event.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\MockResponses.h">
       <Filter>Source\Mocks</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\TokenRefreshTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\TelemetryPipelineTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\AsyncOpTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\CancellationTokenTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\GlobalStateTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\test\UnitTests\Tests\RunContextTests.cpp">
-      <Filter>Source\Tests</Filter>
-    </ClCompile>
+    </ClInclude>
+    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\HttpMock.h">
+      <Filter>Source\Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\Test\UnitTests\Support\TaskQueue.h">
+      <Filter>Source\Support</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\test\UnitTests\Support\AsyncTestContext.h">
+    <ClCompile Include="$(PlayFabCoreSourceDir)\source\stdafx.cpp" />
+    <ClCompile Include="..\..\source\Test\UnitTests\Support\AsyncTestContext.cpp">
       <Filter>Source\Support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\Support\Event.h">
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Support\Event.cpp">
       <Filter>Source\Support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\Support\TestMacros.h">
-      <Filter>Source\Support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\Mocks\HttpMock.h">
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Tests\AsyncOpTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Tests\CancellationTokenTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Tests\GlobalStateTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Tests\TelemetryPipelineTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Tests\TokenRefreshTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Tests\RunContextTests.cpp">
+      <Filter>Source\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Mocks\HttpMock.cpp">
       <Filter>Source\Mocks</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\Wrappers\PlayFabSession.h">
-      <Filter>Source\Wrappers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\Wrappers\ServiceConfig.h">
-      <Filter>Source\Wrappers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\Wrappers\TitlePlayer.h">
-      <Filter>Source\Wrappers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\Wrappers\TelemetryPipeline.h">
-      <Filter>Source\Wrappers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\Mocks\MockResponses.h">
-      <Filter>Source\Mocks</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\Support\TestIncludes.h">
+    </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Support\TaskQueue.cpp">
       <Filter>Source\Support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\test\UnitTests\Support\TestSession.h">
-      <Filter>Source\Support</Filter>
-    </ClInclude>
+    </ClCompile>
   </ItemGroup>
 </Project>

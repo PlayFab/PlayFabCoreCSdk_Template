@@ -9,7 +9,6 @@ namespace PlayFab
 namespace Wrappers
 {
 
-// RAII wrapper around PlayFabCore initialization
 class TestSession
 {
 public:
