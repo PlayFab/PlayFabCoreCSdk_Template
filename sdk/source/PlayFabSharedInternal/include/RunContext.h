@@ -1,5 +1,3 @@
-// Run context is the context needed to perform and XAsync operation
-
 #pragma once
 
 #include "XTaskQueue.h"
@@ -8,80 +6,43 @@
 namespace PlayFab
 {
 
+// Interfaces used with RunContext
 struct ITerminationListener
 {
     virtual ~ITerminationListener() = default;
-
-    // When Terminating, ownership of the termination listener should be transferred back to the termination lister
-    // as part of invoking the OnTerminated callback. This allows listener object to be destroyed within the OnTerminated callback.
-    virtual void OnTerminated(_In_ SharedPtr<ITerminationListener> self, void* context) = 0;
+    virtual void OnTerminated(void* context) = 0;
 };
 
 struct ITerminable
 {
     virtual ~ITerminable() = default;
-    virtual void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) = 0;
+    virtual void Terminate(ITerminationListener& listener, void* context) = 0;
 };
 
-// Interface for work submitted to TaskQueues
 struct ITaskQueueWork
 {
     virtual void Run() = 0;
     virtual void WorkCancelled() {}
 };
 
-// Wrapper to enable submitting arbitrary lambdas to TaskQueues
-template<typename TCallback>
-class TaskQueueWork : public ITaskQueueWork
-{
-public:
-    TaskQueueWork(TCallback&& callback);
-
-    // ITaskQueueWork
-    void Run() override;
-
-private:
-    TCallback m_callback;
-};
-
-// RAII wrapper around XTaskQueueHandle
-class TaskQueue : public ITerminable
-{
-public:
-    TaskQueue DeriveWorkQueue() const noexcept;
-    static TaskQueue DeriveWorkQueue(XTaskQueueHandle handle) noexcept;
-
-    TaskQueue(const TaskQueue& other) noexcept = default;
-    TaskQueue(TaskQueue&& other) noexcept = default;
-    TaskQueue& operator=(TaskQueue const& other) noexcept = delete;
-    TaskQueue& operator=(TaskQueue&& other) noexcept = delete;
-    ~TaskQueue() noexcept = default;
-
-    XTaskQueueHandle Handle() const noexcept;
-    
-    void SubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs = 0) const noexcept;
-    template<typename TCallback, typename std::enable_if_t<!std::is_assignable_v<SharedPtr<ITaskQueueWork>, TCallback>>* = 0>
-    void SubmitWork(TCallback work, uint32_t delayInMs = 0) const noexcept;
-
-    void SubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept;
-    template<typename TCallback, typename std::enable_if_t<!std::is_assignable_v<SharedPtr<ITaskQueueWork>, TCallback>>* = 0>
-    void SubmitCompletion(TCallback completion) const noexcept;
-
-    void Terminate(_In_opt_ SharedPtr<ITerminationListener> listener, void* context) override;
-
-private:
-    class State;
-
-    TaskQueue(SharedPtr<State> state) noexcept;
-
-    SharedPtr<State> m_state;
-};
-
+// RunContext is an execution context for asyncronous work in PlayFab. It provides an interface for basic XAsync primitives, as well
+// as a way to attach and track arbitrary asyncronous work associated with the RunContext.
+// 
+// During SDK cleanup, RunContext::Terminate will be called for all remaining RunContexts and all pending async work will be forcibly
+// ended. The RunContext will then await its completion (including cleanup of any associated state), and then notify the Terminate caller 
+// that everything it is safe to return the the client so they can continue their cleanup.
 class RunContext : public ITerminable
 {
 public:
-    static RunContext Root(XTaskQueueHandle backgroundQueue) noexcept;
+    // Creates a Root RunContext. Should only done by global state
+    static RunContext Root(XTaskQueueHandle queue) noexcept;
+
+    // Derive a new RunContext from another. Subtasks that can be cancelled, succeed, or fail independently should derive their own RunContext
+    // from their parent's RunContext. The derived RunContext will use a derived TaskQueue as well.
     RunContext Derive() noexcept;
+
+    // Derive a new RunContext from another, but use an independent TaskQueue rather than a derived one. This is typically used when a client has
+    // specifed a specific queue for a given piece of work (ex. a public XAsync API call or a client callback that was registered with a queue)
     RunContext DeriveOnQueue(XTaskQueueHandle queueHandle) noexcept;
 
     RunContext(RunContext const&) noexcept = default;
@@ -90,47 +51,90 @@ public:
     RunContext& operator=(RunContext&&) noexcept = delete;
     ~RunContext() noexcept = default;
 
-    PlayFab::TaskQueue TaskQueue() const noexcept;
+public: // XTaskQueue shims
+    // Retreive an XTaskQueueHandle to be passed to XAsyncAsync APIs
+    XTaskQueueHandle TaskQueueHandle() const noexcept;
+
+    // Submits an ITaskQueueWork object to the TaskQueue work port
+    void TaskQueueSubmitWork(SharedPtr<ITaskQueueWork> work, uint32_t delayInMs = 0) const noexcept;
+
+    // Submits an arbitrary lambda to the TaskQueue work port
+    template<typename TCallback, typename std::enable_if_t<!std::is_assignable_v<SharedPtr<ITaskQueueWork>, TCallback>>* = 0>
+    void TaskQueueSubmitWork(TCallback work, uint32_t delayInMs = 0) const noexcept;
+
+    // Submits an ITaskQueueWork object to the TaskQueue completion port
+    void TaskQueueSubmitCompletion(SharedPtr<ITaskQueueWork> completion) const noexcept;
+
+    // Submits an arbitrary lambda to the TaskQueue completion port
+    template<typename TCallback, typename std::enable_if_t<!std::is_assignable_v<SharedPtr<ITaskQueueWork>, TCallback>>* = 0>
+    void TaskQueueSubmitCompletion(TCallback completion) const noexcept;
+
+    // Terminates the XTaskQueue. Can be used to cancel all work submitted to the TaskQueue. Note however that this will also cancel work submitted
+    // to derived RunContext's TaskQueue
+    void TaskQueueTerminate() noexcept;
+
+public:
+    // CancellationToken that can be used to cancel associated work and/or be notified when a cancellation request has been made
     PlayFab::CancellationToken CancellationToken() const noexcept;
 
-    // RunContext::Terminate should be called exactly once during PFCleanup. Allowing multiple terminations if a single
-    // RunContext prevents the RunContext from guaranteeing that it has completely cleaning up its state prior to each
-    // TerminationListener being notified of termination.
-    void Terminate(_In_ SharedPtr<ITerminationListener> listener, _In_opt_ void* context) noexcept override;
+    // Registers an arbitrary piece of work with the RunContext. During Termination, if the work has not yet been unregistered,
+    // the RunContext will alert the registered terminable that the client has requested cleanup and all work should be terminated
+    // as soon as possible.
+    bool RegisterTerminableAndCheck(ITerminable& terminable) noexcept;
+
+    // Unregisters a previously registered terminable. Typically done when the work has completed and has cleaned up any associated state.
+    bool UnregisterTerminableAndCheck(ITerminable& terminable) noexcept;
+
+    // Terminates the TaskQueue, any terminatbles registered with RegisterTerminableAndCheck, and any Derived RunContexts. The provided
+    // ITerminationListener will be notified upon completion.
+    // 
+    // Terminate should only called during PFCleanup. Allowing multiple terminations if a single RunContext prevents the RunContext from
+    // guaranteeing that it has completely cleaning up its state prior to each listener being notified. 
+    void Terminate(ITerminationListener& listener, void* context) noexcept override;
 
 private:
-    class State;
+    RunContext(SharedPtr<class RunContextState> state) noexcept;
 
-    RunContext(SharedPtr<State> state) noexcept;
-
-    SharedPtr<State> m_state;
+    SharedPtr<class RunContextState> m_state;
 };
 
 //------------------------------------------------------------------------------
 // Template implementations
 //------------------------------------------------------------------------------
-template<typename TCallback>
-TaskQueueWork<TCallback>::TaskQueueWork(TCallback&& callback) : m_callback{ std::move(callback) }
-{
-}
 
-// ITaskQueueWork
-template<typename TCallback>
-void TaskQueueWork<TCallback>::Run()
+namespace Detail
 {
-    m_callback();
+
+// Wrapper to enable submitting arbitrary lambdas to TaskQueues
+template<typename TCallback>
+class TaskQueueWork : public ITaskQueueWork
+{
+public:
+    TaskQueueWork(TCallback&& callback) : m_callback{ std::move(callback) } 
+    {
+    }
+    
+private:
+    void Run() override
+    {
+        m_callback();
+    }
+
+    TCallback m_callback;
+};
+
+} // namespace Detail
+
+template<typename TCallback, typename std::enable_if_t<!std::is_assignable_v<SharedPtr<ITaskQueueWork>, TCallback>>*>
+void RunContext::TaskQueueSubmitWork(TCallback work, uint32_t delayInMs) const noexcept
+{
+    TaskQueueSubmitWork(MakeShared<Detail::TaskQueueWork<TCallback>>(std::move(work)), delayInMs);
 }
 
 template<typename TCallback, typename std::enable_if_t<!std::is_assignable_v<SharedPtr<ITaskQueueWork>, TCallback>>*>
-void TaskQueue::SubmitWork(TCallback work, uint32_t delayInMs) const noexcept
+void RunContext::TaskQueueSubmitCompletion(TCallback completion) const noexcept
 {
-    SubmitWork(MakeShared<TaskQueueWork<TCallback>>(std::move(work)), delayInMs);
-}
-
-template<typename TCallback, typename std::enable_if_t<!std::is_assignable_v<SharedPtr<ITaskQueueWork>, TCallback>>*>
-void TaskQueue::SubmitCompletion(TCallback completion) const noexcept
-{
-    SubmitCompletion(MakeShared<TaskQueueWork<TCallback>>(std::move(completion)));
+    TaskQueueSubmitCompletion(MakeShared<Detail::TaskQueueWork<TCallback>>(std::move(completion)));
 }
 
 }

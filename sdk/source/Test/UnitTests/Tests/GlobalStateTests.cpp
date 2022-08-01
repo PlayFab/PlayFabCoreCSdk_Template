@@ -24,7 +24,7 @@ public:
     {
         PFMemoryHooks hooks{ nullptr, nullptr };
         VERIFY_SUCCEEDED(PFMemSetFunctions(&hooks));
-        Assert::IsTrue(s_allocCalls == s_freeCalls);
+        Assert::AreEqual(s_allocCalls.load(), s_freeCalls.load());
     }
 
 private:

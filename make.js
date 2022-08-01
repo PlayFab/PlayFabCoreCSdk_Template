@@ -161,7 +161,7 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
         playFabCoreProjectFiles[relativePath + "\\" + filename] = relativePath;
     }
 
-    relativePath = "Source\\" + (featureGroup.name === "Shared" ? "Common" : featureGroup.name);
+    relativePath = "source\\" + (featureGroup.name === "Shared" ? "Common" : featureGroup.name);
     filename = partialFilename + "Types.h";
     var internalDataModelsHeader = getCompiledTemplate(path.resolve(sourceDir, "sdk_templates/Types.h.ejs"));
     writeFile(path.resolve(apiOutputDir, playFabCoreSourceDir + relativePath, filename), internalDataModelsHeader(locals));
@@ -176,7 +176,7 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
     if (featureGroup.name !== "Shared") {
 
         // Internal APIs
-        relativePath = "Source\\" + featureGroup.name;
+        relativePath = "source\\" + featureGroup.name;
         filename = partialFilename + ".h";
         var internalApisHeader = getCompiledTemplate(path.resolve(sourceDir, "sdk_templates/Calls.h.ejs"));
         writeFile(path.resolve(apiOutputDir, playFabCoreSourceDir + relativePath, filename), internalApisHeader(locals));
@@ -195,7 +195,7 @@ function makeFeatureGroupFiles(featureGroup, sourceDir, apiOutputDir) {
             writeFile(path.resolve(apiOutputDir, playFabCoreSourceDir + relativePath, filename), publicApisHeader(locals));
             playFabCoreProjectFiles[relativePath + "\\" + filename] = relativePath;
 
-            relativePath = "Source\\Api";
+            relativePath = "source\\Api";
             filename = prefix + ".cpp";
             var publicApis = getCompiledTemplate(path.resolve(sourceDir, "sdk_templates/PFCalls.cpp.ejs"));
             writeFile(path.resolve(apiOutputDir, playFabCoreSourceDir + relativePath, filename), publicApis(locals));

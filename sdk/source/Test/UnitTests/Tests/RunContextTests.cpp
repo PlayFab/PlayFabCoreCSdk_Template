@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "TestIncludes.h"
+#include "TaskQueue.h"
 #include "RunContext.h"
 #include "ApiXAsyncProvider.h"
 
@@ -88,7 +89,7 @@ public:
     static void Run(RunContext&& rc, Event* completionEvent, EventList eventList, uint32_t timeout = kDefaultWorkTimeout)
     {
         std::shared_ptr<CancellableWork> work{ new CancellableWork(std::move(rc), completionEvent, eventList) };
-        work->m_rc.TaskQueue().SubmitWork(work, timeout);
+        work->m_rc.TaskQueueSubmitWork(work, timeout);
     }
 
     ~CancellableWork()
@@ -128,7 +129,7 @@ private:
     void OnCancellation() noexcept override
     {
         // Cancel submitted work by terminating the TaskQueue
-        m_rc.TaskQueue().Terminate(nullptr, nullptr);
+        m_rc.TaskQueueTerminate();
     }
 
     RunContext m_rc;
@@ -141,8 +142,8 @@ class UncancellableWork : public ITaskQueueWork
 public:
     static void Run(RunContext&& rc, Event* completionEvent, EventList eventList, uint32_t timeout = kDefaultWorkTimeout)
     {
-        std::shared_ptr<UncancellableWork> op{ new UncancellableWork(std::move(rc), completionEvent, eventList) };
-        op->m_rc.TaskQueue().SubmitWork(op, timeout);
+        std::shared_ptr<UncancellableWork> op{ new UncancellableWork(completionEvent, eventList) };
+        rc.TaskQueueSubmitWork(op, timeout);
     }
 
     ~UncancellableWork()
@@ -151,8 +152,7 @@ public:
     }
 
 private:
-    UncancellableWork(RunContext&& rc, Event* completionEvent, EventList eventList) :
-        m_rc{ std::move(rc) },
+    UncancellableWork(Event* completionEvent, EventList eventList) :
         m_completionEvent{ completionEvent },
         m_eventList{ std::move(eventList) }
     {
@@ -173,6 +173,8 @@ private:
     {
         TRACE_VERBOSE(__FUNCTION__);
 
+        Sleep(1000);
+
         m_eventList.PushBack(EventType::TaskQueueWorkComplete);
         if (m_completionEvent)
         {
@@ -180,7 +182,6 @@ private:
         }
     }
 
-    RunContext m_rc;
     Event* const m_completionEvent;
     EventList m_eventList;
 };
@@ -198,7 +199,7 @@ public:
     }
 
 private:
-    void OnTerminated(SharedPtr<ITerminationListener> self, void* context) override
+    void OnTerminated(void* /*context*/) override
     {
         m_eventList.PushBack(EventType::TerminationComplete);
         m_terminationEvent.Set();
@@ -230,7 +231,7 @@ public:
 
     HRESULT Begin(RunContext rc) override
     {
-        rc.TaskQueue().SubmitWork(std::shared_ptr<Work>{new Work{ *this }}, m_timeout);
+        rc.TaskQueueSubmitWork(std::shared_ptr<Work>{new Work{ *this }}, m_timeout);
         return S_OK;
     }
 
@@ -285,10 +286,10 @@ public:
 
         // Trivially terminate RunContext
         RunContext root = RunContext::Root(nullptr);
-        std::shared_ptr<TerminationListener> listener{ new TerminationListener(events) };
+        TerminationListener listener{ events };
         root.Terminate(listener, nullptr);
 
-        Assert::IsTrue(listener->TerminationEvent().Wait());
+        Assert::IsTrue(listener.TerminationEvent().Wait());
         Assert::IsTrue(events.Size() == 1);
         Assert::IsTrue(events[0] == EventType::TerminationComplete);
     }
@@ -328,14 +329,14 @@ public:
     {
         EventList events;
         RunContext root = RunContext::Root(nullptr);
-        std::shared_ptr<TerminationListener> listener{ new TerminationListener(events) };
+        TerminationListener listener{ events };
 
         // Terminate uncancellable work
         UncancellableWork::Run(root.DeriveOnQueue(nullptr), nullptr, events);
         root.Terminate(listener, nullptr);
 
-        Assert::IsTrue(listener->TerminationEvent().Wait());
-        Assert::IsTrue(events.Size() == 3);
+        Assert::IsTrue(listener.TerminationEvent().Wait());
+        Assert::AreEqual(3u, events.Size());
         // Termination should guarantee everything is destroyed before completing
         Assert::IsTrue(events[0] == EventType::TaskQueueWorkComplete);
         Assert::IsTrue(events[1] == EventType::TaskQueueWorkDestroyed);
@@ -346,7 +347,7 @@ public:
     {
         EventList events;
         RunContext rc = RunContext::Root(nullptr);
-        std::shared_ptr<TerminationListener> listener{ new TerminationListener(events) };
+        TerminationListener listener{ events };
 
         struct XAsyncContext
         {
@@ -361,17 +362,18 @@ public:
                 context->events.PushBack(EventType::XAsyncOperationComplete);
                 context->hr = XAsyncGetResult(async, nullptr, sizeof(uint32_t), &context->result, nullptr);
                 context->completionEvent.Set();
+                Sleep(1000);
             }
         } context{ events };
-        
+
         XAsyncBlock async{ nullptr, &context, XAsyncContext::CompletionCallback, 0 };
-        auto provider = MakeUnique<TestProvider>(rc.DeriveOnQueue(nullptr), &async, &events);
+        auto provider = MakeUnique<TestProvider>(rc.DeriveOnQueue(nullptr), &async, &events, 1000000);
         VERIFY_SUCCEEDED(XAsyncProviderBase::Run(std::move(provider)));
 
         // Terminate 
         rc.Terminate(listener, nullptr);
 
-        Assert::IsTrue(listener->TerminationEvent().Wait());
+        Assert::IsTrue(listener.TerminationEvent().Wait());
         // SDK only guarantees the clients completion callback is submitted to the TaskQueue before termintaion. If the call is made
         // on its on TaskQueue (or a threadpool queue) the callback may not be invoked until after termination. This isn't
         // necessarily and issue; its possible we can clean up the provider cleanup can happen before the callback runs.
@@ -380,7 +382,7 @@ public:
         Assert::AreEqual(4u, events.Size());
         Assert::IsTrue(context.hr == E_ABORT);
         // Provider should always complete the operation first
-        Assert::IsTrue(events[0] == EventType::XAsyncProviderAborted); 
+        Assert::IsTrue(events[0] == EventType::XAsyncProviderAborted);
         // All cleanup should be done before termination completes
         Assert::IsTrue(events.Has(EventType::TerminationComplete) && events.Find(EventType::XAsyncProviderDestroyed) < events.Find(EventType::TerminationComplete));
         Assert::IsTrue(events.Has(EventType::XAsyncOperationComplete));
@@ -390,13 +392,13 @@ public:
     {
         EventList events;
         RunContext rc = RunContext::Root(nullptr);
-        std::shared_ptr<TerminationListener> listener{ new TerminationListener(events) };
+        TerminationListener listener{ events };
 
-        constexpr uint32_t timeout = 1000; // use a short timeout since this should run until timeout
+        constexpr uint32_t timeout = 2000; // use a short timeout since this should run until timeout
         XAsyncBlock async{ nullptr, nullptr, nullptr, 0 };
         auto provider = MakeUnique<TestProvider>(rc.DeriveOnQueue(nullptr), &async, &events, timeout);
         VERIFY_SUCCEEDED(XAsyncProviderBase::Run(std::move(provider)));
-        
+
         // Wait for XAsync operation to complete but don't extract result
         HRESULT hr = XAsyncGetStatus(&async, true);
         VERIFY_SUCCEEDED(hr);
@@ -404,13 +406,11 @@ public:
         // Terminate 
         rc.Terminate(listener, nullptr);
 
-        Assert::IsTrue(listener->TerminationEvent().Wait());
-        Assert::IsTrue(events.Size() == 3);
-        // Termination should guarantee everything is destroyed before completing
-        Assert::IsTrue(events[0] == EventType::XAsyncProviderAborted);
-        Assert::IsTrue(events[1] == EventType::XAsyncProviderDestroyed);
-        Assert::IsTrue(events[2] == EventType::TerminationComplete);
+        Assert::IsFalse(listener.TerminationEvent().Wait(1000)); // Terminate shouldn't complete because XAsync result is pending
+        Assert::IsTrue(events.Size() == 1);
+        Assert::IsTrue(events[0] == EventType::XAsyncProviderCompleted);
     }
+
 };
 
 } // UnitTests

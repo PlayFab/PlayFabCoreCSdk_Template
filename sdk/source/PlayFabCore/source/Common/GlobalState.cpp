@@ -70,6 +70,7 @@ HRESULT GlobalState::Get(SharedPtr<GlobalState>& state) noexcept
 
 struct CleanupContext 
 {
+    SharedPtr<GlobalState> state;
     XAsyncBlock lhcCleanupAsyncBlock{};
     XAsyncBlock traceStateCleanupAsyncBlock{};
     XAsyncBlock* clientAsyncBlock{};
@@ -99,12 +100,10 @@ HRESULT CALLBACK GlobalState::CleanupAsyncProvider(XAsyncOp op, XAsyncProviderDa
     case XAsyncOp::Begin:
     try
     {
-        SharedPtr<GlobalState> state;
-        RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, state));
+        RETURN_IF_FAILED(GlobalStateBootstrapper::StateAccess(GlobalStateBootstrapper::AccessMode::Cleanup, nullptr, context->state));
         context->clientAsyncBlock = data->async;
 
-        PlayFab::RunContext& rc = state->m_runContext; // we are about to move state
-        rc.Terminate(std::move(state), context);
+        context->state->m_runContext.Terminate(*context->state, context);
         return S_OK;
     }
     catch (...)
@@ -181,7 +180,7 @@ void CALLBACK HCCleanupComplete(XAsyncBlock* async)
     context.release();
 }
 
-void GlobalState::OnTerminated(SharedPtr<ITerminationListener> globalState, void* c) noexcept
+void GlobalState::OnTerminated(void* c) noexcept
 {
     TRACE_VERBOSE(__FUNCTION__);
 
@@ -189,7 +188,10 @@ void GlobalState::OnTerminated(SharedPtr<ITerminationListener> globalState, void
     XAsyncBlock* asyncBlock{ context->clientAsyncBlock }; // Keep copy of asyncBlock pointer to complete after cleaning up context
 
     // Free GlobalState before calling HCCleanup - 'this' will be destroyed here
-    globalState.reset();
+    {
+        //SharedPtr<GlobalState> reclaim{ std::move(context->state) };
+        context->state.reset();
+    }
 
     context->lhcCleanupAsyncBlock.callback = HCCleanupComplete;
     context->lhcCleanupAsyncBlock.queue = context->clientAsyncBlock->queue; // Should use derived queue
