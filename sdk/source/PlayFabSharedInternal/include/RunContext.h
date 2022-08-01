@@ -28,8 +28,8 @@ struct ITaskQueueWork
 // RunContext is an execution context for asyncronous work in PlayFab. It provides an interface for basic XAsync primitives, as well
 // as a way to attach and track arbitrary asyncronous work associated with the RunContext.
 // 
-// During SDK cleanup, RunContext::Terminate will be called for all remaining RunContexts and all pending pending async work will be forcibly
-// ended. The RunContext will then awaiting its completion (including cleanup of any associated state), and then notify the Terminate caller 
+// During SDK cleanup, RunContext::Terminate will be called for all remaining RunContexts and all pending async work will be forcibly
+// ended. The RunContext will then await its completion (including cleanup of any associated state), and then notify the Terminate caller 
 // that everything it is safe to return the the client so they can continue their cleanup.
 class RunContext : public ITerminable
 {

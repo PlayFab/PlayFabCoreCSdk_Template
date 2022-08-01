@@ -429,7 +429,7 @@ void RunContextState::CheckTerminationAndNotifyListener(SharedPtr<RunContextStat
     // Notify listener iff
     // 1) m_terminationListener is non-null (Terminate has been called and hasn't previously been completed)
     // 2) there are no pending TaskQueue callbacks
-    // 3) there are no pendinding terminations of registered or child terminables
+    // 3) there are no pendind terminations of registered or child terminables
 
     assert(lock.owns_lock());
 
