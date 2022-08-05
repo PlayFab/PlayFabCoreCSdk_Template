@@ -4,7 +4,7 @@
 namespace PlayFab
 {
 
-class CancellationToken::SharedState : public ICancellationListener, public std::enable_shared_from_this<SharedState>
+class CancellationToken::SharedState : public std::enable_shared_from_this<SharedState>
 {
 public:
     SharedPtr<SharedState> Derive() noexcept;
@@ -14,7 +14,7 @@ public:
     SharedState(SharedState&&) = delete;
     SharedState& operator=(SharedState const&) = delete;
     SharedState& operator=(SharedState&&) = delete;
-    ~SharedState() noexcept;
+    ~SharedState() noexcept = default;
 
     bool IsCanceled() const noexcept;
 
@@ -24,59 +24,47 @@ public:
     bool UnregisterForNotificationAndCheck(ICancellationListener& listener) noexcept;
 
 private:
-    // ICancellationListener
-    void OnCancellation() noexcept override;
-
-    mutable std::recursive_mutex m_mutex; // intentionally recursive
+    mutable std::mutex m_mutex;
+    std::recursive_mutex m_cancellationMutex; // intentionally recursive
     std::atomic<bool> m_cancelled{ false };
     Vector<ICancellationListener*> m_listeners; // non-owning
+    Vector<WeakPtr<SharedState>> m_children;
     SharedPtr<SharedState> m_parent;
 };
 
 SharedPtr<CancellationToken::SharedState> CancellationToken::SharedState::Derive() noexcept
 {
     SharedPtr<SharedState> child = MakeShared<SharedState>();
-    child->m_cancelled = this->RegisterForNotificationAndCheck(*child);
 
-    if (!child->m_cancelled)
+    std::unique_lock<std::mutex> lock{ m_mutex };
+
+    // Clean up stale child references
+    m_children.erase(
+        std::remove_if(
+            m_children.begin(),
+            m_children.end(),
+            [](WeakPtr<SharedState> const& p) { return p.expired(); }
+        ),
+        m_children.end()
+    );
+
+    // Set up parent/child pointers depending on whether the token has been cancelled
+    if (m_cancelled)
     {
-        // We only need a reference to parent if we aren't already cancelled
+        child->m_cancelled = true;
+    }
+    else
+    {
         child->m_parent = shared_from_this();
+        m_children.push_back(child);
     }
 
     return child;
 }
 
-CancellationToken::SharedState::~SharedState() noexcept
-{
-    // We need to read m_parent under a lock as we could be racing with
-    // OnCancellation, we must also not hold the lock when calling into
-    // UnregisterForNotifications as that would invert the lock order and lead
-    // to deadlocks.
-    // The parent's lock in UnregisterForNotifications is what ensures that this
-    // object (the child) cannot be destroyed while OnCancellation is running.
-
-    SharedPtr<CancellationToken::SharedState> parent;
-    {
-        std::unique_lock<std::recursive_mutex> lock{ m_mutex };
-        std::swap(m_parent, parent);
-    }
-
-    if (parent)
-    {
-        bool wasCanceled = parent->UnregisterForNotificationAndCheck(*this);
-
-        // If the parent returns that is was canceled, we should also be
-        // canceled (the reverse is not true, the child could be canceled for
-        // its own reasons)
-        assert(!wasCanceled || m_cancelled);
-        UNREFERENCED_PARAMETER(wasCanceled);
-    }
-}
-
 bool CancellationToken::SharedState::IsCanceled() const noexcept
 {
-    std::unique_lock<std::recursive_mutex> lock{ m_mutex };
+    std::unique_lock<std::mutex> lock{ m_mutex };
     return m_cancelled;
 }
 
@@ -87,20 +75,30 @@ bool CancellationToken::SharedState::Cancel() noexcept
     // callback
     SharedPtr<SharedState> self{ shared_from_this() };
 
-    std::unique_lock<std::recursive_mutex> lock{ m_mutex };
-
+    std::unique_lock<std::recursive_mutex> cancellationLock{ m_cancellationMutex };
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    
     // If we've already been cancelled, nothing to do
     if (m_cancelled.exchange(true))
     {
         return false;
     }
 
-    // Intentionally hold the lock while notifying to avoid races with unregister
+    // We only needed to keep m_parent alive so we'd be recursively cancelled, safe to release it now
+    m_parent.reset();
+
+    Vector<ICancellationListener*> listeners{};
+    Vector<WeakPtr<SharedState>> children{};
 
     // Move the listeners in a local to clear the list
-    Vector<ICancellationListener*> listeners{};
     std::swap(listeners, m_listeners);
 
+    // Move the child tokens into a local to clear the list
+    std::swap(children, m_children);
+
+    lock.unlock();
+
+    // Intentionally hold the cancellationLock while notifying to avoid races with unregister
     for (auto l : listeners)
     {
         // We do not have ownership of l, but we do have an existance guarantee
@@ -110,12 +108,23 @@ bool CancellationToken::SharedState::Cancel() noexcept
         l->OnCancellation();
     }
 
-    return !listeners.empty();
+    for (auto& weakChild : children)
+    {
+        SharedPtr<SharedState> child = weakChild.lock();
+        if (child)
+        {
+            child->Cancel();
+        }
+    }
+
+    return !listeners.empty() || !children.empty();
 }
 
 bool CancellationToken::SharedState::RegisterForNotificationAndCheck(ICancellationListener& listener)
 {
-    std::unique_lock<std::recursive_mutex> lock{ m_mutex };
+    // We don't need to sync on cancellation here, either the callback will
+    // happen entirely after we are done, or it will never happen at all
+    std::unique_lock<std::mutex> lock{ m_mutex };
 
     // We return the current cancellation state as part of this function so that
     // callers can know if the callbacks will be invoked later or not
@@ -132,7 +141,11 @@ bool CancellationToken::SharedState::RegisterForNotificationAndCheck(ICancellati
 
 bool CancellationToken::SharedState::UnregisterForNotificationAndCheck(ICancellationListener& listener) noexcept
 {
-    std::unique_lock<std::recursive_mutex> lock{ m_mutex };
+    // We take the cancellationGuard to ensure that we are properly serialized
+    // with respect to the callbacks. Because it's a recursive lock,
+    // unregistering from within the callback will also work (and it's safe)
+    std::unique_lock<std::recursive_mutex> cancallationLock{ m_cancellationMutex };
+    std::unique_lock<std::mutex> lock{ m_mutex };
 
     auto it = std::find(m_listeners.begin(), m_listeners.end(), &listener);
     if (it != m_listeners.end())
@@ -141,22 +154,6 @@ bool CancellationToken::SharedState::UnregisterForNotificationAndCheck(ICancella
     }
 
     return m_cancelled;
-}
-
-
-void CancellationToken::SharedState::OnCancellation() noexcept
-{
-    // The parent's lock in UnregisterForNotifications is what ensures that this
-    // object (the child) cannot be destroyed while OnCancellation is running.
-
-    {
-        std::unique_lock<std::recursive_mutex>{ m_mutex };
-
-        // Automatically unregistered by the parent
-        m_parent.reset();
-    }
-
-    Cancel();
 }
 
 CancellationToken::CancellationToken(SharedPtr<SharedState> state) noexcept :

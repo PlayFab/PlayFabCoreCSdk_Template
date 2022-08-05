@@ -34,6 +34,7 @@ for (var file in projectFiles.PlayFabCore) {
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\Test\UnitTests\Mocks\HttpMock.cpp" />
+    <ClCompile Include="..\..\source\Test\UnitTests\Mocks\PlayFabServiceMock.cpp" />
     <ClCompile Include="..\..\source\Test\UnitTests\Support\AsyncTestContext.cpp" />
     <ClCompile Include="..\..\source\Test\UnitTests\Support\Event.cpp" />
     <ClCompile Include="..\..\source\Test\UnitTests\Support\TaskQueue.cpp" />
@@ -44,13 +45,19 @@ for (var file in projectFiles.PlayFabCore) {
     <ClCompile Include="..\..\source\Test\UnitTests\Tests\TelemetryPipelineTests.cpp" />
     <ClCompile Include="..\..\source\Test\UnitTests\Tests\TokenRefreshTests.cpp" />
     <ClInclude Include="..\..\source\Test\UnitTests\Mocks\HttpMock.h" />
-    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\MockResponses.h" />
+    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\PlayFabServiceMock.h" />
     <ClInclude Include="..\..\source\Test\UnitTests\Support\AsyncTestContext.h" />
     <ClInclude Include="..\..\source\Test\UnitTests\Support\Event.h" />
     <ClInclude Include="..\..\source\Test\UnitTests\Support\TaskQueue.h" />
     <ClInclude Include="..\..\source\Test\UnitTests\Support\TestIncludes.h" />
     <ClInclude Include="..\..\source\Test\UnitTests\Support\TestMacros.h" />
     <ClInclude Include="..\..\source\Test\UnitTests\Support\TestSession.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\..\source\Test\UnitTests\Mocks\MockResponses.json">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

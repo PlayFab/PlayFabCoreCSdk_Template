@@ -20,6 +20,7 @@ Event::~Event() noexcept
 void Event::Set() noexcept
 {
     auto result = SetEvent(m_handle);
+    auto error = GetLastError();
     assert(result);
     UNREFERENCED_PARAMETER(result);
 }

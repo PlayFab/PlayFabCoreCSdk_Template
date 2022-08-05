@@ -134,10 +134,13 @@ AsyncOp<void> <%- featureGroup.name %>API::Re<%- call.name %>(
             <%- call.resultDatatype.name %> resultModel;
             resultModel.FromJson(serviceResponse.Data);
 
-            assert(resultModel.titlePlayerAccount.has_value());
+            // Update TitlePlayer
             RETURN_HR_IF(E_FAIL, !resultModel.titlePlayerAccount.has_value());
-            return player->SetEntityToken(*resultModel.titlePlayerAccount);
-            // TODO update MasterPlayer EntityToken as well
+            RETURN_IF_FAILED(player->SetEntityToken(*resultModel.titlePlayerAccount));
+
+            // Update MasterPlayer
+            RETURN_HR_IF(E_FAIL, !resultModel.masterPlayerAccount.has_value());
+            return player->LinkedMasterPlayer()->SetEntityToken(*resultModel.masterPlayerAccount);
         }
         else
         {

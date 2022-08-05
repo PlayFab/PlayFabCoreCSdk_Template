@@ -12,3 +12,9 @@
 #define RETURN_HR_INVALIDARG_IF_NULL(arg)                       do { RETURN_HR_IF(E_INVALIDARG, arg == nullptr); } while(0, 0)
 #define RETURN_LAST_ERROR_IF(condition)                         do { if (condition) { RETURN_LAST_ERROR(); }} while (0, 0)
 #define RETURN_LAST_ERROR_IF_NULL(ptr)                          do { if ((ptr) == nullptr) { RETURN_LAST_ERROR(); }} while (0, 0)
+
+#if _DEBUG
+#define ASSERT_SUCCEEDED(hr)                                    do { HRESULT __hrRet = hr; assert(SUCCEEDED(__hrRet)); } while(0, 0)
+#else 
+#define ASSERT_SUCCEEDED(hr)                                    do { HRESULT __hrRet = hr; } while(0, 0)
+#endif

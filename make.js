@@ -323,6 +323,16 @@ function curateServiceApis(apis) {
                 }
                 customizeLoginRequest(call.requestDatatype);
             }
+
+            // Special logic for GetEntityToken. For now project as internal only as a way to renew existing Entity's tokens. May want to expose
+            // publicly at some point as a way to get Title EntityToken but that public signature would be customized as well (i.e. to return 
+            // a PFEntityHandle rather than a EntityTokenResult)
+            if (call.name === "GetEntityToken") {
+                call.entityRequired = "Entity"
+                call.isInternalOnly = true;
+                call.requestDatatype.isInternalOnly = true;
+                call.resultDatatype.isInternalOnly = true;
+            }
         }
     }
 }

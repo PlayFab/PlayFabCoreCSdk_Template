@@ -4,7 +4,7 @@
 namespace PlayFab
 {
 
-static uint32_t g_nextId{ 0 };
+static std::atomic<uint32_t> g_nextId{ 0 };
 
 // RAII wrapper of XTaskQueueHandle
 class TaskQueue
@@ -55,6 +55,8 @@ public:
     void Terminate(ITerminationListener& listener, void* context) override;
 
 private:
+    void AppendChild(SharedPtr<RunContextState> child) noexcept;
+
     // ITerminationListener
     void OnTerminated(void* context) noexcept override; 
 
@@ -182,21 +184,31 @@ SharedPtr<RunContextState> RunContextState::Root(XTaskQueueHandle queueHandle) n
 SharedPtr<RunContextState> RunContextState::Derive() noexcept
 {
     SharedPtr<RunContextState> derived = MakeShared<RunContextState>(m_queue.DeriveWorkQueue(), m_cancellationToken.Derive(), shared_from_this());
-
-    std::unique_lock<std::mutex> lock{ m_mutex };
-    m_children.push_back(derived);
-
+    AppendChild(derived);
     return derived;
 }
 
 SharedPtr<RunContextState> RunContextState::DeriveOnQueue(XTaskQueueHandle queueHandle) noexcept
 {
     SharedPtr<RunContextState> derived = MakeShared<RunContextState>(TaskQueue::DeriveWorkQueue(queueHandle), m_cancellationToken.Derive(), shared_from_this());
-
-    std::unique_lock<std::mutex> lock{ m_mutex };
-    m_children.push_back(derived);
-
+    AppendChild(derived);
     return derived;
+}
+
+void RunContextState::AppendChild(SharedPtr<RunContextState> child) noexcept
+{
+    std::unique_lock<std::mutex> lock{ m_mutex };
+    // Clean up stale child references
+    m_children.erase(
+        std::remove_if(
+            m_children.begin(),
+            m_children.end(),
+            [](WeakPtr<RunContextState> const& p) { return p.expired(); }
+        ),
+        m_children.end()
+    );
+
+    m_children.push_back(child);
 }
 
 XTaskQueueHandle RunContextState::TaskQueueHandle() const noexcept
@@ -222,6 +234,8 @@ void RunContextState::TaskQueueSubmitCallback(XTaskQueuePort port, SharedPtr<ITa
     ++m_pendingTaskQueueCallbacks;
     lock.unlock();
 
+    TRACE_VERBOSE("RunContextState[id=%u] TaskQueue callback submitted", m_id);
+
     HRESULT hr = XTaskQueueSubmitDelayedCallback(m_queue.Handle(), port, delayInMs, context, TaskQueueCallback);
     if (FAILED(hr))
     {
@@ -239,6 +253,8 @@ void CALLBACK RunContextState::TaskQueueCallback(void* c, bool cancelled) noexce
     assert(c);
     UniquePtr<XTaskQueueCallbackContext> callbackContext{ static_cast<XTaskQueueCallbackContext*>(c) };
     assert(callbackContext->runContext && callbackContext->work);
+
+    TRACE_VERBOSE("RunContextState[id=%u] TaskQueueCallback", callbackContext->runContext->m_id);
 
     if (cancelled)
     {
@@ -279,7 +295,7 @@ void RunContextState::TaskQueueTerminate() noexcept
     m_queueTerminated = true;
     lock.unlock();
 
-    TRACE_VERBOSE("RunContextState[id=%u] TaskQueue terminating", m_id);
+    TRACE_VERBOSE("RunContextState[id=%u] TaskQueue terminating, %u callbacks remaining", m_id, m_pendingTaskQueueCallbacks);
 
     assert(m_queue.Handle());
     Allocator<XTaskQueueCallbackContext> a;
@@ -429,7 +445,7 @@ void RunContextState::CheckTerminationAndNotifyListener(SharedPtr<RunContextStat
     // Notify listener iff
     // 1) m_terminationListener is non-null (Terminate has been called and hasn't previously been completed)
     // 2) there are no pending TaskQueue callbacks
-    // 3) there are no pendind terminations of registered or child terminables
+    // 3) there are no pending terminations of registered or child terminables
 
     assert(lock.owns_lock());
 
@@ -441,6 +457,8 @@ void RunContextState::CheckTerminationAndNotifyListener(SharedPtr<RunContextStat
 
         // reset m_terminationListener to avoid double notifying in some race scenarios
         runContext->m_terminationListener = nullptr; 
+
+        TRACE_VERBOSE("RunContextState[id=%u] Termination complete, notifying listener", runContext->m_id);
 
         lock.unlock();
         runContext.reset();

@@ -42,6 +42,7 @@ GlobalState::GlobalState(XTaskQueueHandle backgroundQueue) noexcept :
     m_titlePlayers{ Detail::kFirstTitlePlayerHandle },
     m_clientTeletryPipelines{ Detail::kFirstTelemetryPipelineHandle }
 {
+    TRACE_VERBOSE(__FUNCTION__);
 }
 
 GlobalState::~GlobalState() noexcept

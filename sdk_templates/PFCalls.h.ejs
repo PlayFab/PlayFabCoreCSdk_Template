@@ -17,6 +17,9 @@ extern "C"
 
 for (var callIndex = 0; callIndex < featureGroup.calls.length; callIndex++) {
     var call = featureGroup.calls[callIndex];
+    if (call.isInternalOnly) {
+        continue;
+    }
     var contextHandleParam = globalPrefix + "ServiceConfigHandle serviceConfigHandle";
     if (call.entityRequired) {
         continue; // only defining auth calls for now
