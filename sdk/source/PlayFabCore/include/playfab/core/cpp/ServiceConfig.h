@@ -24,6 +24,20 @@ public:
     template<typename T>
     using Vector = typename std::vector<T, Allocator<T>>;
 
+    // Creates a ServiceConfig by wrapping a PFServiceConfigHandle (transfers ownership of the handle)
+    static ServiceConfig Wrap(PFServiceConfigHandle handle)
+    {
+        return ServiceConfig{ handle };
+    }
+
+    // Creates a TitlePlayer by duplicating a PFServiceConfigHandle (caller still owns provided handle)
+    static ServiceConfig Duplicate(PFServiceConfigHandle handle)
+    {
+        PFServiceConfigHandle duplicatedHandle;
+        THROW_IF_FAILED(PFServiceConfigDuplicateHandle(handle, &duplicatedHandle));
+        return ServiceConfig{ duplicatedHandle };
+    }
+
     ServiceConfig(_In_z_ const char* connectionString, _In_z_ const char* titleId, _In_z_ const char* playerAccountPoolId)
     {
         THROW_IF_FAILED(PFServiceConfigCreateHandle(connectionString, titleId, playerAccountPoolId, &m_handle));

@@ -14,6 +14,7 @@ class EntityToken : public PFEntityToken, public ClientOutputModel<PFEntityToken
 {
 public:
     EntityToken(const Authentication::EntityTokenResponse& tokenResponse);
+    EntityToken(const Authentication::GetEntityTokenResponse& tokenResponse);
     EntityToken(const EntityToken& src);
     EntityToken(EntityToken&& src);
     EntityToken& operator=(const EntityToken& src);
@@ -44,7 +45,7 @@ public:
     Entity(Entity&&) = delete;
     Entity& operator=(const Entity&) = delete;
     Entity& operator=(Entity&&) = delete;
-    ~Entity() noexcept;
+    ~Entity() noexcept = default;
 
 public:
     SharedPtr<ServiceConfig const> ServiceConfig() const;
@@ -52,9 +53,7 @@ public:
     AsyncOp<EntityToken> GetEntityToken(bool forceRefresh, RunContext runContext);
 
     HRESULT SetEntityToken(Authentication::EntityTokenResponse const& entityTokenResponse);
-
-    // Temporary stub for testing. This will eventually be replaced with auto generated service wrapper when that API is available.
-    static AsyncOp<Authentication::EntityTokenResponse> RefreshToken(SharedPtr<Entity> entity, RunContext&& runContext);
+    HRESULT SetEntityToken(Authentication::GetEntityTokenResponse const& entityTokenResponse);
 
 protected:
     Entity(

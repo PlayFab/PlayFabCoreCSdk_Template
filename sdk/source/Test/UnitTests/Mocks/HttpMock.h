@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include "httpClient/httpClient.h"
+#include <httpClient/httpClient.h>
+#include <playfab/core/cpp/ServiceConfig.h> 
 
 namespace PlayFab
 {
@@ -12,17 +13,17 @@ namespace UnitTests
 
 using HttpHeaders = std::map<std::string, std::string>;
 
-using MockMatchedCallback = std::function<void(class HttpMock const& mock, std::string url, std::string requestBody)>;
-
 // RAII wrapper around HCMockCallHandle
 class HttpMock
 {
 public:
+    using Callback = std::function<void(HttpMock const& mock, std::string url, std::string requestBody)>;
+
     HttpMock(_In_ const char* httpMethod, _In_ const char* url) noexcept;
-    HttpMock(const HttpMock&) = delete;
-    HttpMock& operator=(HttpMock) = delete;
-    HttpMock(HttpMock&& other);
-    HttpMock& operator=(HttpMock&& other) = delete;
+    HttpMock(HttpMock const&) = delete;
+    HttpMock(HttpMock&&) = delete;
+    HttpMock& operator=(HttpMock const&) = delete;
+    HttpMock& operator=(HttpMock&&) = delete;
     virtual ~HttpMock();
 
     void SetResponseHttpStatus(uint32_t httpStatus) const noexcept;
@@ -31,21 +32,21 @@ public:
     void SetResponseBody(const uint8_t* responseBodyBytes, size_t responseBodySize) const noexcept;
     void ClearReponseBody() const noexcept;
     void SetResponseHeaders(const HttpHeaders& responseHeaders) const noexcept;
-
-    void SetMockMatchedCallback(MockMatchedCallback&& callback) noexcept;
+    void SetCallback(Callback callback) noexcept;
 
 private:
-    static void CALLBACK MatchedCallback(
+    static void CALLBACK HCMockMatchedCallback(
         _In_ HCMockCallHandle mockHandle,
         _In_ const char* method,
         _In_ const char* url,
         _In_ const uint8_t* requestBodyBytes,
         _In_ uint32_t requestBodySize,
         _In_ void* context
-    );
+    ) noexcept;
 
-    HCMockCallHandle m_handle;
-    MockMatchedCallback m_callback;
+    std::mutex m_mutex;
+    HCMockCallHandle m_handle{ nullptr };
+    Callback m_callback;
 };
 
 }

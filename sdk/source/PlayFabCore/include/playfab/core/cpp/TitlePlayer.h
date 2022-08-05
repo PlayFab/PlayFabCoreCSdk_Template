@@ -65,7 +65,7 @@ public:
         return m_handle;
     }
 
-    PFEntityKeyWrapper<Alloc> EntityKey() const noexcept
+    PFEntityKeyWrapper<Alloc> EntityKey() const
     {
         size_t size{};
         THROW_IF_FAILED(PFTitlePlayerGetEntityKeySize(m_handle, &size));

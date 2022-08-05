@@ -14,5 +14,4 @@
 #include <playfab/core/cpp/TitlePlayer.h>
 
 // Mocks
-#include "Mocks/HttpMock.h"
-#include "Mocks/MockResponses.h"
+#include "Mocks/PlayFabServiceMock.h"

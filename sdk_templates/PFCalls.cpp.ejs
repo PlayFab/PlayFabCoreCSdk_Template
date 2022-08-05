@@ -14,6 +14,9 @@ using namespace PlayFab::<%- featureGroup.name %>;
 
 for (var i = 0; i < featureGroup.calls.length; i++) {
     var call = featureGroup.calls[i]; 
+    if (call.isInternalOnly) {
+        continue;
+    }
     var contextHandleParam = globalPrefix + "ServiceConfigHandle contextHandle";
     var contextBinder = "std::move(serviceConfig)";
     if (call.entityRequired) {

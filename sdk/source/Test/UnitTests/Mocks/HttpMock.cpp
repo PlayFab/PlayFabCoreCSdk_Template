@@ -8,40 +8,26 @@ namespace UnitTests
 
 HttpMock::HttpMock(const char* method, const char* url) noexcept
 {
-    HRESULT hr = HCMockCallCreate(&m_handle);
-    assert(SUCCEEDED(hr));
-
-    hr = HCMockAddMock(m_handle, method, url, nullptr, 0);
-    assert(SUCCEEDED(hr));
-
+    ASSERT_SUCCEEDED(HCMockCallCreate(&m_handle));
+    ASSERT_SUCCEEDED(HCMockAddMock(m_handle, method, url, nullptr, 0));
     // Default mock response of 200 with no response headers or body
-    SetResponseHttpStatus(200);
-
-    hr = HCMockSetMockMatchedCallback(m_handle, HttpMock::MatchedCallback, this);
-    assert(SUCCEEDED(hr));
-
-    UNREFERENCED_PARAMETER(hr);
+    ASSERT_SUCCEEDED(HCMockResponseSetStatusCode(m_handle, 200));
+    ASSERT_SUCCEEDED(HCMockSetMockMatchedCallback(m_handle, HCMockMatchedCallback, this));
 }
 
-HttpMock::HttpMock(HttpMock&& other) : m_handle{ other.m_handle }
-{
-    other.m_handle = nullptr;
-}
 
 HttpMock::~HttpMock()
 {
-    if (m_handle)
-    {
-        // Remove mock also closes handle
-        HCMockRemoveMock(m_handle);
-    }
+    // avoid race between destruction and callback invocation
+    std::unique_lock<std::mutex> lock{ m_mutex };
+
+    ASSERT_SUCCEEDED(HCMockRemoveMock(m_handle));
+    ASSERT_SUCCEEDED(HCMockCallCloseHandle(m_handle));
 }
 
 void HttpMock::SetResponseHttpStatus(uint32_t httpStatus) const noexcept
 {
-    auto hr = HCMockResponseSetStatusCode(m_handle, httpStatus);
-    assert(SUCCEEDED(hr));
-    UNREFERENCED_PARAMETER(hr);
+    ASSERT_SUCCEEDED(HCMockResponseSetStatusCode(m_handle, httpStatus));
 }
 
 void HttpMock::SetResponseBody(const char* responseBodyString) const noexcept
@@ -70,9 +56,7 @@ void HttpMock::SetResponseBody(
 {
     if (responseBodyBytes && responseBodySize)
     {
-        auto hr = HCMockResponseSetResponseBodyBytes(m_handle, responseBodyBytes, static_cast<uint32_t>(responseBodySize));
-        assert(SUCCEEDED(hr));
-        UNREFERENCED_PARAMETER(hr);
+        ASSERT_SUCCEEDED(HCMockResponseSetResponseBodyBytes(m_handle, responseBodyBytes, static_cast<uint32_t>(responseBodySize)));
     }
 }
 
@@ -87,31 +71,30 @@ void HttpMock::SetResponseHeaders(const HttpHeaders& responseHeaders) const noex
 {
     for (const auto& header : responseHeaders)
     {
-        auto hr = HCMockResponseSetHeader(m_handle, header.first.data(), header.second.data());
-        assert(SUCCEEDED(hr));
-        UNREFERENCED_PARAMETER(hr);
+        ASSERT_SUCCEEDED(HCMockResponseSetHeader(m_handle, header.first.data(), header.second.data()));
     }
 }
 
-void HttpMock::SetMockMatchedCallback(MockMatchedCallback&& callback) noexcept
+void HttpMock::SetCallback(Callback callback) noexcept
 {
+    std::unique_lock<std::mutex> lock{ m_mutex };
     m_callback = std::move(callback);
 }
 
-void CALLBACK HttpMock::MatchedCallback(
+void CALLBACK HttpMock::HCMockMatchedCallback(
     _In_ HCMockCallHandle mockHandle,
-    _In_ const char* method,
+    _In_ const char* /*method*/,
     _In_ const char* url,
     _In_ const uint8_t* requestBodyBytes,
     _In_ uint32_t requestBodySize,
     _In_ void* context
-)
+) noexcept
 {
-    UNREFERENCED_PARAMETER(method);
-
     auto mock = static_cast<HttpMock*>(context);
     assert(mock->m_handle == mockHandle);
 
+    // avoid race between destruction and callback invocation
+    std::unique_lock<std::mutex> lock{ mock->m_mutex };
     if (mock->m_callback)
     {
         mock->m_callback(*mock, url, std::string{ requestBodyBytes, requestBodyBytes + requestBodySize });

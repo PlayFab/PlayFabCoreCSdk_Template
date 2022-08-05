@@ -9,17 +9,6 @@ namespace PlayFab
 namespace UnitTests
 {
 
-constexpr char* kWriteEventsMockResponseBody =
-R"({
-  "code": 200,
-  "status": "OK",
-  "data": {
-    "WriteEventsResponse": {
-      "AssignedEventIds": []
-    }
-  }
-})";
-
 constexpr char* kTestEventTemplate =
 R"({
   "eventId": 0
@@ -33,15 +22,7 @@ public:
         Wrappers::TestSession session;
         Wrappers::ServiceConfig<> serviceConfig{ "mockConnectionString", "mockTitleId", "mockPlayerAccountPoolId" };
 
-        // Configure Mocks
-        std::stringstream authUrl;
-        authUrl << serviceConfig.ConnectionString() << "/PlayerIdentity/AuthenticateWith";
-        HttpMock authMock{ "POST", authUrl.str().data() };
-
-        rapidjson::Document authResponseBodyJson;
-        auto& allocator{ authResponseBodyJson.GetAllocator() };
-        authResponseBodyJson.Parse(kMockAuthResponseBody);
-        authMock.SetResponseBody(authResponseBodyJson);
+        PlayFabServiceMock authMock{serviceConfig, "AuthenticateWithCustomId"};
 
         // Synchronously authenticate
         XAsyncBlock async{};
@@ -54,13 +35,10 @@ public:
 
         Wrappers::TelemetryPipeline pipeline{ titlePlayer.Handle(), nullptr };
 
-        std::stringstream writeEventUrl;
-        writeEventUrl << serviceConfig.ConnectionString() << "/Event/WriteEvent";
-        HttpMock writeEventMock{ "POST", writeEventUrl.str().data() };
-        writeEventMock.SetResponseBody(kWriteEventsMockResponseBody);
+        PlayFabServiceMock writeEventsMock{ serviceConfig, "WriteEvents" };
 
         AsyncTestContext tc;
-        writeEventMock.SetMockMatchedCallback([&](HttpMock const& mock, std::string url, std::string requestBody)
+        writeEventsMock.SetCallback([&](PlayFabServiceMock& mock, std::string url, std::string requestBody)
         {
             rapidjson::Document requestJson;
             requestJson.Parse(requestBody.data());
@@ -81,14 +59,7 @@ public:
         Wrappers::ServiceConfig<> serviceConfig{ "mockConnectionString", "mockTitleId", "mockPlayerAccountPoolId" };
 
         // Configure Mocks
-        std::stringstream authUrl;
-        authUrl << serviceConfig.ConnectionString() << "/PlayerIdentity/AuthenticateWith";
-        HttpMock authMock{ "POST", authUrl.str().data() };
-
-        rapidjson::Document authResponseBodyJson;
-        auto& allocator{ authResponseBodyJson.GetAllocator() };
-        authResponseBodyJson.Parse(kMockAuthResponseBody);
-        authMock.SetResponseBody(authResponseBodyJson);
+        PlayFabServiceMock authMock{ serviceConfig, "AuthenticateWithCustomId" };
 
         // Synchronously authenticate
         XAsyncBlock async{};
@@ -101,16 +72,13 @@ public:
 
         Wrappers::TelemetryPipeline pipeline{ titlePlayer.Handle(), nullptr };
 
-        std::stringstream writeEventUrl;
-        writeEventUrl << serviceConfig.ConnectionString() << "/Event/WriteEvent";
-        HttpMock writeEventMock{ "POST", writeEventUrl.str().data() };
-        writeEventMock.SetResponseBody(kWriteEventsMockResponseBody);
+        PlayFabServiceMock writeEventsMock{ serviceConfig, "WriteEvents" };
 
         std::set<int> eventIdsToWrite{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
         size_t eventsWritten = 0;
 
         AsyncTestContext tc;
-        writeEventMock.SetMockMatchedCallback([&](HttpMock const& mock, std::string url, std::string requestBody)
+        writeEventsMock.SetCallback([&](PlayFabServiceMock& mock, std::string url, std::string requestBody)
         {
             rapidjson::Document requestJson;
             requestJson.Parse(requestBody.data());
