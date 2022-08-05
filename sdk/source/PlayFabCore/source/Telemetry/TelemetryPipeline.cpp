@@ -105,15 +105,12 @@ EventUploader::EventUploader(RunContext rc, SharedPtr<TitlePlayer> uploadingEnti
 
 void EventUploader::Start()
 {
-    TRACE_VERBOSE(__FUNCTION__);
     // Should never be called twice. Make clearer from interface
     m_rc.TaskQueueSubmitWork(shared_from_this(), 0);
 }
 
 void EventUploader::Run() noexcept
 {
-    TRACE_VERBOSE(__FUNCTION__);
-
     std::unique_lock<std::mutex> lock{ m_mutex };
 
     for (bool haveEvents = true; haveEvents; )

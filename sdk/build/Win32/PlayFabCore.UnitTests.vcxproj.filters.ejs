@@ -49,10 +49,10 @@ for (var file in projectFiles.PlayFabCore) {
     <ClInclude Include="..\..\source\Test\UnitTests\Support\Event.h">
       <Filter>Source\Support</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\MockResponses.h">
+    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\HttpMock.h">
       <Filter>Source\Mocks</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\HttpMock.h">
+    <ClInclude Include="..\..\source\Test\UnitTests\Mocks\PlayFabServiceMock.h">
       <Filter>Source\Mocks</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\Test\UnitTests\Support\TaskQueue.h">
@@ -88,8 +88,16 @@ for (var file in projectFiles.PlayFabCore) {
     <ClCompile Include="..\..\source\Test\UnitTests\Mocks\HttpMock.cpp">
       <Filter>Source\Mocks</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\Test\UnitTests\Mocks\PlayFabServiceMock.cpp">
+      <Filter>Source\Mocks</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\Test\UnitTests\Support\TaskQueue.cpp">
       <Filter>Source\Support</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\..\source\Test\UnitTests\Mocks\MockResponses.json">
+      <Filter>Source\Mocks</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
